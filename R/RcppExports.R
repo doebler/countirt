@@ -165,7 +165,3 @@ e_values_newem_cpp2 <- function(data, alphas, deltas, disps, nodes, weights, gri
     .Call(`_countirt_e_values_newem_cpp2`, data, alphas, deltas, disps, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
-rcpp_hello_world <- function() {
-    .Call(`_countirt_rcpp_hello_world`)
-}
-

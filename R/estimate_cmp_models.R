@@ -1,3 +1,10 @@
+# set up the tables ------------------------------------------------------------------
+
+grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
+grid_nus <- c(1e-100, seq(0.01, 1, by = 0.01), seq(1.1,50,0.1))
+grid_log_lambda_long <- as.vector(countirt:::grid_log_lambda)
+grid_logZ_long <- as.vector(countirt:::grid_log_Z)
+grid_cmp_var_long <- as.vector(countirt:::grid_cmp_var)
 
 # newem_estep2 ---------------------------------------------------------------------
 newem_estep2 <- function(data, item_params, weights_and_nodes) {

@@ -12,3 +12,5 @@ Imports: Rcpp (>= 1.0.6)
 LinkingTo: Rcpp, RcppGSL
 NeedsCompilation: yes
 RoxygenNote: 7.1.1
+Depends: 
+    R (>= 2.10)

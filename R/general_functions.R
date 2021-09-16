@@ -1,8 +1,4 @@
-# TODO muss ich die laden und wenn ja wo?
-load("grid_log_lambda.rda")
-load("grid_log_Z.rda")
-load("grid_cmp_var.rda")
-
+# set up the tables ------------------------------------------------------------------
 grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
 grid_nus <- c(1e-100, seq(0.01, 1, by = 0.01), seq(1.1,50,0.1))
 grid_log_lambda_long <- as.vector(grid_log_lambda)

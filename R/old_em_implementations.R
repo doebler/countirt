@@ -10,9 +10,6 @@
 
 # -----------------------------------------------------------------------------
 
-load("grid_W.rda")
-load("grid_R.rda")
-
 grid_W_long <- as.vector(grid_W)
 grid_R_long <- as.vector(grid_R)
 grid_W_long_nona <- ifelse(is.na(grid_W_long), 

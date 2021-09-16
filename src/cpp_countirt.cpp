@@ -9,24 +9,6 @@ using namespace R;
 
 // [[Rcpp::depends(RcppGSL)]]
 
-// greatest common divisor
-int GCD(int a, int b)
-{
-  while( 1 )
-  {
-    a = a % b;
-    if( a == 0 )
-      return b;
-    b = b % a;
-
-    if( b == 0 )
-      return a;
-  }
-}
-
-// The log-Factorial is numerically more stable than the regular factorial.
-// It's a building block for other functions.
-// We export it for debugging purposes mostly.
 // [[Rcpp::export]]
 double logFactorial( int n )
 {
@@ -426,16 +408,6 @@ NumericVector computeh_allnodes(NumericVector resp, NumericMatrix pp){
 }
 
 
-// // [[Rcpp::export]]
-//double get_Z(NumericMatrix grid){
-
-// }
-
-// // [[Rcpp::export]]
-//double dcmp(NumericMatrix grid){
-
-//}
-
 // [[Rcpp::export]]
 double interp_from_grid(NumericVector mu, NumericVector nu,
                    NumericVector grid_long, const double mu0, const double nu0){
@@ -693,10 +665,6 @@ NumericVector dcmp_cpp(NumericVector data, NumericVector mu, NumericVector nu,
 
 }
 
-// // [[Rcpp::export]]
-//NumericMatrix dcmp_cpp(NumericMatrix data, NumericVector mu, NumericVector nu){
-
-//}
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_cpp(NumericVector alphas,

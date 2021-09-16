@@ -463,18 +463,41 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 }
 
 
+# get_start_values -----------------------------------------------------------------
 
-# truncated quadrature rule
-quad_rule <- function(n_nodes, thres = Inf, prob = 0) {
-  weights_and_nodes <- gaussHermiteData(n_nodes)
-  # rescale because we are approximating integral for normal density
-  weights_and_nodes$x <- weights_and_nodes$x * sqrt(2)
-  weights_and_nodes$w <- weights_and_nodes$w / sqrt(pi)
-  trunc <- abs(weights_and_nodes$x) < thres & 
-    weights_and_nodes$w > prob
-  weights_and_nodes$x <- weights_and_nodes$x[trunc]
-  weights_and_nodes$w <- weights_and_nodes$w[trunc] 
-  return(weights_and_nodes)
+get_start_values <- function(data, init_disp_one = TRUE, same_alpha = FALSE) {
+  init_deltas <- log(apply(data, 2, mean))
+  
+  if (same_alpha) {
+    # just one alpha for all items
+    init_alphas <- c()
+    for (i in 1:ncol(data)) {
+      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+    }
+    init_alphas <- mean(init_alphas)
+  } else {
+    # different alpha for each item
+    init_alphas <- c()
+    for (i in 1:ncol(data)) {
+      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+    }
+  }
+  
+  if (init_disp_one) {
+    init_logdisps <- log(rep(1, length(init_deltas)))
+  } else {
+    # we could try and get start values with:
+    init_logdisps <- apply(data, 2, mean) / apply(data, 2, var)
+    # but actually, we get the same results upon trying out
+    # with disp = 1
+  }
+  
+  start_values <- c(init_alphas, init_deltas, init_logdisps)
+  names(start_values) <- c(
+    paste0("alpha", 1:length(init_alphas)),
+    paste0("delta", 1:length(init_deltas)),
+    paste0("log_disp", 1:length(init_logdisps))
+  )
+  return(start_values)
 }
-
 

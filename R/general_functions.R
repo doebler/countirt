@@ -1,5 +1,4 @@
-
-
+# TODO muss ich die laden und wenn ja wo?
 load("grid_log_lambda.rda")
 load("grid_log_Z.rda")
 load("grid_cmp_var.rda")

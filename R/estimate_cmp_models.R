@@ -1,29 +1,5 @@
-# newem_estep <- function(data, item_params, weights_and_nodes) {
-#   # prep item parameters
-#   alphas <- item_params[grepl("alpha", names(item_params))]
-#   deltas <- item_params[grepl("delta", names(item_params))]
-#   log_disps <- item_params[grepl("log_disp", names(item_params))]
-#   disps <- exp(log_disps)
-# 
-#   exp_abilities <- e_values_newem_cpp(
-#     data = as.matrix(data),
-#     alphas = alphas,
-#     deltas = deltas,
-#     disps = disps,
-#     nodes = weights_and_nodes$x,
-#     weights = weights_and_nodes$w,
-#     grid_mus = grid_mus,
-#     grid_nus = grid_nus,
-#     grid_logZ_long = grid_logZ_long,
-#     grid_log_lambda_long = grid_log_lambda_long,
-#     max_mu = 200,
-#     min_mu = 0.001
-#   )
-# 
-#   print(exp_abilities)
-#   return(exp_abilities)
-# }
 
+# newem_estep2 ---------------------------------------------------------------------
 newem_estep2 <- function(data, item_params, weights_and_nodes) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -49,37 +25,7 @@ newem_estep2 <- function(data, item_params, weights_and_nodes) {
   return(PPs)
 }
 
-
-# grad_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
-#   # prep item parameters
-#   alphas <- item_params[grepl("alpha", names(item_params))]
-#   deltas <- item_params[grepl("delta", names(item_params))]
-#   log_disps <- item_params[grepl("log_disp", names(item_params))]
-#   disps <- exp(log_disps)
-# 
-#   grads <- grad_cmp_newem_cpp(
-#     alphas = alphas,
-#     deltas = deltas,
-#     disps = disps,
-#     data = as.matrix(data),
-#     exp_abilities = e_values,
-#     grid_mus = grid_mus,
-#     grid_nus = grid_nus,
-#     grid_cmp_var_long = grid_cmp_var_long,
-#     grid_log_lambda_long = grid_log_lambda_long,
-#     grid_logZ_long = grid_logZ_long,
-#     max_mu = 200,
-#     min_mu = 0.001)
-# 
-#   if (any(is.na(grads))) {
-#     stop("Gradient contained NA", paste0(grads, collapse = ","),
-#          paste0(item_params, collapse = ","))
-#   }
-# 
-#   print(grads)
-#   return(grads)
-# }
-
+# grad_cmp_newem2 ------------------------------------------------------------------
 grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -111,6 +57,7 @@ grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data) {
   return(grads)
 }
 
+# grad_cmp_fixdisps_newem ----------------------------------------------------------
 grad_cmp_fixdisps_newem <- function(item_params, PPs, 
                                      weights_and_nodes, data,
                                      fix_disps) {
@@ -143,6 +90,7 @@ grad_cmp_fixdisps_newem <- function(item_params, PPs,
   return(grads)
 }
 
+# grad_cmp_fixalphas_newem -------------------------------------------------------
 grad_cmp_fixalphas_newem <- function(item_params, PPs, 
                                     weights_and_nodes, data,
                                     fix_alphas) {
@@ -176,6 +124,7 @@ grad_cmp_fixalphas_newem <- function(item_params, PPs,
   return(grads)
 }
 
+# grad_cmp_samedisps_newem ---------------------------------------------------------
 grad_cmp_samedisps_newem <- function(item_params, PPs, 
                                      weights_and_nodes, data) {
   
@@ -208,6 +157,7 @@ grad_cmp_samedisps_newem <- function(item_params, PPs,
   return(grads)
 }
 
+# grad_cmp_samealphas_newem -----------------------------------------------------
 grad_cmp_samealphas_newem <- function(item_params, PPs, 
                                      weights_and_nodes, data) {
   
@@ -241,6 +191,7 @@ grad_cmp_samealphas_newem <- function(item_params, PPs,
   return(grads)
 }
 
+# ell_cmp_newem -------------------------------------------------------------------
 ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -265,6 +216,7 @@ ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
   return(ell)
 }
 
+# newem_em_cycle ---------------------------------------------------------------------
 newem_em_cycle <- function(data, item_params, weights_and_nodes,
                            ctol_maxstep = 1e-8, m_method = "nleqslv",
                            fix_disps = NULL, fix_alphas = NULL,
@@ -380,6 +332,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
   return(new_item_params)
 }
 
+# run_newem ----------------------------------------------------------------------
 run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
                       maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                       m_method = "nleqslv", convcrit = "marglik",

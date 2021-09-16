@@ -1,6 +1,0 @@
-
-# Mimicking RcppGSLExample in RcppGSL package
-
-## This assumes that the LIB_GSL variable points to working GSL libraries
-PKG_CPPFLAGS=-I$(LIB_GSL)/include
-PKG_LIBS=-L$(LIB_GSL)/lib -lgsl -lgslcblas

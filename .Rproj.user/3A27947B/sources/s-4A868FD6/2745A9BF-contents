@@ -1,2 +1,0 @@
-useDynLib(countirt, .registration=TRUE)
-importFrom(Rcpp, evalCpp)

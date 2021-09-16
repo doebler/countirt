@@ -36,11 +36,13 @@ cirt <- function(data,
       convcrit = control$convcrit
     )
   
-    
-    +ü+üpwp
   
-  if (stand_errors) {
+    if (stand_errors) {
+    
+    }
+  } else if (family == "poisson") {
     
   }
+  
   
 }

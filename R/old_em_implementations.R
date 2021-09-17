@@ -10,8 +10,8 @@
 
 # -----------------------------------------------------------------------------
 
-grid_W_long <- as.vector(countirt:::grid_W)
-grid_R_long <- as.vector(countirt:::grid_R)
+grid_W_long <- as.vector(grid_W)
+grid_R_long <- as.vector(grid_R)
 grid_W_long_nona <- ifelse(is.na(grid_W_long), 
                            max(grid_W_long, na.rm = TRUE), 
                            grid_W_long)

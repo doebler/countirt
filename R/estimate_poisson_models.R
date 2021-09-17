@@ -273,14 +273,6 @@ get_start_values_pois <- function(data, same_alpha = FALSE) {
   return(start_values)
 }
 
-# test poisson model
-# sim_dat_pois <- gen_test_data(c(0.3, 0.4, 0.5, 0.4), c(1.5, 1.8, 2, 1.5), rnorm(300), 300)
-# init_vals <- get_start_values_pois(sim_dat_pois)
-# fit_pois <- run_em_poisson(sim_dat_pois, init_vals, 121)
-# 
-# sim_dat_pois2 <- gen_test_data(c(0.3, 0.3, 0.3, 0.3), c(1.5, 1.8, 2, 1.5), rnorm(300), 300)
-# init_vals2 <- get_start_values_pois(sim_dat_pois2, same_alpha = TRUE)
-# fit_pois <- run_em_poisson(sim_dat_pois2, init_vals2, 121, same_alpha = TRUE)
 
 
 

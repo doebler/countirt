@@ -2,9 +2,9 @@
 
 grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
 grid_nus <- c(1e-100, seq(0.01, 1, by = 0.01), seq(1.1,50,0.1))
-grid_log_lambda_long <- as.vector(countirt:::grid_log_lambda)
-grid_logZ_long <- as.vector(countirt:::grid_log_Z)
-grid_cmp_var_long <- as.vector(countirt:::grid_cmp_var)
+grid_log_lambda_long <- as.vector(grid_log_lambda)
+grid_logZ_long <- as.vector(grid_log_Z)
+grid_cmp_var_long <- as.vector(grid_cmp_var)
 
 # log_lambda_from_grid --------------------------------------------------------------
 log_lambda_from_grid <- function(mu, nu){
@@ -39,7 +39,7 @@ lambda_from_grid <- function(mu, nu){
   lambda_grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
   lambda_grid_nus <- c(1e-100, seq(0.01, 1, by = 0.01), seq(1.1,50,0.1))
   
-  grid_log_lambda_long <- as.vector(countirt:::grid_log_lambda)
+  grid_log_lambda_long <- as.vector(grid_log_lambda)
   
   if (length(nu) == 1) {
     nu_filled <- rep(nu, length(mu))
@@ -106,7 +106,7 @@ dcmp <- function(data, mu, nu, logprob = FALSE) {
   
   grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
   grid_nus <- c(1e-100, seq(0.01, 1, by = 0.01), seq(1.1,50,0.1))
-  grid_log_lambda_long <- as.vector(countirt:::grid_log_lambda)
+  grid_log_lambda_long <- as.vector(grid_log_lambda)
   grid_logZ_long <- as.vector(grid_log_Z)
   
   out <- dcmp_cpp(data, mu, nu, logprob,

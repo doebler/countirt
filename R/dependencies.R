@@ -6,5 +6,3 @@ library(RcppEigen)
 library(rlist)
 library(rootSolve)
 library(nleqslv)
-
-

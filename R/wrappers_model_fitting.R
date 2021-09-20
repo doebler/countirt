@@ -59,17 +59,15 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
       fit_ses <- NA
     }
   } else if (family == "poisson") {
-    start_values <- get_start_values(
+    start_values <- get_start_values_pois(
       data = data, init_disp_one = control$init_disp_one
     )
     
-    fit <- run_newem(
+    fit <- run_em_poisson(
       data = data, 
       init_params = start_values, 
       n_nodes = n_nodes, 
-      fix_disps = constraints$fix_disps,
       fix_alphas = constraints$fix_alphas,
-      same_disps = constraints$same_disps, 
       same_alphas = constraints$same_alphas,
       thres = control$thres,
       prob = control$prob,
@@ -81,7 +79,7 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
     )
     
     if (stand_errors) {
-      fit_vcov <- compute_vcov(fitparams, quad_rule(n_nodes), data)
+      fit_vcov <- compute_vcov_poisson(fitparams, quad_rule(n_nodes), data)
       fit_ses <- se_from_vcov(fit_vcov)
     } else {
       fit_vcov <- NA

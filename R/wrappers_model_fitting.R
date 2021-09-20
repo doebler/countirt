@@ -77,7 +77,6 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
       maxiter = control$maxiter, 
       convtol = control$convtol, 
       ctol_maxstep = control$ctol_maxstep,
-      m_method = control$m_method, 
       convcrit = control$convcrit
     )
     

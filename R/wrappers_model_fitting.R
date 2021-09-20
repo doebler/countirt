@@ -7,7 +7,8 @@
 #' @param constraints a list, indicating the constraints for the model, note that at the current moment, the possible constraints are mutually exclusive (this functionality will be extended in the future). 
 #' @param control a list, providing control parameters for the estimation
 #' 
-#' @importFrom Rcpp evalCpp
+#' @import Rcpp
+#' @import RcppGSL
 #' @importFrom fastGHQuad gaussHermiteData
 #' @importFrom nleqslv nleqslv
 #' @importFrom rootSolve gradient

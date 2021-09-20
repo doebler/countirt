@@ -419,31 +419,33 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 
 # get_start_values -----------------------------------------------------------------
 
-get_start_values <- function(data, init_disp_one = TRUE, same_alpha = FALSE) {
-  init_deltas <- log(apply(data, 2, mean))
-  
+get_start_values <- function(data, nodes = 121, nsim = 1000,
+                             init_disp_one = TRUE, same_alpha = FALSE) {
+  # for CMP start values, we fit a Poisson model and get deltas and alphas from there
   if (same_alpha) {
     # just one alpha for all items
-    init_alphas <- c()
-    for (i in 1:ncol(data)) {
-      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    }
-    init_alphas <- mean(init_alphas)
+    init_values_pois <- get_start_values_pois(data, same_alpha = TRUE)
+    fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE)
+    init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
+    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
     # different alpha for each item
-    init_alphas <- c()
-    for (i in 1:ncol(data)) {
-      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    }
+    init_values_pois <- get_start_values_pois(data)
+    fit_pois <- run_em_poisson(data, init_values_pois, nodes)
+    init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
+    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   }
   
-  if (init_disp_one) {
-    init_logdisps <- log(rep(1, length(init_deltas)))
-  } else {
-    # we could try and get start values with:
-    init_logdisps <- apply(data, 2, mean) / apply(data, 2, var)
-    # but actually, we get the same results upon trying out
-    # with disp = 1
+  init_logdisps<-c()
+  sim_abilities=rnorm(nsim)
+  for (i in 1:ncol(data)) {
+    if (same_alpha) {
+      mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+    } else {
+      mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+    }
+    sim <- rpois(nsim, mu)
+    init_logdisps[i] <- log((var(sim) / var(data[,i])))
   }
   
   start_values <- c(init_alphas, init_deltas, init_logdisps)

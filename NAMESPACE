@@ -2,7 +2,10 @@
 
 export(cirt)
 export(test)
+import(Rcpp)
+import(RcppGSL)
 importFrom(Rcpp,evalCpp)
 importFrom(fastGHQuad,gaussHermiteData)
 importFrom(nleqslv,nleqslv)
+importFrom(rootSolve,gradient)
 useDynLib(countirt, .registration=TRUE)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/wrappers_model_fitting.R
 \name{cirt}
 \alias{cirt}
-\title{model fitting function for count data irt models}
+\title{Model fitting function for count data IRT models}
 \usage{
 cirt(
   data,
@@ -20,7 +20,7 @@ cirt(
 
 \item{family}{a string indicating the count data family, can be either "cmp" or "poisson"}
 
-\item{n_nodes}{integer, number of quadrtaure nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended}
+\item{n_nodes}{integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended}
 
 \item{stand_errors}{boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE}
 
@@ -29,5 +29,5 @@ cirt(
 \item{control}{a list, providing control parameters for the estimation}
 }
 \description{
-model fitting function for count data irt models
+Model fitting function for count data IRT models
 }

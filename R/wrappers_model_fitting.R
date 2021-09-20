@@ -1,9 +1,9 @@
 #' Model fitting function for count data IRT models
 #' 
-#' @param data data matrix, each column must correspond to one item, each row to an observational unit (usually a person)
+#' @param data a data matrix, each column must correspond to one item, each row to an observational unit (usually a person)
 #' @param family a string indicating the count data family, can be either "cmp" or "poisson"
-#' @param n_nodes integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended
-#' @param stand_errors boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE
+#' @param n_nodes an integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended
+#' @param stand_errors a boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE
 #' @param constraints a list, indicating the constraints for the model, note that at the current moment, the possible constraints are mutually exclusive (this functionality will be extended in the future). 
 #' @param control a list, providing control parameters for the estimation
 #' 
@@ -14,10 +14,7 @@
 #' @importFrom rootSolve gradient
 #' @useDynLib countirt, .registration=TRUE
 #' @export
-cirt <- function(data, 
-                 family,
-                 n_nodes = 121,
-                 stand_errors = FALSE,
+cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
                  constraints = list(
                    fix_disps = NULL, fix_alphas = NULL,
                    same_disps = FALSE, same_alphas = FALSE
@@ -29,6 +26,7 @@ cirt <- function(data,
                    m_method = "nleqslv", convcrit = "marglik"
                  )) {
   # TODO checks and data prep
+  # TODO implement some proper error catching and meaningful error messages
   
   if (family == "cmp") {
     start_values <- get_start_values(
@@ -52,13 +50,52 @@ cirt <- function(data,
       convcrit = control$convcrit
     )
   
-  
     if (stand_errors) {
-    
+      fit_vcov <- compute_vcov(fitparams, quad_rule(n_nodes), data)
+      fit_ses <- se_from_vcov(fit_vcov)
+    } else {
+      fit_vcov <- NA
+      fit_ses <- NA
     }
   } else if (family == "poisson") {
+    start_values <- get_start_values(
+      data = data, init_disp_one = control$init_disp_one
+    )
     
+    fit <- run_newem(
+      data = data, 
+      init_params = start_values, 
+      n_nodes = n_nodes, 
+      fix_disps = constraints$fix_disps,
+      fix_alphas = constraints$fix_alphas,
+      same_disps = constraints$same_disps, 
+      same_alphas = constraints$same_alphas,
+      thres = control$thres,
+      prob = control$prob,
+      maxiter = control$maxiter, 
+      convtol = control$convtol, 
+      ctol_maxstep = control$ctol_maxstep,
+      m_method = control$m_method, 
+      convcrit = control$convcrit
+    )
+    
+    if (stand_errors) {
+      fit_vcov <- compute_vcov(fitparams, quad_rule(n_nodes), data)
+      fit_ses <- se_from_vcov(fit_vcov)
+    } else {
+      fit_vcov <- NA
+      fit_ses <- NA
+    }
+  } else {
+    stop("Invalid family specified. Please see documentations for available families.")
   }
   
+  # prepare object for returning
+  out <- list(
+    family = family,
+    fit = fit,
+    fit_ses = fit_ses
+  )
   
+  return(out)
 }

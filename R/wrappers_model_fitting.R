@@ -1,8 +1,8 @@
-#' model fitting function for count data irt models
+#' Model fitting function for count data IRT models
 #' 
 #' @param data data matrix, each column must correspond to one item, each row to an observational unit (usually a person)
 #' @param family a string indicating the count data family, can be either "cmp" or "poisson"
-#' @param n_nodes integer, number of quadrtaure nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended
+#' @param n_nodes integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended
 #' @param stand_errors boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE
 #' @param constraints a list, indicating the constraints for the model, note that at the current moment, the possible constraints are mutually exclusive (this functionality will be extended in the future). 
 #' @param control a list, providing control parameters for the estimation
@@ -10,6 +10,7 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom fastGHQuad gaussHermiteData
 #' @importFrom nleqslv nleqslv
+#' @importFrom rootSolve gradient
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 cirt <- function(data, 

@@ -16,13 +16,13 @@ cirt(
 )
 }
 \arguments{
-\item{data}{data matrix, each column must correspond to one item, each row to an observational unit (usually a person)}
+\item{data}{a data matrix, each column must correspond to one item, each row to an observational unit (usually a person)}
 
 \item{family}{a string indicating the count data family, can be either "cmp" or "poisson"}
 
-\item{n_nodes}{integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended}
+\item{n_nodes}{an integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended}
 
-\item{stand_errors}{boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE}
+\item{stand_errors}{a boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE}
 
 \item{constraints}{a list, indicating the constraints for the model, note that at the current moment, the possible constraints are mutually exclusive (this functionality will be extended in the future).}
 

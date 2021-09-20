@@ -10,6 +10,7 @@
 #' @import Rcpp
 #' @import RcppGSL
 #' @importFrom fastGHQuad gaussHermiteData
+#' @importFrom fastGHQuad ghQuad
 #' @importFrom nleqslv nleqslv
 #' @importFrom rootSolve gradient
 #' @useDynLib countirt, .registration=TRUE

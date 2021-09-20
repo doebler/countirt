@@ -30,12 +30,12 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # TODO implement some proper error catching and meaningful error messages
   
   if (family == "cmp") {
-    Print("Start determining start values.")
+    print("Start determining start values.")
     start_values <- get_start_values(
       data = data, init_disp_one = control$init_disp_one
     )
     
-    Print("Start model fitting. This will at least take a little bit of time.")
+    print("Start model fitting. This will at least take a little bit of time.")
     fit <- run_newem(
       data = data, 
       init_params = start_values, 
@@ -65,7 +65,7 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
       data = data
     )
     
-    Print("Start model fitting.")
+    print("Start model fitting.")
     fit <- run_em_poisson(
       data = data, 
       init_params = start_values, 

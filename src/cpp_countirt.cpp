@@ -2696,7 +2696,7 @@ NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
             log_mu += p_betas[p] * p_cov_data(i,p);
           }
           mu(k+i*n_nodes,j) = exp(log_mu);
-          mu_interp(k+i*n_nodes,j) = mu(k+i*K,j);
+          mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
           if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
           if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
           // we need to set maximum for mu to max_mu so that the interpolation will

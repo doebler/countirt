@@ -16,7 +16,7 @@ estep_cmp_with_cov <- function(data, item_params, p_covariates, weights_and_node
     deltas = deltas,
     disps = disps,
     p_betas = p_betas,
-    p_cov_data = p_covariates,
+    p_cov_data = as.matrix(p_covariates),
     nodes = weights_and_nodes$x,
     weights = weights_and_nodes$w,
     grid_mus = grid_mus,

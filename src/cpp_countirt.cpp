@@ -2671,8 +2671,6 @@ NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
   
   // for person covariates, we need mus (and lambdas and Zs) which are person
   // as well as node and item specific
-  if (P > 0) {
-    // we have at least one person covariate
     // so then I extend my nu and mu matrices for interpolation accordingly
     // so that i can interpolate lambdas and Zs person-node-item specifically
     // but still only work with matrices so that i can use interp_from_grid_m
@@ -2705,7 +2703,6 @@ NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
         }
       }  // end loop over items
     } // end loop over N
-  } // end if P > 0
   
   NumericMatrix log_Z(n_nodes*N, m);
   NumericMatrix log_lambda(n_nodes*N, m);

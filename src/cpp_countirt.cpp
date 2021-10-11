@@ -2658,3 +2658,139 @@ NumericMatrix e_values_newem_cpp2(NumericMatrix data,
   }
   return(PPs);
 }
+
+// [[Rcpp::export]]
+NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
+                                  NumericVector alphas,
+                                  NumericVector deltas,
+                                  NumericVector disps,
+                                  NumericVector p_betas,
+                                  NumericMatrix p_cov_data,
+                                  NumericVector nodes,
+                                  NumericVector weights,
+                                  NumericVector grid_mus,
+                                  NumericVector grid_nus,
+                                  NumericVector grid_logZ_long,
+                                  NumericVector grid_log_lambda_long,
+                                  double max_mu,
+                                  double min_mu) {
+  
+  int m = alphas.size();
+  int n_nodes = nodes.size();
+  int N = data.nrow();
+  int P = p_betas.size();
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are person
+  // as well as node and item specific
+  if (P > 0) {
+    // we have at least one person covariate
+    // so then I extend my nu and mu matrices for interpolation accordingly
+    // so that i can interpolate lambdas and Zs person-node-item specifically
+    // but still only work with matrices so that i can use interp_from_grid_m
+    // here i just chain KxM matrices (like I had for no covariates) below each other
+    // (so rbind basically), for all N person so that for the first K rows,
+    // we have the KxM matrix for person 1, for rows K+1 - K+K we have the
+    // KxM matrix for person 1, etc.
+    NumericMatrix mu(n_nodes*N, m);
+    NumericMatrix mu_interp(n_nodes*N, m);
+    NumericMatrix disp_interp(n_nodes*N, m);
+    for (int i=0; i<N; i++) {
+      // we are computing node-item specific mus for each person
+      for(int j=0;j<m;j++){
+        // loop over items (columns)
+        for(int k=0;k<n_nodes;k++) {
+          // loop over nodes (rows)
+          double log_mu = alphas[j] * nodes[k] + deltas[j];
+          for(int p=0; p<P; p++) {
+            // add all the (weighted) covariate values for all covariates
+            // (for the specific person i we are currently looking at)
+            log_mu += p_betas[p] * p_cov_data(i,p);
+          }
+          mu(k,j) = exp(log_mu);
+          mu_interp(j,j) = mu(j,j);
+          if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+          if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+          // we need to set maximum for mu to max_mu so that the interpolation will
+          // work, max_mu is the maximum mu value in our grid for interpolation
+          disp_interp(k,j) = disps[j];
+        }
+      }  // end loop over items
+    } // end loop over N
+  } // end if P > 0
+  
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int i=0;i<m;i++){
+    // loop over items (columns)
+    for(int j=0;j<n_nodes;j++) {
+      // loop over nodes (rows)
+      double log_mu = alphas[i] * nodes[j] + deltas[i];
+      for(int p=0; p<P; p++) {
+          // problem: the inclusion of person covariates means that we now need to 
+          // have the mu be person specific also
+          log_mu += p_betas[p] * p_cov_data(obs,p);
+        }
+      mu(j,i) = exp(alphas[i] * nodes[j] + deltas[i]);
+      mu_interp(j,i) = mu(j,i);
+      if (mu(j,i) > max_mu) { mu_interp(j,i) = max_mu; }
+      if (mu(j,i) < min_mu) { mu_interp(j,i) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(j,i) = disps[i];
+    }
+  }
+  
+  NumericMatrix log_Z(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many columns as we have nodes and
+  // as many columns as we have items
+  
+  // NumericVector exp_abilities(N);
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // the exp_abilities vector has as many elements as persons
+    // and is the weighted mean of nodes (weighted with posterior probabilities)
+    
+    // first, we need to compute the posterior probabilities
+    
+    // to this end, we need the marginal probabilities (for the denominator)
+    // these are person specific (and summed over nodes and probabilities
+    // are products over items because they are probs for response vectors,
+    // i.e., responses of one person to all items)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes);
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        log_resp_vector_prob(k) += data(i,j)*log_lambda(k,j) -
+          log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k) + log(weights[k]));
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    // and prep for the computation of the post. prob weighted mean
+    //NumericVector post_prob_i(n_nodes);
+    //double sum_across_nodes_i = 0; // numerator for weighted mean
+    //double sum_across_post_probs_i = 0; // denominator for weighted mean
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = (exp(log_resp_vector_prob(k) + log(weights[k]))) / marg_prob(i);
+      // sum_across_nodes_i += post_prob_i(k) * nodes[k];
+      // sum_across_post_probs_i += post_prob_i(k);
+    }
+    
+    // compute the posterior prob weighted mean across nodes for person i
+    // exp_abilities(i) = sum_across_nodes_i / sum_across_post_probs_i;
+  }
+  return(PPs);
+}

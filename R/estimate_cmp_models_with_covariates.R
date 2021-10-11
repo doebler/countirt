@@ -1,18 +1,22 @@
 
 # newem_estep2 ---------------------------------------------------------------------
-newem_estep2 <- function(data, item_params, weights_and_nodes) {
+estep_cmp_with_cov <- function(data, item_params, p_covariates, weights_and_nodes) {
+  # p_covariates is a matrix with the person covariates
   
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  p_betas <- item_params[grepl("p_beta", names(item_params))]
   
-  PPs <- e_values_newem_cpp2(
+  PPs <- estep_cmp_with_cov_cpp(
     data = as.matrix(data),
     alphas = alphas,
     deltas = deltas,
     disps = disps,
+    p_betas = p_betas,
+    p_cov_data = p_covariates,
     nodes = weights_and_nodes$x,
     weights = weights_and_nodes$w,
     grid_mus = grid_mus,

@@ -768,6 +768,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// estep_cmp_with_cov_cpp
+NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data, NumericVector alphas, NumericVector deltas, NumericVector disps, NumericVector p_betas, NumericMatrix p_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_estep_cmp_with_cov_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP p_betasSEXP, SEXP p_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type alphas(alphasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type deltas(deltasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type disps(dispsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type p_betas(p_betasSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type p_cov_data(p_cov_dataSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_logZ_long(grid_logZ_longSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_log_lambda_long(grid_log_lambda_longSEXP);
+    Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
+    Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
+    rcpp_result_gen = Rcpp::wrap(estep_cmp_with_cov_cpp(data, alphas, deltas, disps, p_betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_countirt_logFactorial", (DL_FUNC) &_countirt_logFactorial, 1},
@@ -811,6 +835,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_countirt_ell_cmp_newem_cpp", (DL_FUNC) &_countirt_ell_cmp_newem_cpp, 12},
     {"_countirt_e_values_newem_cpp", (DL_FUNC) &_countirt_e_values_newem_cpp, 12},
     {"_countirt_e_values_newem_cpp2", (DL_FUNC) &_countirt_e_values_newem_cpp2, 12},
+    {"_countirt_estep_cmp_with_cov_cpp", (DL_FUNC) &_countirt_estep_cmp_with_cov_cpp, 14},
     {NULL, NULL, 0}
 };
 

@@ -2695,13 +2695,13 @@ NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
             // (for the specific person i we are currently looking at)
             log_mu += p_betas[p] * p_cov_data(i,p);
           }
-          mu(k+i*K,j) = exp(log_mu);
-          mu_interp(k+i*K,j) = mu(k+i*K,j);
-          if (mu(k+i*K,j) > max_mu) { mu_interp(k+i*K,j) = max_mu; }
-          if (mu(k+i*K,j) < min_mu) { mu_interp(k+i*K,j) = min_mu; }
+          mu(k+i*n_nodes,j) = exp(log_mu);
+          mu_interp(k+i*n_nodes,j) = mu(k+i*K,j);
+          if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
+          if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
           // we need to set maximum for mu to max_mu so that the interpolation will
           // work, max_mu is the maximum mu value in our grid for interpolation
-          disp_interp(k,j) = disps[j];
+          disp_interp(k+i*n_nodes,j) = disps[j];
         }
       }  // end loop over items
     } // end loop over N
@@ -2734,8 +2734,8 @@ NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
         // when we access nodes here note that we need to access the nodes for person i
         // here because our lambda and Z values are not only node and item specific but
         // also additionally person specific
-        log_resp_vector_prob(k) += data(i,j)*log_lambda(k+i*K,j) -
-          log_Z(k+i*K,j) - disps[j]*lgamma(data(i,j)+1);
+        log_resp_vector_prob(k) += data(i,j)*log_lambda(k+i*n_nodes,j) -
+          log_Z(k+i*n_nodes,j) - disps[j]*lgamma(data(i,j)+1);
       }
       marg_prob(i) += exp(log_resp_vector_prob(k) + log(weights[k]));
     }

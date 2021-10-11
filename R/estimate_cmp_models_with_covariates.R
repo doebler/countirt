@@ -1,5 +1,5 @@
 
-# newem_estep2 ---------------------------------------------------------------------
+# estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, p_covariates, weights_and_nodes) {
   # p_covariates is a matrix with the person covariates
   
@@ -30,19 +30,22 @@ estep_cmp_with_cov <- function(data, item_params, p_covariates, weights_and_node
   return(PPs)
 }
 
-# grad_cmp_newem2 ------------------------------------------------------------------
-grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data) {
+# grad_cmp_with_cov ----------------------------------------------------------------------
+grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, p_covariates) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  p_betas <- item_params[grepl("p_beta", names(item_params))]
   
-  grads <- grad_cmp_newem_cpp2(
+  grads <- grad_cmp_with_cov_cpp(
     alphas = alphas,
     deltas = deltas,
     disps = disps,
+    p_betas = p_betas,
     data = as.matrix(data),
+    p_cov_data = as.matrix(p_covariates),
     PPs = PPs,
     nodes = weights_and_nodes$x,
     grid_mus = grid_mus,

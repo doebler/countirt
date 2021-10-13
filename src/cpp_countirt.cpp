@@ -2786,12 +2786,12 @@ NumericMatrix e_values_newem_cpp2(NumericMatrix data,
 }
 
 // [[Rcpp::export]]
-NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
+NumericMatrix estep_cmp_with_icov_cpp(NumericMatrix data,
                                   NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
-                                  NumericVector p_betas,
-                                  NumericMatrix p_cov_data,
+                                  NumericVector betas,
+                                  NumericMatrix i_cov_data,
                                   NumericVector nodes,
                                   NumericVector weights,
                                   NumericVector grid_mus,
@@ -2840,6 +2840,112 @@ NumericMatrix estep_cmp_with_cov_cpp(NumericMatrix data,
         }
       }  // end loop over items
     } // end loop over N
+  
+  NumericMatrix log_Z(n_nodes*N, m);
+  NumericMatrix log_lambda(n_nodes*N, m);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes*persons and
+  // as many columns as we have 
+  // they have the same structure as mu_interp and nu_interp matrices above 
+  // (where the structure is explained in more detail)
+  
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // compute the marginal probability for each person 
+    // (which we need for the denominator of the posterior probabilities)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes); // created anew for each person i
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        // when we access nodes here note that we need to access the nodes for person i
+        // here because our lambda and Z values are not only node and item specific but
+        // also additionally person specific
+        log_resp_vector_prob(k) += data(i,j)*log_lambda(k+i*n_nodes,j) -
+          log_Z(k+i*n_nodes,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k) + log(weights[k]));
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = (exp(log_resp_vector_prob(k) + log(weights[k]))) / marg_prob(i);
+      // sum_across_nodes_i += post_prob_i(k) * nodes[k];
+      // sum_across_post_probs_i += post_prob_i(k);
+    }
+    
+    // compute the posterior prob weighted mean across nodes for person i
+    // exp_abilities(i) = sum_across_nodes_i / sum_across_post_probs_i;
+  }
+  return(PPs);
+}
+
+// [[Rcpp::export]]
+NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
+                                     NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector gammas,
+                                     NumericMatrix p_cov_data,
+                                     NumericVector nodes,
+                                     NumericVector weights,
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_logZ_long,
+                                     NumericVector grid_log_lambda_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  int m = alphas.size();
+  int n_nodes = nodes.size();
+  int N = data.nrow();
+  int P = p_betas.size();
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are person
+  // as well as node and item specific
+  // so then I extend my nu and mu matrices for interpolation accordingly
+  // so that i can interpolate lambdas and Zs person-node-item specifically
+  // but still only work with matrices so that i can use interp_from_grid_m
+  // here i just chain KxM matrices (like I had for no covariates) below each other
+  // (so rbind basically), for all N person so that for the first K rows,
+  // we have the KxM matrix for person 1, for rows K+1 - K+K we have the
+  // KxM matrix for person 1, etc.
+  NumericMatrix mu(n_nodes*N, m);
+  NumericMatrix mu_interp(n_nodes*N, m);
+  NumericMatrix disp_interp(n_nodes*N, m);
+  for (int i=0; i<N; i++) {
+    // we are computing node-item specific mus for each person
+    for(int j=0;j<m;j++){
+      // loop over items (columns)
+      for(int k=0;k<n_nodes;k++) {
+        // loop over nodes (rows)
+        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        // my nodes are here my epsilon
+        for(int p=0; p<P; p++) {
+          // add all the (weighted) covariate values for all covariate item combination
+          // gamma has indices p and j
+          // assume that we have first all covariates for item 1, then all covariates for item 2
+          // (for the specific person i we are currently looking at)
+          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+        }
+        mu(k+i*n_nodes,j) = exp(log_mu);
+        mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
+        if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
+        if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp(k+i*n_nodes,j) = disps[j];
+      }
+    }  // end loop over items
+  } // end loop over N
   
   NumericMatrix log_Z(n_nodes*N, m);
   NumericMatrix log_lambda(n_nodes*N, m);

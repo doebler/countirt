@@ -1,31 +1,56 @@
 
 # estep_cmp_with_cov ---------------------------------------------------------------------
-estep_cmp_with_cov <- function(data, item_params, p_covariates, weights_and_nodes) {
+estep_cmp_with_cov <- function(data, item_params, 
+                               p_covariates, i_covariates,
+                               weights_and_nodes) {
   # p_covariates is a matrix with the person covariates
+  # i_covariates is a matrix with the item covariates
   
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
-  p_betas <- item_params[grepl("p_beta", names(item_params))]
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
-  PPs <- estep_cmp_with_cov_cpp(
-    data = as.matrix(data),
-    alphas = alphas,
-    deltas = deltas,
-    disps = disps,
-    p_betas = p_betas,
-    p_cov_data = as.matrix(p_covariates),
-    nodes = weights_and_nodes$x,
-    weights = weights_and_nodes$w,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_logZ_long = grid_logZ_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    max_mu = 200,
-    min_mu = 0.001
-  )
+  if (is.null(i_covariates)) {
+    PPs <- estep_cmp_with_pcov_cpp(
+      data = as.matrix(data),
+      alphas = alphas,
+      deltas = deltas,
+      disps = disps,
+      betas = betas,
+      p_cov_data = as.matrix(p_covariates),
+      nodes = weights_and_nodes$x,
+      weights = weights_and_nodes$w,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_logZ_long = grid_logZ_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  } else if (is.null(p_covariates)) {
+    PPs <- estep_cmp_with_icov_cpp(
+      data = as.matrix(data),
+      alphas = alphas,
+      deltas = deltas,
+      disps = disps,
+      gammas = gammas,
+      i_cov_data = as.matrix(i_covariates),
+      nodes = weights_and_nodes$x,
+      weights = weights_and_nodes$w,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_logZ_long = grid_logZ_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  }
+  
+  # TODO allow for person and item covariates at the same time
   
   return(PPs)
 }
@@ -39,6 +64,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, p_covar
   disps <- exp(log_disps)
   p_betas <- item_params[grepl("p_beta", names(item_params))]
   
+  # TODO hier weiter machen (C++ zu Ende anpassen, dann ist diese Funktion fertig)
   grads <- grad_cmp_with_cov_cpp(
     alphas = alphas,
     deltas = deltas,

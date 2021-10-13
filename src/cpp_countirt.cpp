@@ -2930,7 +2930,7 @@ NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
         double log_mu = alphas[j] * nodes[k] + deltas[j];
         // my nodes are here my epsilon
         for(int p=0; p<P; p++) {
-          // add all the (weighted) covariate values for all covariate item combination
+          // add all the (weighted) covariate values for that specific item j
           // gamma has indices p and j
           // assume that we have first all covariates for item 1, then all covariates for item 2
           // (for the specific person i we are currently looking at)

@@ -56,7 +56,8 @@ estep_cmp_with_cov <- function(data, item_params,
 }
 
 # grad_cmp_with_cov ----------------------------------------------------------------------
-grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, p_covariates) {
+grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, 
+                              p_covariates, i_covariates) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -64,23 +65,42 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, p_covar
   disps <- exp(log_disps)
   p_betas <- item_params[grepl("p_beta", names(item_params))]
   
-  # TODO hier weiter machen (C++ zu Ende anpassen, dann ist diese Funktion fertig)
-  grads <- grad_cmp_with_cov_cpp(
-    alphas = alphas,
-    deltas = deltas,
-    disps = disps,
-    p_betas = p_betas,
-    data = as.matrix(data),
-    p_cov_data = as.matrix(p_covariates),
-    PPs = PPs,
-    nodes = weights_and_nodes$x,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_cmp_var_long = grid_cmp_var_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    grid_logZ_long = grid_logZ_long,
-    max_mu = 200,
-    min_mu = 0.001)
+  if (is.null(i_covariates)) {
+    # TODO fuer diesen gradienten noch das todo im c++ anschauen
+    grads <- grad_cmp_with_pcov_cpp(
+      alphas = alphas,
+      deltas = deltas,
+      disps = disps,
+      gammas = gammas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(p_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001)
+  } else if (is.null(p_covariates)) { # hab ich fertig in c++
+    grads <- grad_cmp_with_icov_cpp(
+      alphas = alphas,
+      deltas = deltas,
+      disps = disps,
+      betas = betas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(i_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001)
+  }
   
   if (any(is.na(grads))) {
     stop("Gradient contained NA", paste0(grads, collapse = ","),
@@ -90,6 +110,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, p_covar
   #print(grads)
   return(grads)
 }
+# TODO hier mit meiner implementierung weiter machen
 
 # grad_cmp_fixdisps_newem ----------------------------------------------------------
 grad_cmp_fixdisps_newem <- function(item_params, PPs, 

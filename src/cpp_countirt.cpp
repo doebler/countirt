@@ -2043,10 +2043,7 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
                              mu_interp, disp_interp);
   // V and log_lambda are matrices with as many rows as we have nodes*persons and
   // as many columns as we have (same as mu_interp and nu_interp matrices)
-  
-  // TODO ich muss hier noch mal ueberlegen was ich damit mache, dassdie mu_interps jetzt
-  // nodes*person x item specific sind, das ist so noch nicht richtig
-  // gradients for item parameters
+
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
@@ -2057,21 +2054,26 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
     for(int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
       
-      // compute A and B for dispersion gradient
-      double lambda = exp(log_lambda(k,i));
-      double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
-      double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
-      
+      // note the index for mu_interp and V_interp (and log_lambda and log_Z) must be adjusted 
+      // as we now have (additionally) person specific mus and Vs
       for(int j=0;j<n;j++) {
         // loop over persons
+      
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+j*n_nodes,i));
+        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
         
         // compute the gradients (summing over persons)
         grad_alphas[i] = grad_alphas[i] +
-          PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+          PPs(j,k) * (nodes[k]*mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
         grad_deltas[i] = grad_deltas[i] +
-          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+          PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
         grad_disps[i] = grad_disps[i] +
-          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B)));
       }
     }
   }

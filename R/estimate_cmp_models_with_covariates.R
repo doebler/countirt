@@ -111,6 +111,9 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   return(grads)
 }
 # TODO hier mit meiner implementierung weiter machen
+# fuer die ganzen constraints ist es vermutlich praktisch, wenn ich den allgemeinen fall
+# kopiere und dann nur den teil fuer die item params aus den constrainten gradienten
+# aus dem normalen 2pcmp fall rueber ziehe
 
 # grad_cmp_fixdisps_newem ----------------------------------------------------------
 grad_cmp_fixdisps_newem <- function(item_params, PPs, 

@@ -63,7 +63,8 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
-  p_betas <- item_params[grepl("p_beta", names(item_params))]
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
   if (is.null(i_covariates)) {
     grads <- grad_cmp_with_pcov_cpp(
@@ -106,117 +107,196 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
          paste0(item_params, collapse = ","))
   }
   
-  #print(grads)
   return(grads)
 }
-# TODO hier mit meiner implementierung weiter machen
-# fuer die ganzen constraints ist es vermutlich praktisch, wenn ich den allgemeinen fall
-# kopiere und dann nur den teil fuer die item params aus den constrainten gradienten
-# aus dem normalen 2pcmp fall rueber ziehe
 
-# grad_cmp_fixdisps_newem ----------------------------------------------------------
-grad_cmp_fixdisps_newem <- function(item_params, PPs, 
-                                     weights_and_nodes, data,
-                                     fix_disps) {
+
+# grad_cmp_with_cov_fixdisps----------------------------------------------------------
+grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes, 
+                                       data, fix_disps,
+                                       p_covariates, i_covariates) {
 
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   disps <- fix_disps
   n_items <- length(alphas)
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
-  grads <- grad_cmp_fixdisps_newem_cpp(
-    alphas = alphas, 
-    deltas = deltas, 
-    disps = disps, 
-    data = as.matrix(data),
-    PPs = PPs,
-    nodes = weights_and_nodes$x,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_cmp_var_long = grid_cmp_var_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    grid_logZ_long = grid_logZ_long,
-    max_mu = 200,
-    min_mu = 0.001
+  if (is.null(i_covariates)) {
+    grads <- grad_cmp_with_pcov_fixdisps_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      gammas = gammas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(p_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
     )
+  } else if (is.null(p_covariates)) {
+    grads <- grad_cmp_with_icov_fixdisps_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      betas = betas,
+      data = as.matrix(data),
+      i_cov_data = as.matrix(i_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  }
+  
   if (any(is.na(grads))) {
     stop("Gradient contained NA", paste0(grads, collapse = ","),
          paste0(item_params, collapse = ","))
   } 
-  #print(grads)
+  
+  # TODO allow for person and item covariates at the same time
+  
   return(grads)
 }
 
-# grad_cmp_fixalphas_newem -------------------------------------------------------
-grad_cmp_fixalphas_newem <- function(item_params, PPs, 
-                                    weights_and_nodes, data,
-                                    fix_alphas) {
+# grad_cmp_with_cov_fixalphas-------------------------------------------------------
+grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
+                                        data, fix_alphas,
+                                        p_covariates, i_covariates) {
   
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
   n_items <- length(alphas)
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
-  grads <- grad_cmp_fixalphas_newem_cpp(
-    alphas = alphas, 
-    deltas = deltas, 
-    disps = disps, 
-    data = as.matrix(data),
-    PPs = PPs,
-    nodes = weights_and_nodes$x,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_cmp_var_long = grid_cmp_var_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    grid_logZ_long = grid_logZ_long,
-    max_mu = 200,
-    min_mu = 0.001
-  )
+  if (is.null(i_covariates)) {
+    grads <- grad_cmp_with_pcov_fixalphas_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      gammas = gammas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(p_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  } else if (is.null(p_covariates)) {
+    grads <- grad_cmp_with_icov_fixalphas_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      betas = betas,
+      data = as.matrix(data),
+      i_cov_data = as.matrix(i_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  }
+  
   if (any(is.na(grads))) {
     stop("Gradient contained NA", paste0(grads, collapse = ","),
          paste0(item_params, collapse = ","))
   } 
-  #print(grads)
+  
+  # TODO allow for person and item covariates at the same time
+  
   return(grads)
 }
 
-# grad_cmp_samedisps_newem ---------------------------------------------------------
-grad_cmp_samedisps_newem <- function(item_params, PPs, 
-                                     weights_and_nodes, data) {
+# grad_cmp_with_cov_samedisps ---------------------------------------------------------
+grad_cmp_with_cov_samedisps <- function(item_params, PPs, 
+                                        weights_and_nodes, data,
+                                        p_covariates, i_covariates) {
   
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   n_items <- length(alphas)
   log_disp <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(rep(log_disp, n_items))
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
-  grads <- grad_cmp_samedisps_newem_cpp(
-    alphas = alphas, 
-    deltas = deltas, 
-    disps = disps, 
-    data = as.matrix(data),
-    PPs = PPs,
-    nodes = weights_and_nodes$x,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_cmp_var_long = grid_cmp_var_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    grid_logZ_long = grid_logZ_long,
-    max_mu = 200,
-    min_mu = 0.001
-  )
+  if (is.null(i_covariates)) {
+    grads <- grad_cmp_with_pcov_samedisps_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      gammas = gammas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(p_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  } else if (is.null(p_covariates)) {
+    grads <- grad_cmp_with_icov_samedisps_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      betas = betas,
+      data = as.matrix(data),
+      c_cov_data = as.matrix(c_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  }
+  
   if (any(is.na(grads))) {
     stop("Gradient contained NA", paste0(grads, collapse = ","),
          paste0(item_params, collapse = ","))
   } 
-  #print(grads)
+  
+  # TODO allow for person and item covariates at the same time
+  
   return(grads)
 }
 
-# grad_cmp_samealphas_newem -----------------------------------------------------
-grad_cmp_samealphas_newem <- function(item_params, PPs, 
-                                     weights_and_nodes, data) {
+# grad_cmp_with_cov_samealphas -----------------------------------------------------
+grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
+                                         weights_and_nodes, data,
+                                         p_covariates, i_covariates) {
   
   deltas <- item_params[grepl("delta", names(item_params))]
   n_items <- length(deltas)
@@ -224,29 +304,59 @@ grad_cmp_samealphas_newem <- function(item_params, PPs,
   alphas <- rep(alpha, n_items)
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
-  grads <- grad_cmp_samealphas_newem_cpp(
-    alphas = alphas, 
-    deltas = deltas, 
-    disps = disps, 
-    data = as.matrix(data),
-    PPs = PPs,
-    nodes = weights_and_nodes$x,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_cmp_var_long = grid_cmp_var_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    grid_logZ_long = grid_logZ_long,
-    max_mu = 200,
-    min_mu = 0.001
-  )
+  if (is.null(i_covariates)) {
+    grads <- grad_cmp_with_pcov_samealphas_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      gammas = gammas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(p_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  } else if (is.null(p_covariates)) {
+    grads <- grad_cmp_with_icov_samealphas_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      betas = betas,
+      data = as.matrix(data),
+      i_cov_data = as.matrix(i_covariates),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  }
+  
   if (any(is.na(grads))) {
     stop("Gradient contained NA", paste0(grads, collapse = ","),
          paste0(item_params, collapse = ","))
   } 
-  #print(grads)
+  
+  # TODO allow for person and item covariates at the same time
+  
   return(grads)
 }
+
+# TODO hier weiter machen: ell implementieren und gradienten testen
+# vorher einmal schon mal paket neu bauen
 
 # ell_cmp_newem -------------------------------------------------------------------
 ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {

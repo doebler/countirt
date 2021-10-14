@@ -2333,6 +2333,262 @@ NumericVector grad_cmp_fixdisps_newem_cpp(NumericVector alphas,
 }
 
 // [[Rcpp::export]]
+NumericVector grad_cmp_with_pcov_fixdisps_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector gammas,
+                                     NumericMatrix data,
+                                     NumericMatrix p_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int P = p_cov_data.ncol();
+  int P_times_M = gammas.size();
+  NumericVector grad_alphas(m);
+  NumericVector grad_deltas(m);
+  NumericVector grad_gammas(P_times_M);
+  NumericVector out(2*m + P_times_M);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are person
+  // as well as node and item specific
+  // so we set up KxM matrices (nodesxitems) which we row-bind under each other 
+  // for all N persons
+  NumericMatrix mu(n_nodes*n, m);
+  NumericMatrix mu_interp(n_nodes*n, m);
+  NumericMatrix disp_interp(n_nodes*n, m);
+  for (int i=0; i<n; i++) {
+    // we are computing node-item specific mus for each person
+    for(int j=0;j<m;j++){
+      // loop over items (columns)
+      for(int k=0;k<n_nodes;k++) {
+        // loop over nodes (rows)
+        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        for(int p=0; p<P; p++) {
+          // add all the (weighted) covariate values for all covariates for the item j
+          // (for the specific person i we are currently looking at)
+          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+        }
+        mu(k+i*n_nodes,j) = exp(log_mu);
+        mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
+        if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
+        if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp(k+i*n_nodes,j) = disps[j];
+      }
+    }  // end loop over items
+  } // end loop over N
+  
+  NumericMatrix V(n_nodes*n, m);
+  NumericMatrix log_lambda(n_nodes*n, m);
+  NumericMatrix log_Z(n_nodes*n, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes*persons and
+  // as many columns as we have (same as mu_interp and nu_interp matrices)
+  
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_alphas[i] = 0;
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // note the index for mu_interp and V_interp (and log_lambda and log_Z) must be adjusted 
+      // as we now have (additionally) person specific mus and Vs
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute the gradients (summing over persons)
+        grad_alphas[i] = grad_alphas[i] +
+          PPs(j,k) * (nodes[k]*mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+      }
+    }
+  }
+  
+  // gradients for person covariate weights
+  for (int j=0; j<m; j++) {
+    for (int p=0; p<P; p++) {
+      // for each gamma of which we have one for each covariate-item combination
+      grad_gammas[p+j*P] = 0;
+      
+      for (int k=0;k<n_nodes;k++) {
+        // over nodes (rows in my matrices)
+        for (int i=0; i<n; i++) {
+          // over persons
+          grad_gammas[p+j*P] += PPs(i,k) * (mu_interp(k+i*n_nodes,j)*p_cov_data(i,p) / V(k+i*n_nodes,j)) *
+            (data(i,j) - mu_interp(k+i*n_nodes,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  for(int i=0;i<m;i++){
+    out[i] = grad_alphas[i];
+    out[i + m] = grad_deltas[i];
+  }
+  for(int p=0; p<P_times_M; p++) {
+    out[2*m + p] = grad_gammas[p];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector betas,
+                                     NumericMatrix data,
+                                     NumericMatrix i_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int I = betas.size();
+  NumericVector grad_alphas(m);
+  NumericVector grad_deltas(m);
+  NumericVector grad_betas(I);
+  NumericVector out(2*m + I);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are node and item specific
+  // contrary to the case of person covariates, we don't have to make them person specific
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over nodes (rows)
+      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      for(int c=0; c<I; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas[c] * i_cov_data(j,c); // for item j
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }  // end loop over items
+  
+  NumericMatrix V(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  NumericMatrix log_Z(n_nodes, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes and
+  // as many columns as we have
+  
+  // gradients for item parameters
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_alphas[i] = 0;
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute the gradients (summing over persons)
+        grad_alphas[i] = grad_alphas[i] +
+          PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+      }
+    }
+  }
+  
+  // gradients for item covariate weights
+  for (int c=0; c<I; c++) {
+    // for each gamma of which we have one for each covariate-item combination
+    grad_betas[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  for(int i=0;i<m;i++){
+    out[i] = grad_alphas[i];
+    out[i + m] = grad_deltas[i];
+  }
+  for(int c=0; c<I; c++) {
+    out[2*m + c] = grad_betas[c];
+  }
+  
+  return(out);
+}
+
+
+
+// [[Rcpp::export]]
 NumericVector grad_cmp_fixalphas_newem_cpp(NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
@@ -2423,6 +2679,269 @@ NumericVector grad_cmp_fixalphas_newem_cpp(NumericVector alphas,
   for(int i=0;i<m;i++){
     out[i] = grad_deltas[i];
     out[i + m] = grad_disps[i];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector gammas,
+                                     NumericMatrix data,
+                                     NumericMatrix p_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int P = p_cov_data.ncol();
+  int P_times_M = gammas.size();
+  NumericVector grad_deltas(m);
+  NumericVector grad_disps(m);
+  NumericVector grad_gammas(P_times_M);
+  NumericVector out(2*m + P_times_M);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are person
+  // as well as node and item specific
+  // so we set up KxM matrices (nodesxitems) which we row-bind under each other 
+  // for all N persons
+  NumericMatrix mu(n_nodes*n, m);
+  NumericMatrix mu_interp(n_nodes*n, m);
+  NumericMatrix disp_interp(n_nodes*n, m);
+  for (int i=0; i<n; i++) {
+    // we are computing node-item specific mus for each person
+    for(int j=0;j<m;j++){
+      // loop over items (columns)
+      for(int k=0;k<n_nodes;k++) {
+        // loop over nodes (rows)
+        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        for(int p=0; p<P; p++) {
+          // add all the (weighted) covariate values for all covariates for the item j
+          // (for the specific person i we are currently looking at)
+          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+        }
+        mu(k+i*n_nodes,j) = exp(log_mu);
+        mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
+        if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
+        if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp(k+i*n_nodes,j) = disps[j];
+      }
+    }  // end loop over items
+  } // end loop over N
+  
+  NumericMatrix V(n_nodes*n, m);
+  NumericMatrix log_lambda(n_nodes*n, m);
+  NumericMatrix log_Z(n_nodes*n, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes*persons and
+  // as many columns as we have (same as mu_interp and nu_interp matrices)
+  
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_deltas[i] = 0;
+    grad_disps[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // note the index for mu_interp and V_interp (and log_lambda and log_Z) must be adjusted 
+      // as we now have (additionally) person specific mus and Vs
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+j*n_nodes,i));
+        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+        grad_disps[i] = grad_disps[i] +
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for person covariate weights
+  for (int j=0; j<m; j++) {
+    for (int p=0; p<P; p++) {
+      // for each gamma of which we have one for each covariate-item combination
+      grad_gammas[p+j*P] = 0;
+      
+      for (int k=0;k<n_nodes;k++) {
+        // over nodes (rows in my matrices)
+        for (int i=0; i<n; i++) {
+          // over persons
+          grad_gammas[p+j*P] += PPs(i,k) * (mu_interp(k+i*n_nodes,j)*p_cov_data(i,p) / V(k+i*n_nodes,j)) *
+            (data(i,j) - mu_interp(k+i*n_nodes,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  for(int i=0;i<m;i++){
+    out[i] = grad_deltas[i];
+    out[i + m] = grad_disps[i];
+  }
+  for(int p=0; p<P_times_M; p++) {
+    out[2*m + p] = grad_gammas[p];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector betas,
+                                     NumericMatrix data,
+                                     NumericMatrix i_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int I = betas.size();
+  NumericVector grad_deltas(m);
+  NumericVector grad_disps(m);
+  NumericVector grad_betas(I);
+  NumericVector out(2*m + I);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are node and item specific
+  // contrary to the case of person covariates, we don't have to make them person specific
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over nodes (rows)
+      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      for(int c=0; c<I; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas[c] * i_cov_data(j,c); // for item j
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }  // end loop over items
+  
+  NumericMatrix V(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  NumericMatrix log_Z(n_nodes, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes and
+  // as many columns as we have
+  
+  // gradients for item parameters
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_deltas[i] = 0;
+    grad_disps[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // compute A and B for dispersion gradient
+      double lambda = exp(log_lambda(k,i));
+      double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute the gradients (summing over persons)
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_disps[i] = grad_disps[i] +
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for item covariate weights
+  for (int c=0; c<I; c++) {
+    // for each gamma of which we have one for each covariate-item combination
+    grad_betas[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  for(int i=0;i<m;i++){
+    out[i] = grad_deltas[i];
+    out[i + m] = grad_disps[i];
+  }
+  for(int c=0; c<I; c++) {
+    out[2*m + c] = grad_betas[c];
   }
   
   return(out);
@@ -2529,6 +3048,282 @@ NumericVector grad_cmp_samedisps_newem_cpp(NumericVector alphas,
 }
 
 // [[Rcpp::export]]
+NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector gammas,
+                                     NumericMatrix data,
+                                     NumericMatrix p_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int P = p_cov_data.ncol();
+  int P_times_M = gammas.size();
+  NumericVector grad_alphas(m);
+  NumericVector grad_deltas(m);
+  double grad_disp;
+  NumericVector grad_gammas(P_times_M);
+  NumericVector out(2*m + 1 + P_times_M);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are person
+  // as well as node and item specific
+  // so we set up KxM matrices (nodesxitems) which we row-bind under each other 
+  // for all N persons
+  NumericMatrix mu(n_nodes*n, m);
+  NumericMatrix mu_interp(n_nodes*n, m);
+  NumericMatrix disp_interp(n_nodes*n, m);
+  for (int i=0; i<n; i++) {
+    // we are computing node-item specific mus for each person
+    for(int j=0;j<m;j++){
+      // loop over items (columns)
+      for(int k=0;k<n_nodes;k++) {
+        // loop over nodes (rows)
+        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        for(int p=0; p<P; p++) {
+          // add all the (weighted) covariate values for all covariates for the item j
+          // (for the specific person i we are currently looking at)
+          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+        }
+        mu(k+i*n_nodes,j) = exp(log_mu);
+        mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
+        if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
+        if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp(k+i*n_nodes,j) = disps[j];
+      }
+    }  // end loop over items
+  } // end loop over N
+  
+  NumericMatrix V(n_nodes*n, m);
+  NumericMatrix log_lambda(n_nodes*n, m);
+  NumericMatrix log_Z(n_nodes*n, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes*persons and
+  // as many columns as we have (same as mu_interp and nu_interp matrices)
+  
+  grad_disp = 0;
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_alphas[i] = 0;
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // note the index for mu_interp and V_interp (and log_lambda and log_Z) must be adjusted 
+      // as we now have (additionally) person specific mus and Vs
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+j*n_nodes,i));
+        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        
+        // compute the gradients (summing over persons)
+        grad_alphas[i] = grad_alphas[i] +
+          PPs(j,k) * (nodes[k]*mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+        grad_disp = grad_disp +
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for person covariate weights
+  for (int j=0; j<m; j++) {
+    for (int p=0; p<P; p++) {
+      // for each gamma of which we have one for each covariate-item combination
+      grad_gammas[p+j*P] = 0;
+      
+      for (int k=0;k<n_nodes;k++) {
+        // over nodes (rows in my matrices)
+        for (int i=0; i<n; i++) {
+          // over persons
+          grad_gammas[p+j*P] += PPs(i,k) * (mu_interp(k+i*n_nodes,j)*p_cov_data(i,p) / V(k+i*n_nodes,j)) *
+            (data(i,j) - mu_interp(k+i*n_nodes,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  for(int i=0;i<m;i++){
+    out[i] = grad_alphas[i];
+    out[i + m] = grad_deltas[i];
+  }
+  out[2*m] = grad_disp;
+  for(int p=0; p<P_times_M; p++) {
+    out[2*m + 1 + p] = grad_gammas[p];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector betas,
+                                     NumericMatrix data,
+                                     NumericMatrix i_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int I = betas.size();
+  NumericVector grad_alphas(m);
+  NumericVector grad_deltas(m);
+  double grad_disp;
+  NumericVector grad_betas(I);
+  NumericVector out(2*m + 1 + I);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are node and item specific
+  // contrary to the case of person covariates, we don't have to make them person specific
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over nodes (rows)
+      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      for(int c=0; c<I; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas[c] * i_cov_data(j,c); // for item j
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }  // end loop over items
+  
+  NumericMatrix V(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  NumericMatrix log_Z(n_nodes, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes and
+  // as many columns as we have
+  
+  grad_disp = 0;
+  // gradients for item parameters
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_alphas[i] = 0;
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // compute A and B for dispersion gradient
+      double lambda = exp(log_lambda(k,i));
+      double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute the gradients (summing over persons)
+        grad_alphas[i] = grad_alphas[i] +
+          PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_disp = grad_disp +
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for item covariate weights
+  for (int c=0; c<I; c++) {
+    // for each gamma of which we have one for each covariate-item combination
+    grad_betas[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  for(int i=0;i<m;i++){
+    out[i] = grad_alphas[i];
+    out[i + m] = grad_deltas[i];
+  }
+  out[2*m] = grad_disp;
+  for(int c=0; c<I; c++) {
+    out[2*m + 1 + c] = grad_betas[c];
+  }
+  
+  return(out);
+}
+
+
+// [[Rcpp::export]]
 NumericVector grad_cmp_samealphas_newem_cpp(NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
@@ -2623,6 +3418,281 @@ NumericVector grad_cmp_samealphas_newem_cpp(NumericVector alphas,
   for(int i=1;i<m+1;i++){
     out[i] = grad_deltas[i-1];
     out[i + m] = grad_disps[i-1];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector gammas,
+                                     NumericMatrix data,
+                                     NumericMatrix p_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int P = p_cov_data.ncol();
+  int P_times_M = gammas.size();
+  double grad_alpha;
+  NumericVector grad_deltas(m);
+  NumericVector grad_disps(m);
+  NumericVector grad_gammas(P_times_M);
+  NumericVector out(2*m + 1 + P_times_M);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are person
+  // as well as node and item specific
+  // so we set up KxM matrices (nodesxitems) which we row-bind under each other 
+  // for all N persons
+  NumericMatrix mu(n_nodes*n, m);
+  NumericMatrix mu_interp(n_nodes*n, m);
+  NumericMatrix disp_interp(n_nodes*n, m);
+  for (int i=0; i<n; i++) {
+    // we are computing node-item specific mus for each person
+    for(int j=0;j<m;j++){
+      // loop over items (columns)
+      for(int k=0;k<n_nodes;k++) {
+        // loop over nodes (rows)
+        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        for(int p=0; p<P; p++) {
+          // add all the (weighted) covariate values for all covariates for the item j
+          // (for the specific person i we are currently looking at)
+          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+        }
+        mu(k+i*n_nodes,j) = exp(log_mu);
+        mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
+        if (mu(k+i*n_nodes,j) > max_mu) { mu_interp(k+i*n_nodes,j) = max_mu; }
+        if (mu(k+i*n_nodes,j) < min_mu) { mu_interp(k+i*n_nodes,j) = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp(k+i*n_nodes,j) = disps[j];
+      }
+    }  // end loop over items
+  } // end loop over N
+  
+  NumericMatrix V(n_nodes*n, m);
+  NumericMatrix log_lambda(n_nodes*n, m);
+  NumericMatrix log_Z(n_nodes*n, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes*persons and
+  // as many columns as we have (same as mu_interp and nu_interp matrices)
+  
+  grad_alpha = 0;
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_deltas[i] = 0;
+    grad_disps[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // note the index for mu_interp and V_interp (and log_lambda and log_Z) must be adjusted 
+      // as we now have (additionally) person specific mus and Vs
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+j*n_nodes,i));
+        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
+        
+        // compute the gradients (summing over persons)
+        grad_alpha = grad_alpha +
+          PPs(j,k) * (nodes[k]*mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
+          mu_interp(k+j*n_nodes,i));
+        grad_disps[i] = grad_disps[i] +
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for person covariate weights
+  for (int j=0; j<m; j++) {
+    for (int p=0; p<P; p++) {
+      // for each gamma of which we have one for each covariate-item combination
+      grad_gammas[p+j*P] = 0;
+      
+      for (int k=0;k<n_nodes;k++) {
+        // over nodes (rows in my matrices)
+        for (int i=0; i<n; i++) {
+          // over persons
+          grad_gammas[p+j*P] += PPs(i,k) * (mu_interp(k+i*n_nodes,j)*p_cov_data(i,p) / V(k+i*n_nodes,j)) *
+            (data(i,j) - mu_interp(k+i*n_nodes,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  out[0] = grad_alpha;
+  for(int i=1;i<m;i++){
+    out[i] = grad_deltas[i];
+    out[i + m] = grad_disps[i];
+  }
+  for(int p=0; p<P_times_M; p++) {
+    out[2*m + 1 + p] = grad_gammas[p];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
+                                     NumericVector deltas,
+                                     NumericVector disps,
+                                     NumericVector betas,
+                                     NumericMatrix data,
+                                     NumericMatrix i_cov_data,
+                                     NumericMatrix PPs,
+                                     NumericVector nodes, 
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = alphas.size();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int I = betas.size();
+  double grad_alpha;
+  NumericVector grad_deltas(m);
+  NumericVector grad_disps(m);
+  NumericVector grad_betas(I);
+  NumericVector out(2*m + 1 + I);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are node and item specific
+  // contrary to the case of person covariates, we don't have to make them person specific
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over nodes (rows)
+      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      for(int c=0; c<I; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas[c] * i_cov_data(j,c); // for item j
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }  // end loop over items
+  
+  NumericMatrix V(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  NumericMatrix log_Z(n_nodes, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes and
+  // as many columns as we have
+  
+  grad_alpha = 0;
+  // gradients for item parameters
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_deltas[i] = 0;
+    grad_disps[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // compute A and B for dispersion gradient
+      double lambda = exp(log_lambda(k,i));
+      double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute the gradients (summing over persons)
+        grad_alpha = grad_alpha +
+          PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_deltas[i] = grad_deltas[i] +
+          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_disps[i] = grad_disps[i] +
+          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for item covariate weights
+  for (int c=0; c<I; c++) {
+    // for each gamma of which we have one for each covariate-item combination
+    grad_betas[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  out[0] = grad_alpha;
+  for(int i=1;i<m;i++){
+    out[i ] = grad_deltas[i];
+    out[i + m] = grad_disps[i];
+  }
+  for(int c=0; c<I; c++) {
+    out[2*m + 1 + c] = grad_betas[c];
   }
   
   return(out);

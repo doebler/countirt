@@ -133,6 +133,14 @@ grad_cmp_newem_cpp2 <- function(alphas, deltas, disps, data, PPs, nodes, grid_mu
     .Call(`_countirt_grad_cmp_newem_cpp2`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+grad_cmp_with_pcov_cpp <- function(alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_pcov_cpp`, alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_icov_cpp <- function(alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_icov_cpp`, alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 grad_cmp_fixdisps_newem_cpp <- function(alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_fixdisps_newem_cpp`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
@@ -165,7 +173,11 @@ e_values_newem_cpp2 <- function(data, alphas, deltas, disps, nodes, weights, gri
     .Call(`_countirt_e_values_newem_cpp2`, data, alphas, deltas, disps, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
-estep_cmp_with_cov_cpp <- function(data, alphas, deltas, disps, p_betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
-    .Call(`_countirt_estep_cmp_with_cov_cpp`, data, alphas, deltas, disps, p_betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+estep_cmp_with_icov_cpp <- function(data, alphas, deltas, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_cmp_with_icov_cpp`, data, alphas, deltas, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
+estep_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, gammas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_cmp_with_pcov_cpp`, data, alphas, deltas, disps, gammas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 

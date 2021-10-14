@@ -66,7 +66,6 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   p_betas <- item_params[grepl("p_beta", names(item_params))]
   
   if (is.null(i_covariates)) {
-    # TODO fuer diesen gradienten noch das todo im c++ anschauen
     grads <- grad_cmp_with_pcov_cpp(
       alphas = alphas,
       deltas = deltas,
@@ -83,7 +82,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       grid_logZ_long = grid_logZ_long,
       max_mu = 200,
       min_mu = 0.001)
-  } else if (is.null(p_covariates)) { # hab ich fertig in c++
+  } else if (is.null(p_covariates)) { 
     grads <- grad_cmp_with_icov_cpp(
       alphas = alphas,
       deltas = deltas,

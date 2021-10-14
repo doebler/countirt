@@ -2233,7 +2233,7 @@ NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
     out[i + m] = grad_deltas[i];
     out[i + 2*m] = grad_disps[i];
   }
-  for(int c=0; p<I; c++) {
+  for(int c=0; c<I; c++) {
     out[3*m + c] = grad_betas[c];
   }
   
@@ -2966,7 +2966,7 @@ NumericMatrix estep_cmp_with_icov_cpp(NumericMatrix data,
       if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
       // we need to set maximum for mu to max_mu so that the interpolation will
       // work, max_mu is the maximum mu value in our grid for interpolation
-      disp_interp(k+i*n_nodes,j) = disps[j];
+      disp_interp(k,j) = disps[j];
     }
   }  // end loop over items
   

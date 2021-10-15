@@ -358,8 +358,9 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
 # TODO hier weiter machen: ell implementieren und gradienten testen
 # vorher einmal schon mal paket neu bauen
 
-# ell_cmp_newem -------------------------------------------------------------------
-ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
+# ell_cmp_with_cov -------------------------------------------------------------------
+ell_cmp_with_cov <- function(item_params, e_values, weights_and_nodes, 
+                             data, p_covariates, i_covariates) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]

@@ -3912,7 +3912,7 @@ double ell_cmp_with_pcov_cpp (NumericVector alphas,
     for(int i=0;i<N;i++) { // persons
       for(int j=0;j<m;j++) { // items
         out += (data(i,j)*log_lambda(k+i*K,j) - log_Z(k+i*K,j) - 
-          disps[j]*logFactorial(data(i,j))) * PP(i,k);
+          disps[j]*logFactorial(data(i,j))) * PPs(i,k);
       }
     }
   } // end loops over K nodes
@@ -3993,7 +3993,7 @@ double ell_cmp_with_icov_cpp (NumericVector alphas,
     for(int i=0;i<N;i++) { // persons
       for(int j=0;j<m;j++) { // items
         out += (data(i,j)*log_lambda(k,j) - log_Z(k,j) - 
-          disps[j]*logFactorial(data(i,j))) * PP(i,k);
+          disps[j]*logFactorial(data(i,j))) * PPs(i,k);
       }
     }
   } // end loops over K nodes

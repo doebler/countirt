@@ -29,6 +29,9 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
   
+  # TODO add some formula syntax to cirt
+  # and think about what makes sense for being able to add item and person covariates
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

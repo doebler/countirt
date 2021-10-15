@@ -366,20 +366,48 @@ ell_cmp_with_cov <- function(item_params, e_values, weights_and_nodes,
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  betas <- item_params[grepl("beta", names(item_params))]
+  gammas <- item_params[grepl("gamma", names(item_params))]
   
-  ell <- ell_cmp_newem_cpp(
-    alphas = alphas,
-    deltas = deltas,
-    disps = disps,
-    data = as.matrix(data),
-    exp_abilities = e_values,
-    grid_mus = grid_mus,
-    grid_nus = grid_nus,
-    grid_cmp_var_long = grid_cmp_var_long,
-    grid_log_lambda_long = grid_log_lambda_long,
-    grid_logZ_long = grid_logZ_long,
-    max_mu = 200,
-    min_mu = 0.001)
+  if (is.null(i_covariates)) {
+    ell <- ell_cmp_with_pcov_cpp(
+      alphas = alphas,
+      deltas = deltas,
+      disps = disps,
+      gammas = gammas,
+      data = as.matrix(data),
+      p_cov_data = as.matrix(p_covariates),
+      PPs = e_values,
+      weights = weights_and_nodes$w,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001)
+  } else if (is.null(p_covariates)) { 
+    ell <- ell_cmp_with_icov_cpp(
+      alphas = alphas,
+      deltas = deltas,
+      disps = disps,
+      betas = betas,
+      data = as.matrix(data),
+      i_cov_data = as.matrix(i_covariates),
+      PPs = e_values,
+      weights = weights_and_nodes$w,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001)
+  }
+  
+  # TODO allow for person and item covariates at the same time
   
   return(ell)
 }

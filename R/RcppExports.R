@@ -145,16 +145,48 @@ grad_cmp_fixdisps_newem_cpp <- function(alphas, deltas, disps, data, PPs, nodes,
     .Call(`_countirt_grad_cmp_fixdisps_newem_cpp`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+grad_cmp_with_pcov_fixdisps_cpp <- function(alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_pcov_fixdisps_cpp`, alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_icov_fixdisps_cpp <- function(alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_icov_fixdisps_cpp`, alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 grad_cmp_fixalphas_newem_cpp <- function(alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_fixalphas_newem_cpp`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_pcov_fixalphas_cpp <- function(alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_pcov_fixalphas_cpp`, alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_icov_fixalphas_cpp <- function(alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_icov_fixalphas_cpp`, alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
 grad_cmp_samedisps_newem_cpp <- function(alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_samedisps_newem_cpp`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+grad_cmp_with_pcov_samedisps_cpp <- function(alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_pcov_samedisps_cpp`, alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_icov_samedisps_cpp <- function(alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_icov_samedisps_cpp`, alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 grad_cmp_samealphas_newem_cpp <- function(alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_samealphas_newem_cpp`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_pcov_samealphas_cpp <- function(alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_pcov_samealphas_cpp`, alphas, deltas, disps, gammas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_with_icov_samealphas_cpp <- function(alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_with_icov_samealphas_cpp`, alphas, deltas, disps, betas, data, i_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
 grad_ll_cmp_ability_1P_cpp <- function(ability, alphas, deltas, disps, data, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, max_mu, min_mu) {

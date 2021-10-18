@@ -359,7 +359,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
 # vorher einmal schon mal paket neu bauen
 
 # ell_cmp_with_cov -------------------------------------------------------------------
-ell_cmp_with_cov <- function(item_params, e_values, weights_and_nodes, 
+ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -377,7 +377,7 @@ ell_cmp_with_cov <- function(item_params, e_values, weights_and_nodes,
       betas = betas_p,
       data = as.matrix(data),
       p_cov_data = as.matrix(p_covariates),
-      PPs = e_values,
+      PPs = PPs,
       weights = weights_and_nodes$w,
       nodes = weights_and_nodes$x,
       grid_mus = grid_mus,
@@ -395,7 +395,7 @@ ell_cmp_with_cov <- function(item_params, e_values, weights_and_nodes,
       betas = betas_i,
       data = as.matrix(data),
       i_cov_data = as.matrix(i_covariates),
-      PPs = e_values,
+      PPs = PPs,
       weights = weights_and_nodes$w,
       nodes = weights_and_nodes$x,
       grid_mus = grid_mus,

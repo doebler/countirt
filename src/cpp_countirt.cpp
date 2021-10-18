@@ -3425,7 +3425,7 @@ NumericVector grad_cmp_samealphas_newem_cpp(NumericVector alphas,
 NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
-                                     NumericVector gammas,
+                                     NumericVector betas,
                                      NumericMatrix data,
                                      NumericMatrix p_cov_data,
                                      NumericMatrix PPs,
@@ -3445,13 +3445,12 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
   int m = alphas.size();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int P = p_cov_data.ncol();
-  int P_times_M = gammas.size();
+  int P = betas.size();
   double grad_alpha;
   NumericVector grad_deltas(m);
   NumericVector grad_disps(m);
-  NumericVector grad_gammas(P_times_M);
-  NumericVector out(2*m + 1 + P_times_M);
+  NumericVector grad_betas(P);
+  NumericVector out(2*m + 1 + P);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3472,7 +3471,7 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
-          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+          log_mu += betas[p] * alphas[j] * p_cov_data(i,p);
         }
         mu(k+i*n_nodes,j) = exp(log_mu);
         mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
@@ -3520,6 +3519,12 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
         double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
         double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
         
+        // compute the sum over the weightes covariates for the gradient for alpha
+        double sum_over_pcov = 0;
+        for (int p=0; p<P; p++) {
+          sum_over_pcov += betas[p] * p_cov_data(j,p);
+        }
+        
         // compute the gradients (summing over persons)
         grad_alpha = grad_alpha +
           PPs(j,k) * (nodes[k]*mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
@@ -3535,21 +3540,17 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
   }
   
   // gradients for person covariate weights
-  for (int j=0; j<m; j++) {
-    for (int p=0; p<P; p++) {
-      // for each gamma of which we have one for each covariate-item combination
-      grad_gammas[p+j*P] = 0;
-      
-      for (int k=0;k<n_nodes;k++) {
-        // over nodes (rows in my matrices)
-        for (int i=0; i<n; i++) {
-          // over persons
-          grad_gammas[p+j*P] += PPs(i,k) * (mu_interp(k+i*n_nodes,j)*p_cov_data(i,p) / V(k+i*n_nodes,j)) *
+  for (int p=0; p<P; p++) { // over covariates
+    grad_betas[p] = 0;
+    for (int j=0; j<m; j++) { // over items
+      for (int k=0;k<n_nodes;k++) { // over nodes (rows in my matrices)
+        for (int i=0; i<n; i++) { // over persons
+          grad_betas[p] += PPs(i,k) * (mu_interp(k+i*n_nodes,j) * alphas[j] * p_cov_data(i,p) / V(k+i*n_nodes,j)) *
             (data(i,j) - mu_interp(k+i*n_nodes,j));
         } // end loop over m (items)
       } // end loop of n_nodes
-    } // end loop over P (person covariates)
-  } // end loop over items
+    } // end loop over items
+  } //end loop over P (person covariates)
   
   // fill up output vector
   out[0] = grad_alpha;
@@ -3557,8 +3558,8 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
     out[i] = grad_deltas[i];
     out[i + m] = grad_disps[i];
   }
-  for(int p=0; p<P_times_M; p++) {
-    out[2*m + 1 + p] = grad_gammas[p];
+  for(int p=0; p<P; p++) {
+    out[2*m + 1 + p] = grad_betas[p];
   }
   
   return(out);

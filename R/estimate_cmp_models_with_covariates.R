@@ -11,8 +11,8 @@ estep_cmp_with_cov <- function(data, item_params,
   deltas <- item_params[grepl("delta", names(item_params))]
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
-  betas <- item_params[grepl("beta", names(item_params))]
-  gammas <- item_params[grepl("gamma", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (is.null(i_covariates)) {
     PPs <- estep_cmp_with_pcov_cpp(
@@ -20,7 +20,7 @@ estep_cmp_with_cov <- function(data, item_params,
       alphas = alphas,
       deltas = deltas,
       disps = disps,
-      betas = betas,
+      betas = betas_p,
       p_cov_data = as.matrix(p_covariates),
       nodes = weights_and_nodes$x,
       weights = weights_and_nodes$w,
@@ -37,7 +37,7 @@ estep_cmp_with_cov <- function(data, item_params,
       alphas = alphas,
       deltas = deltas,
       disps = disps,
-      gammas = gammas,
+      betas = betas_i,
       i_cov_data = as.matrix(i_covariates),
       nodes = weights_and_nodes$x,
       weights = weights_and_nodes$w,

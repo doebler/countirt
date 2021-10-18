@@ -4199,7 +4199,7 @@ NumericMatrix estep_cmp_with_icov_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k];
+      double log_mu = alphas[j] * nodes[k] + deltas[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         // (for the specific item j we are currently looking at)
@@ -4260,7 +4260,7 @@ NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
                                      NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
-                                     NumericVector gammas,
+                                     NumericVector betas,
                                      NumericMatrix p_cov_data,
                                      NumericVector nodes,
                                      NumericVector weights,
@@ -4274,7 +4274,7 @@ NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
   int m = alphas.size();
   int n_nodes = nodes.size();
   int N = data.nrow();
-  int P = p_cov_data.ncol();
+  int P = betas.size();
   
   // for person covariates, we need mus (and lambdas and Zs) which are person
   // as well as node and item specific
@@ -4297,11 +4297,8 @@ NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
         double log_mu = alphas[j] * nodes[k] + deltas[j];
         // my nodes are here my epsilon
         for(int p=0; p<P; p++) {
-          // add all the (weighted) covariate values for that specific item j
-          // gamma has indices p and j
-          // assume that we have first all covariates for item 1, then all covariates for item 2
-          // (for the specific person i we are currently looking at)
-          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+          // add all the (weighted) covariate values for that specific item j and person i
+          log_mu += betas[p] * alphas[j] * p_cov_data(i,p);
         }
         mu(k+i*n_nodes,j) = exp(log_mu);
         mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);

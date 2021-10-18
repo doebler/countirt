@@ -355,9 +355,6 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   return(grads)
 }
 
-# TODO hier weiter machen: ell implementieren und gradienten testen
-# vorher einmal schon mal paket neu bauen
-
 # ell_cmp_with_cov -------------------------------------------------------------------
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates) {
@@ -413,10 +410,11 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
 }
 
 # newem_em_cycle ---------------------------------------------------------------------
-newem_em_cycle <- function(data, item_params, weights_and_nodes,
-                           ctol_maxstep = 1e-8, m_method = "nleqslv",
-                           fix_disps = NULL, fix_alphas = NULL,
-                           same_disps = FALSE, same_alphas = FALSE) {
+em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
+                                  p_covariates, i_covariates,
+                                  ctol_maxstep = 1e-8, m_method = "nleqslv",
+                                  fix_disps = NULL, fix_alphas = NULL,
+                                  same_disps = FALSE, same_alphas = FALSE) {
 
   # e_values <- newem_estep(data, item_params, weights_and_nodes)
   # 
@@ -432,17 +430,26 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
   if (is.null(fix_disps) & is.null(fix_alphas)) {
     if (!same_disps & !same_alphas) {
       # e step
-      PPs <- newem_estep2(data, item_params, weights_and_nodes)
+      PPs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_cmp_newem2,
+        fn = grad_cmp_with_cov,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         control = list(xtol = ctol_maxstep)
       )$x
-    } else if (!same_disps & same_alphas) {
+    } else if (!same_disps & same_alphas) { 
+      # TODO hier weiter machen mit der implementierung von person and item covariates
       # prep the parameters for the e-step
       alpha <- item_params[grepl("alpha", names(item_params))]
       deltas <- item_params[grepl("delta", names(item_params))]

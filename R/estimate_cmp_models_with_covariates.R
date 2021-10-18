@@ -242,15 +242,15 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   n_items <- length(alphas)
   log_disp <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(rep(log_disp, n_items))
-  betas <- item_params[grepl("beta", names(item_params))]
-  gammas <- item_params[grepl("gamma", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (is.null(i_covariates)) {
     grads <- grad_cmp_with_pcov_samedisps_cpp(
       alphas = alphas, 
       deltas = deltas, 
       disps = disps, 
-      gammas = gammas,
+      betas = betas_p,
       data = as.matrix(data),
       p_cov_data = as.matrix(p_covariates),
       PPs = PPs,
@@ -268,7 +268,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
       alphas = alphas, 
       deltas = deltas, 
       disps = disps, 
-      betas = betas,
+      betas = betas_i,
       data = as.matrix(data),
       c_cov_data = as.matrix(c_covariates),
       PPs = PPs,

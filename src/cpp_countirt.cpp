@@ -2713,7 +2713,7 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
   int P = betas.size();
   NumericVector grad_deltas(m);
   NumericVector grad_disps(m);
-  NumericVector grad_gammas(P);
+  NumericVector grad_betas(P);
   NumericVector out(2*m + P);
   
   // set up mu's and nu's for interpolation function to be computed all in one
@@ -2735,7 +2735,7 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
-          log_mu += gammas[p] * alphas[j] * p_cov_data(i,p);
+          log_mu += betas[p] * alphas[j] * p_cov_data(i,p);
         }
         mu(k+i*n_nodes,j) = exp(log_mu);
         mu_interp(k+i*n_nodes,j) = mu(k+i*n_nodes,j);
@@ -2811,7 +2811,7 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
     out[i + m] = grad_disps[i];
   }
   for(int p=0; p<P; p++) {
-    out[2*m + p] = grad_gammas[p];
+    out[2*m + p] = grad_betas[p];
   }
   
   return(out);

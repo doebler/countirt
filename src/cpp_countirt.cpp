@@ -3829,7 +3829,7 @@ double ell_cmp_newem_cpp (NumericVector alphas,
 double ell_cmp_with_pcov_cpp (NumericVector alphas,
                           NumericVector deltas,
                           NumericVector disps,
-                          NumericVector gammas,
+                          NumericVector betas,
                           NumericMatrix data,
                           NumericMatrix p_cov_data,
                           NumericVector PPs,
@@ -3850,8 +3850,7 @@ double ell_cmp_with_pcov_cpp (NumericVector alphas,
   int K = nodes.size();
   int m = alphas.size();
   int N = data.nrow();
-  int P = p_cov_data.ncol();
-  int P_times_M = gammas.size();
+  int P = betas.size();
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3877,10 +3876,8 @@ double ell_cmp_with_pcov_cpp (NumericVector alphas,
         // my nodes are here my epsilon
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for that specific item j
-          // gamma has indices p and j
-          // assume that we have first all covariates for item 1, then all covariates for item 2
-          // (for the specific person i we are currently looking at)
-          log_mu += gammas[p+j*P] * p_cov_data(i,p);
+          // and person
+          log_mu += betas[p] * alphas[j] * p_cov_data(i,p);
         }
         mu(k+i*K,j) = exp(log_mu);
         mu_interp(k+i*K,j) = mu(k+i*K,j);

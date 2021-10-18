@@ -1095,8 +1095,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // estep_cmp_with_pcov_cpp
-NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data, NumericVector alphas, NumericVector deltas, NumericVector disps, NumericVector gammas, NumericMatrix p_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
-RcppExport SEXP _countirt_estep_cmp_with_pcov_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP gammasSEXP, SEXP p_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data, NumericVector alphas, NumericVector deltas, NumericVector disps, NumericVector betas, NumericMatrix p_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_estep_cmp_with_pcov_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP betasSEXP, SEXP p_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1104,7 +1104,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type alphas(alphasSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type deltas(deltasSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type disps(dispsSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type gammas(gammasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type betas(betasSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type p_cov_data(p_cov_dataSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type nodes(nodesSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
@@ -1114,7 +1114,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type grid_log_lambda_long(grid_log_lambda_longSEXP);
     Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
     Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
-    rcpp_result_gen = Rcpp::wrap(estep_cmp_with_pcov_cpp(data, alphas, deltas, disps, gammas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
+    rcpp_result_gen = Rcpp::wrap(estep_cmp_with_pcov_cpp(data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
     return rcpp_result_gen;
 END_RCPP
 }

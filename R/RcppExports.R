@@ -217,7 +217,7 @@ estep_cmp_with_icov_cpp <- function(data, alphas, deltas, disps, betas, i_cov_da
     .Call(`_countirt_estep_cmp_with_icov_cpp`, data, alphas, deltas, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
-estep_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, gammas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
-    .Call(`_countirt_estep_cmp_with_pcov_cpp`, data, alphas, deltas, disps, gammas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+estep_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_cmp_with_pcov_cpp`, data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 

@@ -69,6 +69,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   if (is.null(i_covariates)) {
     # model with person covariates
     grad_betas_p <- numeric(length(betas_p))
+    p_covariates <- as.matrix(p_covariates)
     
     for (j in 1:ncol(data)) {
       lambdas <- exp(outer(
@@ -92,6 +93,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   } else if (is.null(p_covariates)) {
     # model with item covariates
     grad_betas_i <- numeric(length(betas_i))
+    i_covariates <- as.matrix(i_covariates)
     sum_icov <- as.numeric(i_covariates %*% betas_i)
     
     for (j in 1:ncol(data)) {

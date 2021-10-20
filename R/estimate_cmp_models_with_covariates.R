@@ -449,28 +449,39 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!same_disps & same_alphas) { 
-      # TODO hier weiter machen mit der implementierung von person and item covariates
-      # prep the parameters for the e-step
+      # prep for e step
       alpha <- item_params[grepl("alpha", names(item_params))]
       deltas <- item_params[grepl("delta", names(item_params))]
       n_items <- length(deltas)
       log_disps <- item_params[grepl("log_disp", names(item_params))]
-      item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps)
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps, betas_p, betas_i)
       names(item_params_samealph) <- c(
         paste0("alpha", 1:n_items),
         names(item_params[grepl("delta", names(item_params))]),
-        names(item_params[grepl("log_disp", names(item_params))])
+        names(item_params[grepl("log_disp", names(item_params))]),
+        names(item_params[grepl("beta_p", names(item_params))]),
+        names(item_params[grepl("beta_i", names(item_params))])
       )
       
       # e step
-      PPs <- newem_estep2(data, item_params_samealph, weights_and_nodes)
+      PPs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_samealph,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_cmp_samealphas_newem,
+        fn = grad_cmp_with_cov_samealphas,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_disps & !same_alphas) {
@@ -479,53 +490,83 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       deltas <- item_params[grepl("delta", names(item_params))]
       n_items <- length(deltas)
       log_disp <- item_params[grepl("log_disp", names(item_params))]
-      item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items))
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items), betas_p, betas_i)
       names(item_params_samedisp) <- c(
         names(item_params[grepl("alpha", names(item_params))]),
         names(item_params[grepl("delta", names(item_params))]),
-        paste0("log_disp", 1:n_items)
+        paste0("log_disp", 1:n_items),
+        names(item_params[grepl("beta_p", names(item_params))]),
+        names(item_params[grepl("beta_i", names(item_params))])
       )
       
       # e step
-      PPs <- newem_estep2(data, item_params_samedisp, weights_and_nodes)
+      PPs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_samedisp,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_cmp_samedisps_newem,
+        fn = grad_cmp_with_cov_samedisps,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         control = list(xtol = ctol_maxstep)
       )$x
     }
   } else {
     if (!is.null(fix_disps)) {
+      # prep for e step
+      item_params_fixdisps <- c(item_params, log(fix_disps))
+      names(item_params_fixdisps ) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
       # e step
-      params_estep <- c(item_params, log(fix_disps))
-      names(params_estep) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
-      PPs <- newem_estep2(data, params_estep, weights_and_nodes)
+      PPs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_fixdisps,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_cmp_fixdisps_newem,
+        fn = grad_cmp_with_cov_fixdisps,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         fix_disps = fix_disps,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!is.null(fix_alphas)) {
-      # e step
-      params_estep <- c(fix_alphas, item_params)
-      names(params_estep) <- c(paste0("alpha", 1:length(fix_alphas)), names(item_params))
-      PPs <- newem_estep2(data, params_estep, weights_and_nodes)
+      # prep for e step
+      item_params_fixalphas <- c(fix_alphas, item_params)
+      names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), names(item_params))
+      # e step 
+      PPs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_fixalphas,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_cmp_fixalphas_newem,
+        fn = grad_cmp_with_cov_fixalphas,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         fix_alphas = fix_alphas,
         control = list(xtol = ctol_maxstep)
       )$x

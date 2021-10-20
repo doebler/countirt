@@ -415,17 +415,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   ctol_maxstep = 1e-8, m_method = "nleqslv",
                                   fix_disps = NULL, fix_alphas = NULL,
                                   same_disps = FALSE, same_alphas = FALSE) {
-
-  # e_values <- newem_estep(data, item_params, weights_and_nodes)
-  # 
-  # new_item_params <- nleqslv(
-  #   x = item_params,
-  #   fn = grad_cmp_newem,
-  #   e_values = e_values,
-  #   weights_and_nodes = weights_and_nodes,
-  #   data = data,
-  #   control = list(xtol = ctol_maxstep)
-  # )$x
   
   if (is.null(fix_disps) & is.null(fix_alphas)) {
     if (!same_disps & !same_alphas) {
@@ -577,7 +566,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 }
 
 # run_newem ----------------------------------------------------------------------
-run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
+run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
+                                covariates_p, covariates_i, 
+                                thres = Inf, prob = 0,
                       maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                       m_method = "nleqslv", convcrit = "marglik",
                       fix_disps = NULL, fix_alphas = NULL,
@@ -601,8 +592,9 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
   while (!isTRUE(conv) && (iter <= maxiter)) {
     print(paste0("Iteration: ", iter))
     old_params <- new_params
-    new_params <- newem_em_cycle(
-      data, old_params, weights_and_nodes,
+    new_params <- em_cycle_cmp_with_cov(
+      data = data, item_params = old_params, weights_and_nodes = weights_and_nodes,
+      covariates_p = covariates_p, covariates_i = covariates_i,
       ctol_maxstep = ctol_maxstep, m_method = m_method,
       fix_disps = fix_disps, fix_alphas = fix_alphas,
       same_disps = same_disps, same_alphas = same_alphas
@@ -630,8 +622,8 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
         fix_disps = fix_disps, fix_alphas = fix_alphas,
         same_disps = same_disps, same_alphas = same_alphas)
       marg_lls[iter] <- marg_ll
-      #plot(marg_lls)
-      #print(marg_lls)
+      plot(marg_lls)
+      print(marg_lls)
     }
 
     iter <- iter + 1

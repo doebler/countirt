@@ -123,7 +123,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
     for (c in 1:length(betas_i)) {
       grad_betas_i[c] <- 0
       for (j in 1:length(ncol(data))) {
-        grad_betas_i[c] <- grad_betas_i[c] + i_covariates[j,c] * results_per_item[[j]]
+        grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c] * results_per_item[[j]])
       }
     }
   }

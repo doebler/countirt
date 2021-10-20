@@ -635,12 +635,12 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 
 # run_newem ----------------------------------------------------------------------
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
-                                covariates_p, covariates_i, 
+                                p_covariates, i_covariates, 
                                 thres = Inf, prob = 0,
-                      maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
-                      m_method = "nleqslv", convcrit = "marglik",
-                      fix_disps = NULL, fix_alphas = NULL,
-                      same_disps = FALSE, same_alphas = FALSE) {
+                                maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
+                                m_method = "nleqslv", convcrit = "marglik",
+                                fix_disps = NULL, fix_alphas = NULL,
+                                same_disps = FALSE, same_alphas = FALSE) {
 
   # get nodes and weights for GH quadrature
   # weights_and_nodes <- gaussHermiteData(n_nodes)
@@ -662,7 +662,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
     old_params <- new_params
     new_params <- em_cycle_cmp_with_cov(
       data = data, item_params = old_params, weights_and_nodes = weights_and_nodes,
-      covariates_p = covariates_p, covariates_i = covariates_i,
+      p_covariates = p_covariates, i_covariates = i_covariates,
       ctol_maxstep = ctol_maxstep, m_method = m_method,
       fix_disps = fix_disps, fix_alphas = fix_alphas,
       same_disps = same_disps, same_alphas = same_alphas

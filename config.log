@@ -30,12 +30,14 @@ Kernel configured for up to 4 processors.
 Processor type: x86_64h (Intel x86-64h Haswell)
 Processors active: 0 1 2 3
 Primary memory available: 8.00 gigabytes
-Default processor set: 383 tasks, 1790 threads, 4 processors
-Load average: 2.89, Mach factor: 1.80
+Default processor set: 379 tasks, 1699 threads, 4 processors
+Load average: 2.56, Mach factor: 1.55
 /bin/machine           = unknown
 /usr/bin/oslevel       = unknown
 /bin/universe          = unknown
 
+PATH: /usr/local/clang6/bin/
+PATH: /usr/local/clang6/bin/
 PATH: /usr/local/clang6/bin/
 PATH: /usr/local/clang6/bin/
 PATH: /usr/bin/

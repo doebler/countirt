@@ -1,24 +1,47 @@
 
 # estep_pois_with_cov --------------------------------------------------------------------
 
-estep_pois_with_cov <- function(data, item_params, p_covariates, weights_and_nodes) {
-  # p_covariates is a matrix with the person covariates
+estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, weights_and_nodes) {
   
   data <- as.matrix(data)
+  p_covariates <- as.matrix(p_covariates)
+  i_covariates <- as.matrix(i_covariates)
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
-  p_betas <- item_params[grepl("p_beta", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
-  PPs <- matrix(
-    log(weights_and_nodes$w),
-    nrow = nrow(data),
-    ncol = length(weights_and_nodes$x),
-    byrow = TRUE
+  if (is.null(i_covariates)) {
+    # e step for person covariates
+    PPs <- matrix(
+      log(weights_and_nodes$w),
+      nrow = nrow(data),
+      ncol = length(weights_and_nodes$x),
+      byrow = TRUE
     )
-  
-  for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-    PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
+    
+    for (j in 1:ncol(data)) {
+      lambdas <- exp(outer(
+        p_covariates %*% betas_p,
+        alphas[j] * weights_and_nodes$x + deltas[j],
+        "+"
+      ))
+      PPs <- PPs + apply(lambdas, 2, function(x){dpois(data[,j], x, log = TRUE)})
+    }
+  } else if (is.null(p_covariates)) {
+    # e step for item covariates
+    PPs <- matrix(
+      log(weights_and_nodes$w),
+      nrow = nrow(data),
+      ncol = length(weights_and_nodes$x),
+      byrow = TRUE
+    )
+    
+    sum_icov <- as.numeric(i_covariates %*% betas_i)
+    for (j in 1:ncol(data)) {
+      lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + sum_icov[j])
+      PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
+    }
   }
   
   PPs <- exp(PPs)

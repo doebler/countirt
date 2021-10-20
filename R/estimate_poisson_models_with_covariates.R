@@ -22,7 +22,7 @@ estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, w
     
     for (j in 1:ncol(data)) {
       lambdas <- exp(outer(
-        p_covariates %*% betas_p,
+        as.numeric(p_covariates %*% betas_p),
         alphas[j] * weights_and_nodes$x + deltas[j],
         "+"
       ))

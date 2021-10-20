@@ -96,7 +96,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       # results_per_item is a list of length M of NxK matrices
       grad_betas_p[p] <- 0
       for (j in 1:length(ncol(data))) {
-        grad_betas_p[p] <- grad_betas_p[p] + alpha_times_pcov[,j] * results_per_item[[j]]
+        grad_betas_p[p] <- grad_betas_p[p] + sum(alpha_times_pcov[,j] * results_per_item[[j]])
       }
     }
   } else if (is.null(p_covariates)) {
@@ -128,7 +128,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
     }
   }
   
-  out <- c(grad_alphas, grad_deltas, ifelse(is.null(i_covariates), grad_beta_p, grad_betas_i))
+  out <- c(grad_alphas, grad_deltas, ifelse(is.null(i_covariates), grad_betas_p, grad_betas_i))
   return(out)
 }
 

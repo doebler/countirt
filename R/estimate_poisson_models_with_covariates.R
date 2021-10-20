@@ -56,25 +56,58 @@ estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, w
 
 # grad_poisson -----------------------------------------------------------------------
 
-grad_poisson <- function(item_params, PPs, weights_and_nodes, data) {
+grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
+                                  p_covariates, i_covariates) {
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   grad_alphas <- numeric(length(alphas))
   grad_deltas <- numeric(length(deltas))
   
-  for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-    x_minus_lambda <- outer(data[,j], lambdas, "-")
-    matrix_nodes <- matrix(
-      weights_and_nodes$x,
-      nrow = nrow(data), 
-      ncol = length(weights_and_nodes$x),
-      byrow = TRUE
+  if (is.null(i_covariates)) {
+    # model with person covariates
+    grad_betas_p <- numeric(length(betas_p))
+    
+    for (j in 1:ncol(data)) {
+      lambdas <- exp(outer(
+        as.numeric(p_covariates %*% betas_p),
+        alphas[j] * weights_and_nodes$x + deltas[j],
+        "+"
+      ))
+      x_minus_lambda <- apply(lambdas, 2, function(x){data[,j] - x})
+      matrix_nodes <- matrix(
+        weights_and_nodes$x,
+        nrow = nrow(data), 
+        ncol = length(weights_and_nodes$x),
+        byrow = TRUE
       )
-    x_minus_lambda_times_pp <- x_minus_lambda * PPs
-    grad_alphas[j] <- sum(matrix_nodes*x_minus_lambda_times_pp)
-    grad_deltas[j] <- sum(x_minus_lambda_times_pp)
+      x_minus_lambda_times_pp <- x_minus_lambda * PPs
+      grad_alphas[j] <- sum(matrix_nodes*x_minus_lambda_times_pp)
+      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
+      grad_betas_p[j] <- x
+    }
+    
+  } else if (is.null(p_covariates)) {
+    # model with item covariates
+    grad_betas_i <- numeric(length(betas_i))
+    sum_icov <- as.numeric(i_covariates %*% betas_i)
+    
+    for (j in 1:ncol(data)) {
+      lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + sum_icov[j])
+      x_minus_lambda <- outer(data[,j], lambdas, "-")
+      matrix_nodes <- matrix(
+        weights_and_nodes$x,
+        nrow = nrow(data), 
+        ncol = length(weights_and_nodes$x),
+        byrow = TRUE
+      )
+      x_minus_lambda_times_pp <- x_minus_lambda * PPs
+      grad_alphas[j] <- sum(matrix_nodes*x_minus_lambda_times_pp)
+      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
+      grad_betas_p[j] <- x
+    }
   }
   
   out <- c(grad_alphas, grad_deltas)

@@ -1,7 +1,7 @@
 
-# estep_pois_with_cov --------------------------------------------------------------------
+# estep_poisson_with_cov --------------------------------------------------------------------
 
-estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, weights_and_nodes) {
+estep_poisson_with_cov <- function(data, item_params, p_covariates, i_covariates, weights_and_nodes) {
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -289,23 +289,32 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
 # em_cycle_poisson -------------------------------------------------------------------
 
 em_cycle_poisson <- function(data, item_params, weights_and_nodes,
-                     fix_alphas = NULL, same_alpha = FALSE,
-                     ctol_maxstep = 1e-8) {
+                             p_covariates, i_covariates,
+                             fix_alphas = NULL, same_alpha = FALSE,
+                             ctol_maxstep = 1e-8) {
     if (!is.null(fix_alphas)) {
       # fix alphas to the provided values
       # e step
       item_params_fixa <- c(fix_alphas, item_params)
       names(item_params_fixa) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
-      PPs <- e_step_poisson(data, item_params_fixa, weights_and_nodes)
+      PPs <- estep_poisson_with_cov(
+        data = data,
+        item_params = item_params_fixa,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_poisson_fixalphas,
+        fn = grad_poisson_with_cov_fixalphas,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
         fix_alphas = fix_alphas,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_alpha) {
@@ -315,29 +324,45 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
       item_params_samea <- c(rep(alpha, ncol(data)), item_params[-alpha])
       names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
                                    names(item_params[-alpha]))
-      PPs <- e_step_poisson(data, item_params_samea, weights_and_nodes)
+      PPs <- estep_poisson_with_cov(
+        data = data,
+        item_params = item_params_samea,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_poisson_samealpha,
+        fn = grad_poisson_with_cov_samealpha,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         control = list(xtol = ctol_maxstep)
       )$x
     } else {
       # fit a full two parameter model
       # e step
-      PPs <- e_step_poisson(data, item_params, weights_and_nodes)
+      PPs <- estep_poisson_with_cov(
+        data = data,
+        item_params = item_params,
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates
+      )
       
       # m step
       new_item_params <- nleqslv(
         x = item_params,
-        fn = grad_poisson,
+        fn = grad_poisson_with_cov,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -345,13 +370,18 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
   return(new_item_params)
 }
 
+# TODO hier weiter machen und erst marg_ll fuer poisson mit covariates implementieren
+# und dann run_em_poisson anpassen und dann start_values anpassen
+
 # run_em_poisson ----------------------------------------------------------------------
 
 
-run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
-                              maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
-                              convcrit = "marglik",
-                              fix_alphas = NULL, same_alpha = FALSE) {
+run_em_poisson <- function(data, init_params, n_nodes, 
+                           p_covariates, i_covariates,
+                           thres = Inf, prob = 0,
+                           maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
+                           convcrit = "marglik",
+                           fix_alphas = NULL, same_alpha = FALSE) {
   
   # get nodes and weights for GH quadrature
   # weights_and_nodes <- gaussHermiteData(n_nodes)

@@ -565,6 +565,74 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   return(new_item_params)
 }
 
+# marg_ll_cmp_with_cov --------------------------------------------------------------------------
+
+marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 
+                                 p_covariates, i_covariates, 
+                                 fix_disps = NULL, fix_alphas = NULL, 
+                                 same_disps = FALSE, same_alphas = FALSE) {
+  n_items <- ncol(data)
+  n_persons <- nrow(data)
+  deltas <- item_params[grepl("delta", names(item_params))]
+  if (is.null(fix_alphas)) {
+    if (same_alphas) {
+      alpha <- item_params[grepl("alpha", names(item_params))]
+      alphas <- rep(alpha, n_items)
+    } else {
+      alphas <- item_params[grepl("alpha", names(item_params))]
+    }
+  } else {
+     alphas <- fix_alphas
+  }
+  if (is.null(fix_disps)) {
+    if (same_disps) {
+      log_disp <- item_params[grepl("log_disp", names(item_params))]
+      disps <- rep(exp(log_disp), n_items)
+    } else {
+      log_disps <- item_params[grepl("log_disp", names(item_params))]
+      disps <- exp(log_disps)
+    }
+  } else {
+    disps <- fix_disps
+  }
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
+  
+  if (is.null(i_covariates)) {
+    ll <- marg_ll_cmp_with_pcov_cpp(data = as.matrix(data),
+                                   alphas = alphas,
+                                   deltas = deltas, 
+                                   disps = disps, 
+                                   betas = betas_p,
+                                   p_cov_data = as.matrix(p_covariates),
+                                   nodes = weights_and_nodes$x,
+                                   weights = weights_and_nodes$w,
+                                   grid_mus = grid_mus,  
+                                   grid_nus = grid_nus, 
+                                   grid_logZ_long = grid_logZ_long,
+                                   grid_log_lambda_long = grid_log_lambda_long,
+                                   max_mu = 150,
+                                   min_mu = 0.001)
+  } else if (is.null(p_covariates)) {
+    ll <- marg_ll_cmp_with_icov_cpp(data = as.matrix(data),
+                                   alphas = alphas,
+                                   deltas = deltas, 
+                                   disps = disps, 
+                                   betas = betas_i,
+                                   i_cov_data = as.matrix(i_covariates),
+                                   nodes = weights_and_nodes$x,
+                                   weights = weights_and_nodes$w,
+                                   grid_mus = grid_mus,  
+                                   grid_nus = grid_nus, 
+                                   grid_logZ_long = grid_logZ_long,
+                                   grid_log_lambda_long = grid_log_lambda_long,
+                                   max_mu = 150,
+                                   min_mu = 0.001)
+  }
+    
+  return(ll)
+}
+
 # run_newem ----------------------------------------------------------------------
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
                                 covariates_p, covariates_i, 
@@ -604,9 +672,12 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
     # check for convergence
     if (convcrit == "marglik") {
       old_ll <- new_ll
-      new_ll <- marg_ll2(
-        data, new_params,
-        weights_and_nodes, family = "cmp",
+      new_ll <-  marg_ll_cmp_with_cov(
+        data = data,
+        item_params = new_params,
+        weights_and_nodes = weights_and_nodes, 
+        p_covariates = p_covariates, 
+        i_covariates = i_covariates,
         fix_disps = fix_disps, fix_alphas = fix_alphas,
         same_disps = same_disps, same_alphas = same_alphas)
       marg_lls[iter] <- new_ll

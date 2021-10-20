@@ -213,6 +213,7 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
                                             data, p_covariates, i_covariates) {
   data <- as.matrix(data)
   alphas <- rep(item_params[grepl("alpha", names(item_params))], ncol(data))
+  alpha <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]

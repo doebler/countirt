@@ -4,8 +4,6 @@
 estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, weights_and_nodes) {
   
   data <- as.matrix(data)
-  p_covariates <- as.matrix(p_covariates)
-  i_covariates <- as.matrix(i_covariates)
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -13,6 +11,8 @@ estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, w
   
   if (is.null(i_covariates)) {
     # e step for person covariates
+    p_covariates <- as.matrix(p_covariates)
+    
     PPs <- matrix(
       log(weights_and_nodes$w),
       nrow = nrow(data),
@@ -30,6 +30,8 @@ estep_pois_with_cov <- function(data, item_params, p_covariates, i_covariates, w
     }
   } else if (is.null(p_covariates)) {
     # e step for item covariates
+    i_covariates <- as.matrix(i_covariates)
+    
     PPs <- matrix(
       log(weights_and_nodes$w),
       nrow = nrow(data),

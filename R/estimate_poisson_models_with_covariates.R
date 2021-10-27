@@ -442,10 +442,10 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
   return(ll)
 }
 
-# run_em_poisson ------------------------------------------------------------------------------
+# run_em_poisson_with_cov ------------------------------------------------------------------------------
 
 
-run_em_poisson <- function(data, init_params, n_nodes, 
+run_em_poisson_with_cov <- function(data, init_params, n_nodes, 
                            p_covariates, i_covariates,
                            thres = Inf, prob = 0,
                            maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,

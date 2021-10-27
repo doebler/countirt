@@ -302,6 +302,8 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
   I <- length(betas_i)
   P <- length(betas_p)
   
+  nodes <- weights_and_nodes$x
+  
   out <- 0
   if (is.null(i_covariates)) { # we have person covariates
     for (k in 1:K) {

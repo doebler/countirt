@@ -286,9 +286,9 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
   return(out)
 }
 
-# em_cycle_poisson -------------------------------------------------------------------
+# em_cycle_poisson_with_cov -------------------------------------------------------------------
 
-em_cycle_poisson <- function(data, item_params, weights_and_nodes,
+em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
                              p_covariates, i_covariates,
                              fix_alphas = NULL, same_alpha = FALSE,
                              ctol_maxstep = 1e-8) {
@@ -369,9 +369,6 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
 
   return(new_item_params)
 }
-
-# TODO hier weiter machen und erst marg_ll fuer poisson mit covariates implementieren
-# und dann run_em_poisson anpassen und dann start_values anpassen
 
 # marg_ll_poisson_with_cov ---------------------------------------------------------------------
 
@@ -473,19 +470,28 @@ run_em_poisson <- function(data, init_params, n_nodes,
   while (!isTRUE(conv) && (iter <= maxiter)) {
     print(paste0("Iteration: ", iter))
     old_params <- new_params
-    new_params <- em_cycle_poisson(
-      data, old_params, weights_and_nodes,
-      ctol_maxstep = ctol_maxstep,
-      fix_alphas = fix_alphas, same_alpha = same_alpha
+    new_params <- em_cycle_poisson_with_cov(
+      data = data,
+      item_params = old_params,
+      weights_and_nodes = weights_and_nodes,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      fix_alphas = fix_alphas, 
+      same_alpha = same_alpha,
+      ctol_maxstep = ctol_maxstep
     )
     
     # check for convergence
     if (convcrit == "marglik") {
       old_ll <- new_ll
-      new_ll <- marg_ll2(
-        as.matrix(data), new_params,
-        weights_and_nodes, family = "poisson",
-        fix_alphas = fix_alphas, same_alphas = same_alpha)
+      new_ll <- marg_ll_poisson_with_cov(
+        data = as.matrix(data),
+        item_params = new_params,
+        weights_and_nodes = weights_and_nodes, 
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        fix_alphas = fix_alphas, 
+        same_alphas = same_alpha)
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -493,10 +499,14 @@ run_em_poisson <- function(data, init_params, n_nodes,
     } else {
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
-      marg_ll <- marg_ll2(
-        as.matrix(data), new_params,
-        weights_and_nodes, family = "poisson",
-        fix_alphas = fix_alphas, same_alphas = same_alpha)
+      marg_ll <- marg_ll_poisson_with_cov(
+        data = as.matrix(data),
+        item_params = new_params,
+        weights_and_nodes = weights_and_nodes, 
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        fix_alphas = fix_alphas, 
+        same_alphas = same_alpha)
       marg_lls[iter] <- marg_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -526,6 +536,8 @@ run_em_poisson <- function(data, init_params, n_nodes,
   return(out)
   
 }
+
+# TODO hier weitermache und tart_values anpassen
 
 # get_start_values_pois -----------------------------------------------------------------
 

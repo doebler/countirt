@@ -687,9 +687,12 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
     } else {
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
-      marg_ll <- marg_ll2(
-        data, new_params,
-        weights_and_nodes, family = "cmp",
+      marg_ll <- marg_ll_cmp_with_cov(
+        data = data,
+        item_params = new_params,
+        weights_and_nodes = weights_and_nodes, 
+        p_covariates = p_covariates, 
+        i_covariates = i_covariates,
         fix_disps = fix_disps, fix_alphas = fix_alphas,
         same_disps = same_disps, same_alphas = same_alphas)
       marg_lls[iter] <- marg_ll

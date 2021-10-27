@@ -1166,6 +1166,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// grad_poisson_with_icov_cpp
+NumericVector grad_poisson_with_icov_cpp(NumericVector alphas, NumericVector deltas, NumericVector betas, NumericMatrix data, NumericMatrix i_cov_data, NumericMatrix PPs, NumericVector nodes);
+RcppExport SEXP _countirt_grad_poisson_with_icov_cpp(SEXP alphasSEXP, SEXP deltasSEXP, SEXP betasSEXP, SEXP dataSEXP, SEXP i_cov_dataSEXP, SEXP PPsSEXP, SEXP nodesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type alphas(alphasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type deltas(deltasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type i_cov_data(i_cov_dataSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type PPs(PPsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type nodes(nodesSEXP);
+    rcpp_result_gen = Rcpp::wrap(grad_poisson_with_icov_cpp(alphas, deltas, betas, data, i_cov_data, PPs, nodes));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_countirt_logFactorial", (DL_FUNC) &_countirt_logFactorial, 1},
@@ -1225,6 +1242,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_countirt_e_values_newem_cpp2", (DL_FUNC) &_countirt_e_values_newem_cpp2, 12},
     {"_countirt_estep_cmp_with_icov_cpp", (DL_FUNC) &_countirt_estep_cmp_with_icov_cpp, 14},
     {"_countirt_estep_cmp_with_pcov_cpp", (DL_FUNC) &_countirt_estep_cmp_with_pcov_cpp, 14},
+    {"_countirt_grad_poisson_with_icov_cpp", (DL_FUNC) &_countirt_grad_poisson_with_icov_cpp, 7},
     {NULL, NULL, 0}
 };
 

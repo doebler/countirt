@@ -229,3 +229,7 @@ estep_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, p_cov_da
     .Call(`_countirt_estep_cmp_with_pcov_cpp`, data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
+grad_poisson_with_icov_cpp <- function(alphas, deltas, betas, data, i_cov_data, PPs, nodes) {
+    .Call(`_countirt_grad_poisson_with_icov_cpp`, alphas, deltas, betas, data, i_cov_data, PPs, nodes)
+}
+

@@ -537,8 +537,6 @@ run_em_poisson <- function(data, init_params, n_nodes,
   
 }
 
-# TODO hier weitermache und tart_values anpassen
-
 # get_start_values_poisson_with_cov -----------------------------------------------------------------
 
 get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, same_alpha = FALSE) {
@@ -567,7 +565,7 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, 
     }
   }
   
-  start_values <- c(init_alphas, init_deltas, init_betas_p, init_betas_i)
+  start_values <- c(init_alphas, init_deltas, ifelse(is.null(i_covariates), init_betas_p, init_betas_i))
   names(start_values) <- c(
     paste0("alpha", 1:length(init_alphas)),
     paste0("delta", 1:length(init_deltas)),

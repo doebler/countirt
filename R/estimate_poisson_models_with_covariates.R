@@ -311,10 +311,10 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
         for(j in 1:M) {
           log_mu <- alphas[j] * nodes[k] + deltas[j]
           for (p in 1:P) {
-            log_mu <- log_mu + betas_p[p] * alphas[j] * p_covariates(i,p)
+            log_mu <- log_mu + betas_p[p] * alphas[j] * p_covariates[i,p]
           }
           mu <- exp(log_mu);
-          out <- out + dpois(data(i,j), mu, log = TRUE)*PPs(i,k)
+          out <- out + dpois(data[i,j], mu, log = TRUE)*PPs[i,k]
         }
       }
     }
@@ -324,10 +324,10 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
         for(j in 1:M) {
           log_mu <- alphas[j] * nodes[k] + deltas[j]
           for (c in 1:I) {
-            log_mu <- log_mu + betas_i[c] * i_covariates(j,c)
+            log_mu <- log_mu + betas_i[c] * i_covariates[j,c]
           }
           mu <- exp(log_mu);
-          out <- out + dpois(data(i,j), mu, log = TRUE)*PPs(i,k)
+          out <- out + dpois(data[i,j], mu, log = TRUE)*PPs[i,k]
         }
       }
     }

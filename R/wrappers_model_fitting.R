@@ -32,6 +32,10 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # TODO add some formula syntax to cirt
   # and think about what makes sense for being able to add item and person covariates
   
+  if (any(is.na(data))) {
+    # TODO remove rows with NAs and print warning that they were removed
+  }
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

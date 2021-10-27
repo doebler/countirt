@@ -286,6 +286,54 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
   return(out)
 }
 
+# ell_cmp_with_cov ----------------------------------------------------------------------------
+
+ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, 
+                                 data, p_covariates, i_covariates) {
+  # prep item parameters
+  alphas <- item_params[grepl("alpha", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
+  
+  N <- nrow(data)
+  M <- ncol(data)
+  K <- length(weights_and_nodes$x)
+  I <- length(betas_i)
+  P <- length(betas_p)
+  
+  out <- 0
+  if (is.null(i_covariates)) { # we have person covariates
+    for (k in 1:K) {
+      for (i in 1:N) {
+        for(j in 1:M) {
+          log_mu <- alphas[j] * nodes[k] + deltas[j]
+          for (p in 1:P) {
+            log_mu <- log_mu + betas_p[p] * alphas[j] * p_covariates(i,p)
+          }
+          mu <- exp(log_mu);
+          out <- out + dpois(data(i,j), mu, log = TRUE)*PPs(i,k)
+        }
+      }
+    }
+  } else if (is.null(p_covariates)) { # we have item covariates
+    for (k in 1:K) {
+      for (i in 1:N) {
+        for(j in 1:M) {
+          log_mu <- alphas[j] * nodes[k] + deltas[j]
+          for (c in 1:I) {
+            log_mu <- log_mu + betas_i[c] * i_covariates(j,c)
+          }
+          mu <- exp(log_mu);
+          out <- out + dpois(data(i,j), mu, log = TRUE)*PPs(i,k)
+        }
+      }
+    }
+  }
+  
+  return(out)
+}
+
 # em_cycle_poisson_with_cov -------------------------------------------------------------------
 
 em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,

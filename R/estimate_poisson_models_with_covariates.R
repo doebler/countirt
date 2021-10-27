@@ -373,7 +373,79 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
 # TODO hier weiter machen und erst marg_ll fuer poisson mit covariates implementieren
 # und dann run_em_poisson anpassen und dann start_values anpassen
 
-# run_em_poisson ----------------------------------------------------------------------
+# marg_ll_poisson_with_cov ---------------------------------------------------------------------
+
+marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes, 
+                                     p_covariates, i_covariates, 
+                                     fix_alphas = NULL, same_alphas = FALSE) {
+  n_items <- ncol(data)
+  n_persons <- nrow(data)
+  deltas <- item_params[grepl("delta", names(item_params))]
+  if (is.null(fix_alphas)) {
+    # we don't have fixed values for alpha
+    if (same_alphas) {
+      # we have only one alpha which is constant across items
+      alpha <- item_params[grepl("alpha", names(item_params))]
+      alphas <- rep(alpha, n_items) 
+    } else {
+      # we have an alpha for each item
+      alphas <- item_params[grepl("alpha", names(item_params))]
+    }
+  } else {
+    # we have fixed values for alpha
+    alphas <- fix_alphas
+  }
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
+  
+  if (is.null(i_covariates)) { # case of person covariates
+    # function to compute integral with quadrature over
+    f <- function(z, data, alphas, deltas) {
+      sum_p_cov <- betas_p * as.numeric(t(p_cov_data))
+      out <- 0
+      for (j in 1:n_items) {
+        lambda <- exp(alphas[j] * z + deltas[j] + sum_p_cov)
+        out <- out + (dpois(data[,j], lambda, log = TRUE))
+      }
+      return(exp(out))
+    }
+    
+    marg_prob <- numeric(n_persons)
+    for (i in 1:n_persons) {
+      marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
+                             data = data[i, , drop = FALSE], 
+                             p_cov_data = p_covariates[i, , drop = FALSE],
+                             alphas = alphas, deltas = deltas,
+                             betas_p = betas_p)
+    }
+    ll <- sum(log(marg_prob))
+  } else if (is.null(p_covariates)) { # case of item covariates
+    # function to compute integral with quadrature over
+    f <- function(z, data, alphas, deltas) {
+      out <- 0
+      for (j in 1:n_items) {
+        sum_i_cov <- betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE]))
+        lambda <- exp(alphas[j] * z + deltas[j] + sum_i_cov)
+        out <- out + (dpois(data[,j], lambda, log = TRUE))
+      }
+      return(exp(out))
+    }
+    
+    marg_prob <- numeric(n_persons)
+    for (i in 1:n_persons) {
+      marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
+                             data = data[i, , drop = FALSE], 
+                             i_cov_data = i_covariates,
+                             alphas = alphas, deltas = deltas,
+                             betas_i = betas_i)
+    }
+    ll <- sum(log(marg_prob))
+  }
+  
+  return(ll)
+}
+
+# run_em_poisson ------------------------------------------------------------------------------
 
 
 run_em_poisson <- function(data, init_params, n_nodes, 

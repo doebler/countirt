@@ -363,7 +363,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         data = data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        control = list(xtol = ctol_maxstep)
+        control = list(xtol = ctol_maxstep,
+                       allowSingular = TRUE)
       )$x
     }
 

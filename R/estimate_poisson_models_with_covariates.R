@@ -397,7 +397,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
   
   if (is.null(i_covariates)) { # case of person covariates
     # function to compute integral with quadrature over
-    f <- function(z, data, alphas, deltas) {
+    f <- function(z, data, p_cov_data, alphas, deltas, betas_p) {
       sum_p_cov <- betas_p * as.numeric(t(p_cov_data))
       out <- 0
       for (j in 1:n_items) {
@@ -418,7 +418,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
     ll <- sum(log(marg_prob))
   } else if (is.null(p_covariates)) { # case of item covariates
     # function to compute integral with quadrature over
-    f <- function(z, data, alphas, deltas) {
+    f <- function(z, data, i_cov_data, alphas, deltas, betas_i) {
       out <- 0
       for (j in 1:n_items) {
         sum_i_cov <- betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE]))

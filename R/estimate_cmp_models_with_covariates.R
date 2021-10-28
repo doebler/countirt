@@ -9,6 +9,7 @@ estep_cmp_with_cov <- function(data, item_params,
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  # in case of item covariates, deltas will be ust a scalar
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -50,8 +51,6 @@ estep_cmp_with_cov <- function(data, item_params,
     )
   }
   
-  # TODO allow for person and item covariates at the same time
-  
   return(PPs)
 }
 
@@ -61,6 +60,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that for item covariates, deltas is just a scalar
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -86,7 +86,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   } else if (is.null(p_covariates)) { 
     grads <- grad_cmp_with_icov_cpp(
       alphas = alphas,
-      deltas = deltas,
+      delta = deltas,
       disps = disps,
       betas = betas_i,
       data = as.matrix(data),
@@ -118,6 +118,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
 
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that deltas is a scalar if we have item covariates
   disps <- fix_disps
   n_items <- length(alphas)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -144,7 +145,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
   } else if (is.null(p_covariates)) {
     grads <- grad_cmp_with_icov_fixdisps_cpp(
       alphas = alphas, 
-      deltas = deltas, 
+      delta = deltas, 
       disps = disps, 
       betas = betas_i,
       data = as.matrix(data),
@@ -166,8 +167,6 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
          paste0(item_params, collapse = ","))
   } 
   
-  # TODO allow for person and item covariates at the same time
-  
   return(grads)
 }
 
@@ -178,6 +177,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
   
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that deltas is a scalar if we have item covariates
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
   n_items <- length(alphas)
@@ -205,7 +205,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
   } else if (is.null(p_covariates)) {
     grads <- grad_cmp_with_icov_fixalphas_cpp(
       alphas = alphas, 
-      deltas = deltas, 
+      delta = deltas, 
       disps = disps, 
       betas = betas_i,
       data = as.matrix(data),
@@ -227,8 +227,6 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
          paste0(item_params, collapse = ","))
   } 
   
-  # TODO allow for person and item covariates at the same time
-  
   return(grads)
 }
 
@@ -239,6 +237,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that deltas is a scalar for item covariates
   n_items <- length(alphas)
   log_disp <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(rep(log_disp, n_items))
@@ -266,7 +265,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   } else if (is.null(p_covariates)) {
     grads <- grad_cmp_with_icov_samedisps_cpp(
       alphas = alphas, 
-      deltas = deltas, 
+      delta = deltas, 
       disps = disps, 
       betas = betas_i,
       data = as.matrix(data),
@@ -287,8 +286,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
     stop("Gradient contained NA", paste0(grads, collapse = ","),
          paste0(item_params, collapse = ","))
   } 
-  
-  # TODO allow for person and item covariates at the same time
+
   
   return(grads)
 }
@@ -299,6 +297,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
                                          p_covariates, i_covariates) {
   
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that for item covariates, deltas is a scalar
   n_items <- length(deltas)
   alpha <- item_params[grepl("alpha", names(item_params))]
   alphas <- rep(alpha, n_items)
@@ -328,7 +327,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   } else if (is.null(p_covariates)) {
     grads <- grad_cmp_with_icov_samealphas_cpp(
       alphas = alphas, 
-      deltas = deltas, 
+      delta = deltas, 
       disps = disps, 
       betas = betas_i,
       data = as.matrix(data),
@@ -350,8 +349,6 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
          paste0(item_params, collapse = ","))
   } 
   
-  # TODO allow for person and item covariates at the same time
-  
   return(grads)
 }
 
@@ -361,6 +358,7 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that deltas is a scalar if we have item covariates
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -387,7 +385,7 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
   } else if (is.null(p_covariates)) { 
     ell <- ell_cmp_with_icov_cpp(
       alphas = alphas,
-      deltas = deltas,
+      delta = deltas,
       disps = disps,
       betas = betas_i,
       data = as.matrix(data),
@@ -403,8 +401,6 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
       max_mu = 200,
       min_mu = 0.001)
   }
-  
-  # TODO allow for person and item covariates at the same time
   
   return(ell)
 }
@@ -574,6 +570,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params))]
+  # note that deltas will be a scalar if we have item covariates
   if (is.null(fix_alphas)) {
     if (same_alphas) {
       alpha <- item_params[grepl("alpha", names(item_params))]
@@ -616,7 +613,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   } else if (is.null(p_covariates)) {
     ll <- marg_ll_cmp_with_icov_cpp(data = as.matrix(data),
                                    alphas = alphas,
-                                   deltas = deltas, 
+                                   delta = deltas, 
                                    disps = disps, 
                                    betas = betas_i,
                                    i_cov_data = as.matrix(i_covariates),
@@ -726,43 +723,98 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 }
 
 
-# get_start_values -----------------------------------------------------------------
+# get_start_values_cmp_with_cov ---------------------------------------------------------------------
 
-get_start_values <- function(data, nodes = 121, nsim = 1000,
-                             init_disp_one = TRUE, same_alpha = FALSE) {
+get_start_values_cmp_with_cov <- function(data, 
+                                          p_covariates,
+                                          i_covariates,
+                                          nodes = 121, nsim = 1000,
+                                          same_alpha = FALSE) {
   # for CMP start values, we fit a Poisson model and get deltas and alphas from there
   if (same_alpha) {
     # just one alpha for all items
-    init_values_pois <- get_start_values_pois(data, same_alpha = TRUE)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE)
+    init_values_pois <- get_start_values_poisson_with_cov(
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      same_alpha = TRUE
+      )
+    fit_pois <- run_em_poisson_with_cov(
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      init_params = init_values_pois, 
+      n_nodes = nodes, 
+      same_alpha = TRUE
+      )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
     # different alpha for each item
-    init_values_pois <- get_start_values_pois(data)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes)
+    init_values_pois <- get_start_values_poisson_with_cov(
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates
+    )
+    fit_pois <- run_em_poisson_with_cov(
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      init_params = init_values_pois, 
+      n_nodes = nodes
+    )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   }
   
-  init_logdisps<-c()
-  sim_abilities=rnorm(nsim)
-  for (i in 1:ncol(data)) {
-    if (same_alpha) {
-      mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
-    } else {
-      mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+  if (!is.null(p_covariates)) {
+    # we have a model with person covariates
+    init_logdisps<-c()
+    sim_abilities=rnorm(nsim)
+    for (i in 1:ncol(data)) {
+      if (same_alpha) {
+        mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+      } else {
+        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+      }
+      sim <- rpois(nsim, mu)
+      init_logdisps[i] <- log((var(sim) / var(data[,i])))
     }
-    sim <- rpois(nsim, mu)
-    init_logdisps[i] <- log((var(sim) / var(data[,i])))
+    init_betas_p <- rep(0, ncol(p_covariates))
+    
+    start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_p)
+    names(start_values) <- c(
+      paste0("alpha", 1:length(init_alphas)),
+      paste0("delta", 1:length(init_deltas)),
+      paste0("log_disp", 1:length(init_logdisps)),
+      paste0("beta_p", 1:length(init_betas_p))
+    )
+    
+  } else if (!is.null(i_covariates)) {
+    # we have a model with item covariates
+    init_logdisps<-c()
+    sim_abilities=rnorm(nsim)
+    for (i in 1:ncol(data)) {
+      if (same_alpha) {
+        mu <- exp(init_deltas + init_alphas*sim_abilities)
+      } else {
+        mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
+      }
+      sim <- rpois(nsim, mu)
+      init_logdisps[i] <- log((var(sim) / var(data[,i])))
+    }
+    init_betas_i <- rep(0, ncol(i_covariates))
+    
+    start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
+    names(start_values) <- c(
+      paste0("alpha", 1:length(init_alphas)),
+      paste0("delta", 1:length(init_deltas)),
+      paste0("log_disp", 1:length(init_logdisps)),
+      paste0("beta_i", 1:length(init_betas_i))
+    )
+    
   }
   
-  start_values <- c(init_alphas, init_deltas, init_logdisps)
-  names(start_values) <- c(
-    paste0("alpha", 1:length(init_alphas)),
-    paste0("delta", 1:length(init_deltas)),
-    paste0("log_disp", 1:length(init_logdisps))
-  )
   return(start_values)
 }
 

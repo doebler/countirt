@@ -41,7 +41,8 @@ estep_poisson_with_cov <- function(data, item_params, p_covariates, i_covariates
     
     sum_icov <- as.numeric(i_covariates %*% betas_i)
     for (j in 1:ncol(data)) {
-      lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + sum_icov[j])
+      lambdas <- exp(deltas + alphas[j] * weights_and_nodes$x + sum_icov[j])
+      # note that deltas will be just one scalar value in the case of item covariates
       PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
     }
   }
@@ -64,7 +65,11 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   grad_alphas <- numeric(length(alphas))
-  grad_deltas <- numeric(length(deltas))
+  if (is.null(i_covariates)) {
+    grad_deltas <- numeric(length(deltas))
+  }
+  # in the case of item covariates we have just one delta (which is the intercept)
+  # in our prediction of item-specific delta_j
   
   N <- nrow(data)
   M <- ncol(data)
@@ -96,35 +101,34 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         }
       }
     }
+    out <- c(grad_alphas, grad_deltas, grad_betas_p)
   } else if (is.null(p_covariates)) {
     # model with item covariates
-    # TODO schauen ob ich hier noch weiter beschleunigen kann
-
+    grad_delta <- 0
     grad_betas_i <- numeric(length(betas_i))
     i_covariates <- as.matrix(i_covariates)
     for (j in 1:M) {
       for (k in 1:K) {
-        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        # note that for item covariates, deltas is a scalar
         grad_alphas[j] <- grad_alphas[j] + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
+        grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
       }
     }
     for (c in 1:I) {
       for (k in 1:K) {
         for (j in 1:M) {
-          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          # note that for item covariates, deltas is a scalar
           grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
         }
       }
     }
-    
+    out <- c(grad_alphas, grad_delta, grad_betas_i)
   }
-  
-  out <- c(grad_alphas, ifelse(is.null(i_covariates), c(grad_deltas, grad_betas_p), grad_betas_i))
+
   return(out)
 }
-
-# TODO wenn ich gecheckt habe das meine gradienten richtig sind auch fuer die constraints hier
-# implementieren
 
 # grad_poisson_with_cov_fixalphas --------------------------------------------------------------
 
@@ -136,68 +140,66 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
   deltas <- item_params[grepl("delta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
-  grad_deltas <- numeric(length(deltas))
+  if (is.null(i_covariates)) {
+    grad_deltas <- numeric(length(deltas))
+  }
+  # in the case of item covariates we have just one delta (which is the intercept)
+  # in our prediction of item-specific delta_j
+  
+  N <- nrow(data)
+  M <- ncol(data)
+  K <- length(weights_and_nodes$x)
+  I <- length(betas_i)
+  P <- length(betas_p)
+  nodes <- weights_and_nodes$x
   
   if (is.null(i_covariates)) {
     # model with person covariates
     grad_betas_p <- numeric(length(betas_p))
     p_covariates <- as.matrix(p_covariates)
-    
-    results_per_item <- vector(mode = "list", length = ncol(data))
-    for (j in 1:ncol(data)) {
-      lambdas <- exp(outer(
-        as.numeric(p_covariates %*% betas_p),
-        alphas[j] * weights_and_nodes$x + deltas[j],
-        "+"
-      ))
-      x_minus_lambda <- apply(lambdas, 2, function(x){data[,j] - x})
-      matrix_nodes <- matrix(
-        weights_and_nodes$x,
-        nrow = nrow(data), 
-        ncol = length(weights_and_nodes$x),
-        byrow = TRUE
-      )
-      x_minus_lambda_times_pp <- x_minus_lambda * PPs
-      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-      results_per_item[[j]] <- x_minus_lambda_times_pp
-    }
-    for (p in 1:length(betas_p)) {
-      alpha_times_pcov <- outer(p_covariates[,p], alphas, "*") # output: NxM matrix
-      # results_per_item is a list of length M of NxK matrices
-      grad_betas_p[p] <- 0
-      for (j in 1:length(ncol(data))) {
-        grad_betas_p[p] <- grad_betas_p[p] + sum(alpha_times_pcov[,j] * results_per_item[[j]])
+    for (j in 1:M) {
+      for (k in 1:K) {
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+        # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+        # our lambda is person specific
+        grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
       }
     }
+    for (p in 1:P) {
+      for (k in 1:K) {
+        for (j in 1:M) {
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+          # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+          # our lambda is person specific
+          grad_betas_p[p] <- grad_betas_i[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
+        }
+      }
+    }
+    out <- c(grad_deltas, grad_betas_p)
   } else if (is.null(p_covariates)) {
     # model with item covariates
+    grad_delta <- 0
     grad_betas_i <- numeric(length(betas_i))
     i_covariates <- as.matrix(i_covariates)
-    sum_icov <- as.numeric(i_covariates %*% betas_i)
-    
-    results_per_item <- vector(mode = "list", length = ncol(data))
-    for (j in 1:ncol(data)) {
-      lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + sum_icov[j])
-      x_minus_lambda <- outer(data[,j], lambdas, "-")
-      matrix_nodes <- matrix(
-        weights_and_nodes$x,
-        nrow = nrow(data), 
-        ncol = length(weights_and_nodes$x),
-        byrow = TRUE
-      )
-      x_minus_lambda_times_pp <- x_minus_lambda * PPs
-      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-      results_per_item[[j]] <- x_minus_lambda_times_pp
-    }
-    for (c in 1:length(betas_i)) {
-      grad_betas_i[c] <- 0
-      for (j in 1:length(ncol(data))) {
-        grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c] * results_per_item[[j]])
+    for (j in 1:M) {
+      for (k in 1:K) {
+        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        # note that for item covariates, deltas is a scalar
+        grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
       }
     }
+    for (c in 1:I) {
+      for (k in 1:K) {
+        for (j in 1:M) {
+          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          # note that for item covariates, deltas is a scalar
+          grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
+        }
+      }
+    }
+    out <- c(grad_delta, grad_betas_i)
   }
   
-  out <- c(grad_deltas, ifelse(is.null(i_covariates), grad_betas_p, grad_betas_i))
   return(out)
 }
 
@@ -211,72 +213,69 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
   deltas <- item_params[grepl("delta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
-  grad_deltas <- numeric(length(deltas))
   grad_alpha <- 0
+  if (is.null(i_covariates)) {
+    grad_deltas <- numeric(length(deltas))
+  }
+  # in the case of item covariates we have just one delta (which is the intercept)
+  # in our prediction of item-specific delta_j
+  
+  N <- nrow(data)
+  M <- ncol(data)
+  K <- length(weights_and_nodes$x)
+  I <- length(betas_i)
+  P <- length(betas_p)
+  nodes <- weights_and_nodes$x
   
   if (is.null(i_covariates)) {
     # model with person covariates
     grad_betas_p <- numeric(length(betas_p))
     p_covariates <- as.matrix(p_covariates)
-    
-    results_per_item <- vector(mode = "list", length = ncol(data))
-    for (j in 1:ncol(data)) {
-      lambdas <- exp(outer(
-        as.numeric(p_covariates %*% betas_p),
-        alphas[j] * weights_and_nodes$x + deltas[j],
-        "+"
-      ))
-      x_minus_lambda <- apply(lambdas, 2, function(x){data[,j] - x})
-      matrix_nodes <- matrix(
-        weights_and_nodes$x,
-        nrow = nrow(data), 
-        ncol = length(weights_and_nodes$x),
-        byrow = TRUE
-      )
-      x_minus_lambda_times_pp <- x_minus_lambda * PPs
-      grad_alpha <- grad_alpha + sum((matrix_nodes + sum(as.numeric(p_covariates %*% betas_p)))*
-                              x_minus_lambda_times_pp)
-      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-      results_per_item[[j]] <- x_minus_lambda_times_pp
-    }
-    for (p in 1:length(betas_p)) {
-      alpha_times_pcov <- alpha * p_covariates[,p] # output: vector of length N
-      # results_per_item is a list of length M of NxK matrices
-      grad_betas_p[p] <- 0
-      for (j in 1:length(ncol(data))) {
-        grad_betas_p[p] <- grad_betas_p[p] + sum(alpha_times_pcov * results_per_item[[j]])
+    for (j in 1:M) {
+      for (k in 1:K) {
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+        # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+        # our lambda is person specific
+        grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
+        grad_alpha <- grad_alpha + sum((nodes[k]+p_covariates%*%betas_p)*(data[,j] - lambda)*PPs[,k])
       }
     }
+    for (p in 1:P) {
+      for (k in 1:K) {
+        for (j in 1:M) {
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+          # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+          # our lambda is person specific
+          grad_betas_p[p] <- grad_betas_i[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
+        }
+      }
+    }
+    out <- c(grad_alpha, grad_deltas, grad_betas_p)
   } else if (is.null(p_covariates)) {
     # model with item covariates
+    grad_delta <- 0
     grad_betas_i <- numeric(length(betas_i))
     i_covariates <- as.matrix(i_covariates)
-    sum_icov <- as.numeric(i_covariates %*% betas_i)
-    
-    results_per_item <- vector(mode = "list", length = ncol(data))
-    for (j in 1:ncol(data)) {
-      lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + sum_icov[j])
-      x_minus_lambda <- outer(data[,j], lambdas, "-")
-      matrix_nodes <- matrix(
-        weights_and_nodes$x,
-        nrow = nrow(data), 
-        ncol = length(weights_and_nodes$x),
-        byrow = TRUE
-      )
-      x_minus_lambda_times_pp <- x_minus_lambda * PPs
-      grad_alpha <- grad_alpha + sum(matrix_nodes*x_minus_lambda_times_pp)
-      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-      results_per_item[[j]] <- x_minus_lambda_times_pp
-    }
-    for (c in 1:length(betas_i)) {
-      grad_betas_i[c] <- 0
-      for (j in 1:length(ncol(data))) {
-        grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c] * results_per_item[[j]])
+    for (j in 1:M) {
+      for (k in 1:K) {
+        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        # note that for item covariates, deltas is a scalar
+        grad_alpha <- grad_alpha + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
+        grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
       }
     }
+    for (c in 1:I) {
+      for (k in 1:K) {
+        for (j in 1:M) {
+          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          # note that for item covariates, deltas is a scalar
+          grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
+        }
+      }
+    }
+    out <- c(grad_alpha, grad_delta, grad_betas_i)
   }
   
-  out <- c(grad_alpha, grad_deltas, ifelse(is.null(i_covariates), grad_betas_p, grad_betas_i))
   return(out)
 }
 
@@ -316,7 +315,8 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
     for (k in 1:K) {
       for (i in 1:N) {
         for(j in 1:M) {
-          log_mu <- alphas[j] * nodes[k]
+          log_mu <- deltas + alphas[j] * nodes[k]
+          # for item covariates deltas is just one scalar value
           for (c in 1:I) {
             log_mu <- log_mu + betas_i[c] * i_covariates[j,c]
           }
@@ -446,7 +446,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       sum_p_cov <- betas_p * as.numeric(t(p_cov_data))
       out <- 0
       for (j in 1:n_items) {
-        lambda <- exp(alphas[j] * z + deltas[j] + sum_p_cov)
+        lambda <- exp(alphas[j] * z + deltas[j] + alphas[j] * sum_p_cov)
         out <- out + (dpois(data[,j], lambda, log = TRUE))
       }
       return(exp(out))
@@ -467,7 +467,8 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       out <- 0
       for (j in 1:n_items) {
         sum_i_cov <- betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE]))
-        lambda <- exp(alphas[j] * z + deltas[j] + sum_i_cov)
+        lambda <- exp(deltas + alphas[j] * z + sum_i_cov)
+        # note that deltas is just a scalar in the case of item covariates
         out <- out + (dpois(data[,j], lambda, log = TRUE))
       }
       return(exp(out))
@@ -582,18 +583,19 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
   
 }
 
-# get_start_values_poisson_with_cov -----------------------------------------------------------------
+# get_start_values_poisson_with_cov -------------------------------------------------------------------
 
 get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, same_alpha = FALSE) {
   
   # we just start with covariate weights set at 0
   if(is.null(i_covariates)) { # for person covariates
     init_betas_p <- rep(0, ncol(p_covariates))
+    init_deltas <- log(apply(data, 2, mean))
   } else if (is.null(p_covariates)) { # for item covariates
     init_betas_i <- rep(0, ncol(i_covariates))
+    init_deltas <- log(mean(apply(data, 2, mean)))
+    # note that for item covariates, we will then have just one delta
   }
-  
-  init_deltas <- log(apply(data, 2, mean))
   
   if (same_alpha) {
     # just one alpha for all items

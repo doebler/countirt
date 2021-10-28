@@ -1789,7 +1789,7 @@ double marg_ll_cmp_with_pcov_cpp (NumericMatrix data,
 // [[Rcpp::export]]
 double marg_ll_cmp_with_icov_cpp (NumericMatrix data,
                                   NumericVector alphas,
-                                  NumericVector deltas,
+                                  double delta,
                                   NumericVector disps,
                                   NumericVector betas,
                                   NumericMatrix i_cov_data,
@@ -1816,7 +1816,7 @@ double marg_ll_cmp_with_icov_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -2265,7 +2265,7 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
-                                     NumericVector deltas,
+                                     double delta,
                                      NumericVector disps,
                                      NumericVector betas,
                                      NumericMatrix data,
@@ -2289,10 +2289,10 @@ NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
   int n_nodes = nodes.size();
   int I = betas.size();
   NumericVector grad_alphas(m);
-  NumericVector grad_deltas(m);
+  double grad_delta;
   NumericVector grad_disps(m);
   NumericVector grad_betas(I);
-  NumericVector out(3*m + I);
+  NumericVector out(2*m + 1 + I);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -2305,7 +2305,7 @@ NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta; // not
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -2335,12 +2335,12 @@ NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
   // V and log_lambda are matrices with as many rows as we have nodes and
   // as many columns as we have
   
+  grad_delta = 0;
   // gradients for item parameters
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
     grad_alphas[i] = 0;
-    grad_deltas[i] = 0;
     grad_disps[i] = 0;
     
     for(int k=0;k<n_nodes;k++) {
@@ -2357,8 +2357,7 @@ NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
         // compute the gradients (summing over persons)
         grad_alphas[i] = grad_alphas[i] +
           PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        grad_deltas[i] = grad_deltas[i] +
-          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_delta += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
         grad_disps[i] = grad_disps[i] +
           PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
       }
@@ -2385,11 +2384,11 @@ NumericVector grad_cmp_with_icov_cpp(NumericVector alphas,
   // fill up output vector
   for(int i=0;i<m;i++){
     out[i] = grad_alphas[i];
-    out[i + m] = grad_deltas[i];
-    out[i + 2*m] = grad_disps[i];
+    out[i + m + 1] = grad_disps[i];
   }
+  out[m] = grad_delta;
   for(int c=0; c<I; c++) {
-    out[3*m + c] = grad_betas[c];
+    out[2*m + 1 + c] = grad_betas[c];
   }
   
   return(out);
@@ -2622,7 +2621,7 @@ NumericVector grad_cmp_with_pcov_fixdisps_cpp(NumericVector alphas,
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
-                                     NumericVector deltas,
+                                     double delta,
                                      NumericVector disps,
                                      NumericVector betas,
                                      NumericMatrix data,
@@ -2646,9 +2645,9 @@ NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
   int n_nodes = nodes.size();
   int I = betas.size();
   NumericVector grad_alphas(m);
-  NumericVector grad_deltas(m);
+  double grad_delta;
   NumericVector grad_betas(I);
-  NumericVector out(2*m + I);
+  NumericVector out(m + 1 + I);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -2661,7 +2660,7 @@ NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -2691,12 +2690,12 @@ NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
   // V and log_lambda are matrices with as many rows as we have nodes and
   // as many columns as we have
   
+  grad_delta = 0;
   // gradients for item parameters
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
     grad_alphas[i] = 0;
-    grad_deltas[i] = 0;
     
     for(int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -2707,8 +2706,7 @@ NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
         // compute the gradients (summing over persons)
         grad_alphas[i] = grad_alphas[i] +
           PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        grad_deltas[i] = grad_deltas[i] +
-          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_delta += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
       }
     }
   }
@@ -2733,10 +2731,10 @@ NumericVector grad_cmp_with_icov_fixdisps_cpp(NumericVector alphas,
   // fill up output vector
   for(int i=0;i<m;i++){
     out[i] = grad_alphas[i];
-    out[i + m] = grad_deltas[i];
   }
+  out[m] = grad_delta;
   for(int c=0; c<I; c++) {
-    out[2*m + c] = grad_betas[c];
+    out[m + 1 + c] = grad_betas[c];
   }
   
   return(out);
@@ -2973,7 +2971,7 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
-                                     NumericVector deltas,
+                                     double delta,
                                      NumericVector disps,
                                      NumericVector betas,
                                      NumericMatrix data,
@@ -2996,10 +2994,10 @@ NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
   int n = PPs.nrow();
   int n_nodes = nodes.size();
   int I = betas.size();
-  NumericVector grad_deltas(m);
+  double grad_delta;
   NumericVector grad_disps(m);
   NumericVector grad_betas(I);
-  NumericVector out(2*m + I);
+  NumericVector out(1 + m + I);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3012,7 +3010,7 @@ NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -3042,11 +3040,11 @@ NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
   // V and log_lambda are matrices with as many rows as we have nodes and
   // as many columns as we have
   
+  grad_delta = 0;
   // gradients for item parameters
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
-    grad_deltas[i] = 0;
     grad_disps[i] = 0;
     
     for(int k=0;k<n_nodes;k++) {
@@ -3061,8 +3059,7 @@ NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
         // loop over persons
         
         // compute the gradients (summing over persons)
-        grad_deltas[i] = grad_deltas[i] +
-          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_delta += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
         grad_disps[i] = grad_disps[i] +
           PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
       }
@@ -3087,12 +3084,12 @@ NumericVector grad_cmp_with_icov_fixalphas_cpp(NumericVector alphas,
   } // end loop over items
   
   // fill up output vector
+  out[0] = grad_delta;
   for(int i=0;i<m;i++){
-    out[i] = grad_deltas[i];
-    out[i + m] = grad_disps[i];
+    out[i + 1] = grad_disps[i];
   }
   for(int c=0; c<I; c++) {
-    out[2*m + c] = grad_betas[c];
+    out[m + 1 + c] = grad_betas[c];
   }
   
   return(out);
@@ -3344,7 +3341,7 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
-                                     NumericVector deltas,
+                                     double delta,
                                      NumericVector disps,
                                      NumericVector betas,
                                      NumericMatrix data,
@@ -3368,10 +3365,10 @@ NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
   int n_nodes = nodes.size();
   int I = betas.size();
   NumericVector grad_alphas(m);
-  NumericVector grad_deltas(m);
+  double grad_delta;
   double grad_disp;
   NumericVector grad_betas(I);
-  NumericVector out(2*m + 1 + I);
+  NumericVector out(m + 2 + I);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3384,7 +3381,7 @@ NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -3415,12 +3412,12 @@ NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
   // as many columns as we have
   
   grad_disp = 0;
+  grad_delta = 0;
   // gradients for item parameters
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
     grad_alphas[i] = 0;
-    grad_deltas[i] = 0;
     
     for(int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -3436,10 +3433,8 @@ NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
         // compute the gradients (summing over persons)
         grad_alphas[i] = grad_alphas[i] +
           PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        grad_deltas[i] = grad_deltas[i] +
-          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        grad_disp = grad_disp +
-          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+        grad_delta += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_disp += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
       }
     }
   }
@@ -3464,11 +3459,11 @@ NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
   // fill up output vector
   for(int i=0;i<m;i++){
     out[i] = grad_alphas[i];
-    out[i + m] = grad_deltas[i];
   }
-  out[2*m] = grad_disp;
+  out[m] = grad_delta;
+  out[m + 1] = grad_disp;
   for(int c=0; c<I; c++) {
-    out[2*m + 1 + c] = grad_betas[c];
+    out[m + 2 + c] = grad_betas[c];
   }
   
   return(out);
@@ -3721,7 +3716,7 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
-                                     NumericVector deltas,
+                                     double delta,
                                      NumericVector disps,
                                      NumericVector betas,
                                      NumericMatrix data,
@@ -3745,10 +3740,10 @@ NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
   int n_nodes = nodes.size();
   int I = betas.size();
   double grad_alpha;
-  NumericVector grad_deltas(m);
+  double grad_delta;
   NumericVector grad_disps(m);
   NumericVector grad_betas(I);
-  NumericVector out(2*m + 1 + I);
+  NumericVector out(m + 2 + I);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3761,7 +3756,7 @@ NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -3792,11 +3787,11 @@ NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
   // as many columns as we have
   
   grad_alpha = 0;
+  grad_delta = 0;
   // gradients for item parameters
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
-    grad_deltas[i] = 0;
     grad_disps[i] = 0;
     
     for(int k=0;k<n_nodes;k++) {
@@ -3811,10 +3806,8 @@ NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
         // loop over persons
         
         // compute the gradients (summing over persons)
-        grad_alpha = grad_alpha +
-          PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        grad_deltas[i] = grad_deltas[i] +
-          PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_alpha += PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_delta += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
         grad_disps[i] = grad_disps[i] +
           PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
       }
@@ -3840,12 +3833,12 @@ NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
   
   // fill up output vector
   out[0] = grad_alpha;
+  out[1] = grad_delta;
   for(int i=1;i<m;i++){
-    out[i ] = grad_deltas[i];
-    out[i + m] = grad_disps[i];
+    out[i + 2] = grad_disps[i];
   }
   for(int c=0; c<I; c++) {
-    out[2*m + 1 + c] = grad_betas[c];
+    out[2 + m + c] = grad_betas[c];
   }
   
   return(out);
@@ -4072,7 +4065,7 @@ double ell_cmp_with_pcov_cpp (NumericVector alphas,
 
 // [[Rcpp::export]]
 double ell_cmp_with_icov_cpp (NumericVector alphas,
-                              NumericVector deltas,
+                              double delta,
                               NumericVector disps,
                               NumericVector betas,
                               NumericMatrix data,
@@ -4108,7 +4101,7 @@ double ell_cmp_with_icov_cpp (NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + delta;
       // my nodes are here my epsilon
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values
@@ -4322,7 +4315,7 @@ NumericMatrix e_values_newem_cpp2(NumericMatrix data,
 // [[Rcpp::export]]
 NumericMatrix estep_cmp_with_icov_cpp(NumericMatrix data,
                                   NumericVector alphas,
-                                  NumericVector deltas,
+                                  double deltas,
                                   NumericVector disps,
                                   NumericVector betas,
                                   NumericMatrix i_cov_data,
@@ -4349,7 +4342,7 @@ NumericMatrix estep_cmp_with_icov_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + deltas; // deltas is a scalar for item covariates
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         // (for the specific item j we are currently looking at)

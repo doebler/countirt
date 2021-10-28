@@ -77,121 +77,54 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
     # model with person covariates
     grad_betas_p <- numeric(length(betas_p))
     p_covariates <- as.matrix(p_covariates)
-    
-    results_per_item <- vector(mode = "list", length = ncol(data))
-    for (j in 1:ncol(data)) {
-      lambdas <- exp(outer(
-        as.numeric(p_covariates %*% betas_p),
-        alphas[j] * weights_and_nodes$x + deltas[j],
-        "+"
-      ))
-      x_minus_lambda <- apply(lambdas, 2, function(x){data[,j] - x})
-      matrix_nodes <- matrix(
-        weights_and_nodes$x,
-        nrow = nrow(data), 
-        ncol = length(weights_and_nodes$x),
-        byrow = TRUE
-      )
-      x_minus_lambda_times_pp <- x_minus_lambda * PPs
-      grad_alphas[j] <- sum((matrix_nodes + sum(as.numeric(p_covariates %*% betas_p)))*
-                              x_minus_lambda_times_pp)
-      grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-      results_per_item[[j]] <- x_minus_lambda_times_pp
+    for (j in 1:M) {
+      for (k in 1:K) {
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+        # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+        # our lambda is person specific
+        grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
+        grad_alphas[j] <- grad_alphas[j] + sum((nodes[k]+p_covariates%*%betas_p)*(data[,j] - lambda)*PPs[,k])
+      }
     }
-    for (p in 1:length(betas_p)) {
-      alpha_times_pcov <- outer(p_covariates[,p], alphas, "*") # output: NxM matrix
-      # results_per_item is a list of length M of NxK matrices
-      grad_betas_p[p] <- 0
-      for (j in 1:length(ncol(data))) {
-        grad_betas_p[p] <- grad_betas_p[p] + sum(alpha_times_pcov[,j] * results_per_item[[j]])
+    for (p in 1:P) {
+      for (k in 1:K) {
+        for (j in 1:M) {
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+          # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+          # our lambda is person specific
+          grad_betas_p[p] <- grad_betas_i[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
+        }
       }
     }
   } else if (is.null(p_covariates)) {
     # model with item covariates
-    # grad_betas_i <- numeric(length(betas_i))
-    # i_covariates <- as.matrix(i_covariates)
-    # sum_icov <- as.numeric(i_covariates %*% betas_i)
-    # 
-    # results_per_item <- vector(mode = "list", length = ncol(data))
-    # for (j in 1:ncol(data)) {
-    #   lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + sum_icov[j])
-    #   x_minus_lambda <- outer(data[,j], lambdas, "-")
-    #   matrix_nodes <- matrix(
-    #     weights_and_nodes$x,
-    #     nrow = nrow(data), 
-    #     ncol = length(weights_and_nodes$x),
-    #     byrow = TRUE
-    #   )
-    #   x_minus_lambda_times_pp <- x_minus_lambda * PPs
-    #   grad_alphas[j] <- sum(matrix_nodes*x_minus_lambda_times_pp)
-    #   grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-    #   results_per_item[[j]] <- x_minus_lambda_times_pp
-    # }
-    # for (c in 1:length(betas_i)) {
-    #   grad_betas_i[c] <- 0
-    #   for (j in 1:length(ncol(data))) {
-    #     grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c] * results_per_item[[j]])
-    #   }
-    # }
-    
-    # FIXME this loopy code works but is super slow
-    # grad_betas_i <- numeric(length(betas_i))
-    # i_covariates <- as.matrix(i_covariates)
-    # for (j in 1:M) {
-    #   for (k in 1:K) {
-    #     for (i in 1:N) {
-    #       lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
-    #       grad_deltas[j] <- grad_deltas[j] + (data[i,j] - lambda)*PPs[i,k]
-    #       grad_alphas[j] <- grad_alphas[j] + nodes[k]*(data[i,j] - lambda)*PPs[i,k]
-    #     }
-    #   }
-    # }
-    # for (c in 1:I) {
-    #   for (k in 1:K) {
-    #     for (i in 1:N) {
-    #       for (j in 1:M) {
-    #         lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
-    #         grad_betas_i[c] <- grad_betas_i[c] + i_covariates[j,c]*(data[i,j] - lambda)*PPs[i,k]
-    #       }
-    #     }
-    #   }
-    # }
-    
-    # TODO hier weitermachen und ueberlegen, warum der c++ code nicht funktioniert
-    # oder alternativ eine schnellere implementierung von dem funktionierenden loopy code oben schreiben
-    grads <- grad_poisson_with_icov_cpp(
-      alphas = alphas,
-      deltas = deltas,
-      betas = betas_i,
-      data = as.matrix(data),
-      i_cov_data = as.matrix(i_covariates),
-      PPs = PPs,
-      nodes = weights_and_nodes$x
-    )
-    
-    # grad_betas_i <- numeric(length(betas_i))
-    # i_covariates <- as.matrix(i_covariates)
-    # for (j in 1:M) {
-    #   for (k in 1:K) {
-    #     lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
-    #     grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
-    #     grad_alphas[j] <- grad_alphas[j] + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
-    #   }
-    # }
-    # for (c in 1:I) {
-    #   for (k in 1:K) {
-    #     for (j in 1:M) {
-    #       lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
-    #       grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[,c]*(data[i,j] - lambda)*PPs[,k])
-    #     }
-    #   }
-    # }
+    # TODO schauen ob ich hier noch weiter beschleunigen kann
+
+    grad_betas_i <- numeric(length(betas_i))
+    i_covariates <- as.matrix(i_covariates)
+    for (j in 1:M) {
+      for (k in 1:K) {
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        grad_alphas[j] <- grad_alphas[j] + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
+      }
+    }
+    for (c in 1:I) {
+      for (k in 1:K) {
+        for (j in 1:M) {
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
+        }
+      }
+    }
     
   }
   
-  #out <- c(grad_alphas, grad_deltas, ifelse(is.null(i_covariates), grad_betas_p, grad_betas_i))
-  return(grads)
+  out <- c(grad_alphas, ifelse(is.null(i_covariates), c(grad_deltas, grad_betas_p), grad_betas_i))
+  return(out)
 }
+
+# TODO wenn ich gecheckt habe das meine gradienten richtig sind auch fuer die constraints hier
+# implementieren
 
 # grad_poisson_with_cov_fixalphas --------------------------------------------------------------
 
@@ -347,7 +280,7 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
   return(out)
 }
 
-# ell_cmp_with_cov ----------------------------------------------------------------------------
+# ell_poisson_with_cov ----------------------------------------------------------------------------
 
 ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, 
                                  data, p_covariates, i_covariates) {
@@ -383,7 +316,7 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
     for (k in 1:K) {
       for (i in 1:N) {
         for(j in 1:M) {
-          log_mu <- alphas[j] * nodes[k] + deltas[j]
+          log_mu <- alphas[j] * nodes[k]
           for (c in 1:I) {
             log_mu <- log_mu + betas_i[c] * i_covariates[j,c]
           }

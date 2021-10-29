@@ -437,7 +437,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # prep for e step
       alpha <- item_params[grepl("alpha", names(item_params))]
       deltas <- item_params[grepl("delta", names(item_params))]
-      n_items <- length(deltas)
+      n_items <- ncol(data)
       log_disps <- item_params[grepl("log_disp", names(item_params))]
       betas_p <- item_params[grepl("beta_p", names(item_params))]
       betas_i <- item_params[grepl("beta_i", names(item_params))]
@@ -473,7 +473,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # prep the parameters for the e-step
       alphas <- item_params[grepl("alpha", names(item_params))]
       deltas <- item_params[grepl("delta", names(item_params))]
-      n_items <- length(deltas)
+      n_items <- ncol(data)
       log_disp <- item_params[grepl("log_disp", names(item_params))]
       betas_p <- item_params[grepl("beta_p", names(item_params))]
       betas_i <- item_params[grepl("beta_i", names(item_params))]

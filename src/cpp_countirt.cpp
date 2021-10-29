@@ -3703,9 +3703,9 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
   
   // fill up output vector
   out[0] = grad_alpha;
-  for(int i=1;i<m;i++){
-    out[i] = grad_deltas[i];
-    out[i + m] = grad_disps[i];
+  for(int i=0;i<m;i++){
+    out[1 + i] = grad_deltas[i];
+    out[1 + i + m] = grad_disps[i];
   }
   for(int p=0; p<P; p++) {
     out[2*m + 1 + p] = grad_betas[p];
@@ -3834,7 +3834,7 @@ NumericVector grad_cmp_with_icov_samealphas_cpp(NumericVector alphas,
   // fill up output vector
   out[0] = grad_alpha;
   out[1] = grad_delta;
-  for(int i=1;i<m;i++){
+  for(int i=0;i<m;i++){
     out[i + 2] = grad_disps[i];
   }
   for(int c=0; c<I; c++) {

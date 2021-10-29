@@ -120,7 +120,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
   deltas <- item_params[grepl("delta", names(item_params))]
   # note that deltas is a scalar if we have item covariates
   disps <- fix_disps
-  n_items <- length(alphas)
+  n_items <- ncol(data)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -180,7 +180,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
   # note that deltas is a scalar if we have item covariates
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
-  n_items <- length(alphas)
+  n_items <- ncol(data)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -238,7 +238,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   # note that deltas is a scalar for item covariates
-  n_items <- length(alphas)
+  n_items <- ncol(data)
   log_disp <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(rep(log_disp, n_items))
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -298,7 +298,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   
   deltas <- item_params[grepl("delta", names(item_params))]
   # note that for item covariates, deltas is a scalar
-  n_items <- length(deltas)
+  n_items <- ncol(data)
   alpha <- item_params[grepl("alpha", names(item_params))]
   alphas <- rep(alpha, n_items)
   log_disps <- item_params[grepl("log_disp", names(item_params))]

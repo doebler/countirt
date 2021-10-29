@@ -780,7 +780,7 @@ get_start_values_cmp_with_cov <- function(data,
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))
     }
-    init_betas_p <- rep(0, ncol(p_covariates))
+    init_betas_p <- fit_pois$params[grepl("beta_p", names(fit_pois$params))]
     
     start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_p)
     names(start_values) <- c(
@@ -803,7 +803,7 @@ get_start_values_cmp_with_cov <- function(data,
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))
     }
-    init_betas_i <- rep(0, ncol(i_covariates))
+    init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
     
     start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
     names(start_values) <- c(

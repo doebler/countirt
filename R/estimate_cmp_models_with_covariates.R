@@ -729,10 +729,13 @@ get_start_values_cmp_with_cov <- function(data,
                                           p_covariates,
                                           i_covariates,
                                           nodes = 121, nsim = 1000,
-                                          same_alpha = FALSE) {
-  # for CMP start values, we fit a Poisson model and get deltas and alphas from there
+                                          same_alpha = FALSE,
+                                          i_cov_on = c("alpha", "delta", "log_disp")) {
+  # for CMP start values, we fit a Poisson model and get deltas and alphas 
+  # and betas from there
   if (same_alpha) {
     # just one alpha for all items
+    # note that we can't have same alpha together with item covariates on alpha
     init_values_pois <- get_start_values_poisson_with_cov(
       data = data,
       p_covariates = p_covariates,
@@ -745,7 +748,8 @@ get_start_values_cmp_with_cov <- function(data,
       i_covariates = i_covariates,
       init_params = init_values_pois, 
       n_nodes = nodes, 
-      same_alpha = TRUE
+      same_alpha = TRUE,
+      i_cov_on = "delta"
       )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
@@ -761,7 +765,8 @@ get_start_values_cmp_with_cov <- function(data,
       p_covariates = p_covariates,
       i_covariates = i_covariates,
       init_params = init_values_pois, 
-      n_nodes = nodes
+      n_nodes = nodes,
+      i_cov_on = i_cov_on
     )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
@@ -769,18 +774,21 @@ get_start_values_cmp_with_cov <- function(data,
   
   if (!is.null(p_covariates)) {
     # we have a model with person covariates
+    init_betas_p <- fit_pois$params[grepl("beta_p", names(fit_pois$params))]
     init_logdisps<-c()
     sim_abilities=rnorm(nsim)
-    for (i in 1:ncol(data)) {
+    for (i in 1:ncol(data)) { 
       if (same_alpha) {
-        mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+        mu <- exp(init_deltas[i] + init_alphas*sim_abilities + 
+                    init_alphas*sum(t(init_betas_p * t(p_covariates))))
+        # here alphas is a scalar because we have the constraint same alpha here
       } else {
-        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities + 
+                    init_alphas[i]*sum(t(init_betas_p * t(p_covariates))))
       }
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))
     }
-    init_betas_p <- fit_pois$params[grepl("beta_p", names(fit_pois$params))]
     
     start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_p)
     names(start_values) <- c(
@@ -792,18 +800,32 @@ get_start_values_cmp_with_cov <- function(data,
     
   } else if (!is.null(i_covariates)) {
     # we have a model with item covariates
+    init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
     init_logdisps<-c()
     sim_abilities=rnorm(nsim)
     for (i in 1:ncol(data)) {
-      if (same_alpha) {
-        mu <- exp(init_deltas + init_alphas*sim_abilities)
-      } else {
-        mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
-      }
+      # distinguish between on which parameters we have item covariates
+      if (length(i_cov_on) == 1) {
+        if (i_cov_on == "delta") {
+          if (same_alpha) {
+            mu <- exp(init_deltas + init_alphas*sim_abilities +
+                        sum(t(init_betas_i * t(i_covariates))))
+          } else {
+            mu <- exp(init_deltas + init_alphas[i]*sim_abilities + 
+                        sum(t(init_betas_i * t(i_covariates))))
+          }
+        } else if (i_cov_on == "alpha") {
+          # we can't have the constraint of same alphas if we have covaraites on
+          # alpha because the covariates have different values for the different
+          # items implying different alphas
+          mu <- exp(init_deltas + init_alphas[i]*sim_abilities + 
+                      sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+        } # TODO hier noch den fall einbauen, dass ich i_cov_on == "lod_disp" habe
+      } # TODO hier ein else einfuegen und den fall behandeln, dass ich auf allen
+      # parametern kovariaten habe
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))
     }
-    init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
     
     start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
     names(start_values) <- c(

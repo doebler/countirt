@@ -714,9 +714,6 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
 
 # get_start_values_poisson_with_cov -------------------------------------------------------------------
 
-# TODO add i_cov_on = c("alpha", "delta"), argument and handle the different cases
-# what i have so far is the case of i_cov_on = "delta", next start doing i_cov_on = "alpha"
-# and then in a couple of weeks add the i_cov_on = c("alpha", "delta") option
 get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, 
                                               same_alpha = FALSE, i_cov_on = c("alpha", "delta")) {
   
@@ -768,7 +765,7 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
             init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
           }
         }
-      } else if ("alpha") {
+      } else if (i_cov_on == "alpha") {
         init_deltas <- log(apply(data, 2, mean))
         
         # note that if have item covariates on alpha, we can't have any of the

@@ -717,41 +717,82 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
 # TODO add i_cov_on = c("alpha", "delta"), argument and handle the different cases
 # what i have so far is the case of i_cov_on = "delta", next start doing i_cov_on = "alpha"
 # and then in a couple of weeks add the i_cov_on = c("alpha", "delta") option
-get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, same_alpha = FALSE) {
+get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, 
+                                              same_alpha = FALSE, i_cov_on = c("alpha", "delta")) {
   
   # we just start with covariate weights set at 0
-  if(is.null(i_covariates)) { # for person covariates
+  if(!is.null(p_covariates)) { # for person covariates
     init_betas_p <- rep(0, ncol(p_covariates))
     init_deltas <- log(apply(data, 2, mean))
-  } else if (is.null(p_covariates)) { # for item covariates
+    
+    if (same_alpha) {
+      # just one alpha for all items
+      init_alphas <- c()
+      for (i in 1:ncol(data)) {
+        init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+      }
+      init_alphas <- mean(init_alphas)
+    } else {
+      # different alpha for each item
+      init_alphas <- c()
+      for (i in 1:ncol(data)) {
+        init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+      }
+    }
+    
+    start_values <- c(init_alphas, init_deltas, init_betas_p)
+    names(start_values) <- c(
+      paste0("alpha", 1:length(init_alphas)),
+      paste0("delta", 1:length(init_deltas)),
+      paste0("beta_p", 1:length(init_betas_p))
+      )
+  } else if (!is.null(i_covariates)) { # for item covariates
     init_betas_i <- rep(0, ncol(i_covariates))
-    init_deltas <- log(mean(apply(data, 2, mean)))
-    # note that for item covariates, we will then have just one delta
+    # distinguish between on which item parameter we have item covariates
+    if (length(i_cov_on) == 1) {
+      if (i_cov_on == "delta") {
+        init_deltas <- log(mean(apply(data, 2, mean)))
+        # note that for item covariates on delta, we will then have just one delta
+        
+        if (same_alpha) {
+          # just one alpha for all items
+          init_alphas <- c()
+          for (i in 1:ncol(data)) {
+            init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+          }
+          init_alphas <- mean(init_alphas)
+        } else {
+          # different alpha for each item
+          init_alphas <- c()
+          for (i in 1:ncol(data)) {
+            init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+          }
+        }
+      } else if ("alpha") {
+        init_deltas <- log(apply(data, 2, mean))
+        
+        # note that if have item covariates on alpha, we can't have any of the
+        # constraints (because with fixed alphas their values are known anyways)
+        # and with same alphas, they have to be the same and with item covariates with
+        # different values for different items, they won't be the same
+        
+        # for covaruates on alpha, we just have one alpha
+        init_alphas <- c()
+        for (i in 1:ncol(data)) {
+          init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+        }
+        init_alphas <- mean(init_alphas)
+      }
+      start_values <- c(init_alphas, init_deltas, init_betas_i)
+      names(start_values) <- c(
+        paste0("alpha", 1:length(init_alphas)),
+        paste0("delta", 1:length(init_deltas)),
+        paste0("beta_i", 1:length(init_betas_i))
+      )
+    } # TODO hier mit einem else den Fall einbauen, dass wir auf beiden item parameter
+    # haben koennten
   }
   
-  if (same_alpha) {
-    # just one alpha for all items
-    init_alphas <- c()
-    for (i in 1:ncol(data)) {
-      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    }
-    init_alphas <- mean(init_alphas)
-  } else {
-    # different alpha for each item
-    init_alphas <- c()
-    for (i in 1:ncol(data)) {
-      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    }
-  }
-  
-  start_values <- c(init_alphas, init_deltas, ifelse(is.null(i_covariates), init_betas_p, init_betas_i))
-  names(start_values) <- c(
-    paste0("alpha", 1:length(init_alphas)),
-    paste0("delta", 1:length(init_deltas)),
-    ifelse(is.null(p_covariates), 
-           paste0("beta_i", 1:length(init_betas_i)),
-           paste0("beta_p", 1:length(init_betas_p)))
-  )
   return(start_values)
 }
 

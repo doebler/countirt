@@ -429,7 +429,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on,
+        i_cov_on = i_cov_on
       )
       
       # m step
@@ -458,7 +458,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on,
+        i_cov_on = i_cov_on
       )
       
       # m step
@@ -482,7 +482,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on,
+        i_cov_on = i_cov_on
       )
       
       # m step

@@ -36,6 +36,13 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
     # TODO remove rows with NAs and print warning that they were removed
   }
   
+  # TODO wenn ich hier das i_cov_on argument einbaue, so dass ich item kovariaten mit
+  # einbauen kann, dann sollte ich checken, dass wenn fix_alphas = TRUE, nur
+  # i_cov_on = "delta" ist; wenn nicht, das so setzen und eine warnung ausgeben, dass
+  # man bei fixierten alphas dann nur item kovaraiten auf den deltas haben kann
+  # (im poisson fall); analog auch im cmp fall unter beruecksichtigung von nu
+  # (same with same_alpha; and analgously fix_disps and same_disp)
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

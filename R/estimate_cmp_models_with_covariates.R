@@ -740,7 +740,8 @@ get_start_values_cmp_with_cov <- function(data,
       data = data,
       p_covariates = p_covariates,
       i_covariates = i_covariates,
-      same_alpha = TRUE
+      same_alpha = TRUE,
+      i_cov_on = "delta"
       )
     fit_pois <- run_em_poisson_with_cov(
       data = data,
@@ -758,7 +759,8 @@ get_start_values_cmp_with_cov <- function(data,
     init_values_pois <- get_start_values_poisson_with_cov(
       data = data,
       p_covariates = p_covariates,
-      i_covariates = i_covariates
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
     )
     fit_pois <- run_em_poisson_with_cov(
       data = data,

@@ -561,6 +561,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   return(new_item_params)
 }
 
+# TODO hier weiter machen und von hier nach oben durcharbeiten und argument
+# i_cov_on = c("alpha", "delta", "log_disp") ueberall einfuegen
+# (ist schon eingefuegt in die funktionen unter marg_Ll)
+
 # marg_ll_cmp_with_cov --------------------------------------------------------------------------
 
 marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 
@@ -633,6 +637,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 # run_newem ----------------------------------------------------------------------
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
                                 p_covariates, i_covariates, 
+                                i_cov_on = c("alpha", "delta", "log_disp"),
                                 thres = Inf, prob = 0,
                                 maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                 m_method = "nleqslv", convcrit = "marglik",
@@ -658,11 +663,18 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
     print(paste0("Iteration: ", iter))
     old_params <- new_params
     new_params <- em_cycle_cmp_with_cov(
-      data = data, item_params = old_params, weights_and_nodes = weights_and_nodes,
-      p_covariates = p_covariates, i_covariates = i_covariates,
-      ctol_maxstep = ctol_maxstep, m_method = m_method,
-      fix_disps = fix_disps, fix_alphas = fix_alphas,
-      same_disps = same_disps, same_alphas = same_alphas
+      data = data, 
+      item_params = old_params, 
+      weights_and_nodes = weights_and_nodes,
+      p_covariates = p_covariates, 
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on,
+      ctol_maxstep = ctol_maxstep,
+      m_method = m_method,
+      fix_disps = fix_disps, 
+      fix_alphas = fix_alphas,
+      same_disps = same_disps, 
+      same_alphas = same_alphas
     )
     #print(new_params)
 
@@ -675,8 +687,11 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         weights_and_nodes = weights_and_nodes, 
         p_covariates = p_covariates, 
         i_covariates = i_covariates,
-        fix_disps = fix_disps, fix_alphas = fix_alphas,
-        same_disps = same_disps, same_alphas = same_alphas)
+        i_cov_on = i_cov_on,
+        fix_disps = fix_disps, 
+        fix_alphas = fix_alphas,
+        same_disps = same_disps, 
+        same_alphas = same_alphas)
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -690,8 +705,11 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         weights_and_nodes = weights_and_nodes, 
         p_covariates = p_covariates, 
         i_covariates = i_covariates,
-        fix_disps = fix_disps, fix_alphas = fix_alphas,
-        same_disps = same_disps, same_alphas = same_alphas)
+        i_cov_on = i_cov_on,
+        fix_disps = fix_disps, 
+        fix_alphas = fix_alphas,
+        same_disps = same_disps, 
+        same_alphas = same_alphas)
       marg_lls[iter] <- marg_ll
       plot(marg_lls)
       print(marg_lls)

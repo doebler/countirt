@@ -820,7 +820,7 @@ get_start_values_cmp_with_cov <- function(data,
           # we can't have the constraint of same alphas if we have covaraites on
           # alpha because the covariates have different values for the different
           # items implying different alphas
-          mu <- exp(init_deltas + init_alphas[i]*sim_abilities + 
+          mu <- exp(init_deltas[i] + init_alphas*sim_abilities + 
                       sim_abilities * sum(t(init_betas_i * t(i_covariates))))
         } # TODO hier noch den fall einbauen, dass ich i_cov_on == "lod_disp" habe
       } # TODO hier ein else einfuegen und den fall behandeln, dass ich auf allen

@@ -152,7 +152,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           }
         }
         out <- c(grad_alphas, grad_delta, grad_betas_i)
-      } else (i_cov_on == "alpha") {
+      } else if (i_cov_on == "alpha") {
         grad_alpha <- 0
         grad_deltas <- numeric(length(deltas))
         grad_betas_i <- numeric(length(betas_i))

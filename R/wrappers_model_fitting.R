@@ -43,6 +43,9 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # (im poisson fall); analog auch im cmp fall unter beruecksichtigung von nu
   # (same with same_alpha; and analgously fix_disps and same_disp)
   
+  # TODO incorporate check that we only have item or person parameters as
+  # we can only do one or the other atm
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

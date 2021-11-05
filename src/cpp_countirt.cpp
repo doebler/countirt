@@ -3414,7 +3414,7 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
 }
 
 // [[Rcpp::export]]
-NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
+NumericVector grad_cmp_with_icov_delta_samedisps_cpp(NumericVector alphas,
                                      double delta,
                                      NumericVector disps,
                                      NumericVector betas,
@@ -3543,6 +3543,134 @@ NumericVector grad_cmp_with_icov_samedisps_cpp(NumericVector alphas,
   return(out);
 }
 
+// [[Rcpp::export]]
+NumericVector grad_cmp_with_icov_alpha_samedisps_cpp(double alpha,
+                                                     NumericVector deltas,
+                                                     NumericVector disps,
+                                                     NumericVector betas,
+                                                     NumericMatrix data,
+                                                     NumericMatrix i_cov_data,
+                                                     NumericMatrix PPs,
+                                                     NumericVector nodes, 
+                                                     NumericVector grid_mus,
+                                                     NumericVector grid_nus,
+                                                     NumericVector grid_cmp_var_long,
+                                                     NumericVector grid_log_lambda_long,
+                                                     NumericVector grid_logZ_long,
+                                                     double max_mu,
+                                                     double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = data.ncol();
+  int n = PPs.nrow();
+  int n_nodes = nodes.size();
+  int I = betas.size();
+  double grad_alpha;
+  NumericVector grad_deltas(m);
+  double grad_disp;
+  NumericVector grad_betas(I);
+  NumericVector out(m + 2 + I);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  // for person covariates, we need mus (and lambdas and Zs) which are node and item specific
+  // contrary to the case of person covariates, we don't have to make them person specific
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over nodes (rows)
+      double log_mu = alpha * nodes[k] + deltas[j];
+      for(int c=0; c<I; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += nodes[k] * betas[c] * i_cov_data(j,c); // for item j
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }  // end loop over items
+  
+  NumericMatrix V(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  NumericMatrix log_Z(n_nodes, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes and
+  // as many columns as we have
+  
+  grad_disp = 0;
+  grad_alpha = 0;
+  // gradients for item parameters
+  for(int i=0;i<m;i++){
+    // over items (columns in my matrices)
+    // so that we get one gradient per item
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      
+      // compute A and B for dispersion gradient
+      double lambda = exp(log_lambda(k,i));
+      double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      
+      for(int j=0;j<n;j++) {
+        // loop over persons
+        
+        // compute the gradients (summing over persons)
+        grad_alpha += PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_deltas[j] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_disp += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  // gradients for item covariate weights
+  for (int c=0; c<I; c++) {
+    // for each gamma of which we have one for each covariate-item combination
+    grad_betas[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  
+  // fill up output vector
+  out[0] = grad_alpha;
+  for(int i=0;i<m;i++){
+    out[i+1] = grad_deltas[i];
+  }
+  out[m + 1] = grad_disp;
+  for(int c=0; c<I; c++) {
+    out[m + 2 + c] = grad_betas[c];
+  }
+  
+  return(out);
+}
 
 // [[Rcpp::export]]
 NumericVector grad_cmp_samealphas_newem_cpp(NumericVector alphas,
@@ -4241,7 +4369,7 @@ double ell_cmp_with_icov_alpha_cpp (double alpha,
   // analogously for f and h
   
   int K = nodes.size();
-  int m = alphas.size();
+  int m = data.ncol();
   int N = data.nrow();
   int I = betas.size();
   

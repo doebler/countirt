@@ -943,21 +943,33 @@ get_start_values_cmp_with_cov <- function(data,
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
+    if (length(i_cov_on) == 1) {
+      if (i_cov_on == "log_disp") {
+        init_values_pois <- get_start_values_pois(
+          data = data
+        )
+        fit_pois <- run_em_poisson(
+          data = data,
+          init_params = init_values_pois
+        )
+      } else {
+        init_values_pois <- get_start_values_poisson_with_cov(
+          data = data,
+          p_covariates = p_covariates,
+          i_covariates = i_covariates,
+          i_cov_on = i_cov_on
+        )
+        fit_pois <- run_em_poisson_with_cov(
+          data = data,
+          p_covariates = p_covariates,
+          i_covariates = i_covariates,
+          init_params = init_values_pois, 
+          n_nodes = nodes,
+          i_cov_on = i_cov_on
+        )
+      }
+    } # TODO handle case where we want item covariates on all parameters
     # different alpha for each item
-    init_values_pois <- get_start_values_poisson_with_cov(
-      data = data,
-      p_covariates = p_covariates,
-      i_covariates = i_covariates,
-      i_cov_on = i_cov_on
-    )
-    fit_pois <- run_em_poisson_with_cov(
-      data = data,
-      p_covariates = p_covariates,
-      i_covariates = i_covariates,
-      init_params = init_values_pois, 
-      n_nodes = nodes,
-      i_cov_on = i_cov_on
-    )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   }

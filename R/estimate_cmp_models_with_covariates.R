@@ -1,7 +1,4 @@
 
-# TODO weitermachen: implementierung testen von kovariaten auf alpha und dann
-# kovariaten auf log nu implementieren
-
 # estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, 
                                p_covariates, i_covariates,
@@ -912,6 +909,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 
 }
 
+# TODO covaraites auf log_disp implementieren
 
 # get_start_values_cmp_with_cov ---------------------------------------------------------------------
 
@@ -992,13 +990,15 @@ get_start_values_cmp_with_cov <- function(data,
     
   } else if (!is.null(i_covariates)) {
     # we have a model with item covariates
-    init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
     init_logdisps<-c()
     sim_abilities=rnorm(nsim)
     for (i in 1:ncol(data)) {
+      # TODO here, I can reduce case distinctions as I pretty much do the same in all the cases
+      # anyways
       # distinguish between on which parameters we have item covariates
       if (length(i_cov_on) == 1) {
         if (i_cov_on == "delta") {
+          init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
           if (same_alpha) {
             mu <- exp(init_deltas + init_alphas*sim_abilities)
                         # + sum(t(init_betas_i * t(i_covariates))))
@@ -1007,16 +1007,35 @@ get_start_values_cmp_with_cov <- function(data,
                         # + sum(t(init_betas_i * t(i_covariates))))
           }
         } else if (i_cov_on == "alpha") {
+          init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
           # we can't have the constraint of same alphas if we have covaraites on
           # alpha because the covariates have different values for the different
           # items implying different alphas
           mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
                      # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
-        } # TODO hier noch den fall einbauen, dass ich i_cov_on == "lod_disp" habe
+        } else if (i_cov_on == "log_disp") {
+          mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+        } 
       } # TODO hier ein else einfuegen und den fall behandeln, dass ich auf allen
       # parametern kovariaten habe
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))
+    }
+    if (length(i_cov_on) == 1) {
+      if (i_cov_on == "log_disp") {
+        init_logdisps <- mean(init_logdisps)
+        # we need one log nu and then the covariate weights on nu
+        predict_log_disp_df <- data.frame(
+          count_var = apply(data, 2, var)
+        )
+        predict_log_disp_df <- as.data.frame(cbind(predict_log_disp_df, i_covariates))
+        # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
+        # of the M items on those I covariates
+        fit_log_disp <- lm(paste0("count_var ~", 
+                                  paste(colnames(i_covariates), collapse = "+" )),
+                           data = predict_log_disp_df)
+        init_betas_i <- log(fit_log_disp$coefficients[-1])
+      }
     }
     
     start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)

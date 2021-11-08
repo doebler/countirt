@@ -133,6 +133,10 @@ marg_ll_cmp_with_icov_alpha_cpp <- function(data, alpha, deltas, disps, betas, i
     .Call(`_countirt_marg_ll_cmp_with_icov_alpha_cpp`, data, alpha, deltas, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
+marg_ll_cmp_with_icov_nu_cpp <- function(data, alphas, deltas, disp, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu, max_nu, min_nu) {
+    .Call(`_countirt_marg_ll_cmp_with_icov_nu_cpp`, data, alphas, deltas, disp, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu, max_nu, min_nu)
+}
+
 marg_ll_cpp_lininterp <- function(data, alphas, deltas, disps, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long) {
     .Call(`_countirt_marg_ll_cpp_lininterp`, data, alphas, deltas, disps, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long)
 }
@@ -231,6 +235,10 @@ ell_cmp_with_icov_delta_cpp <- function(alphas, delta, disps, betas, data, i_cov
 
 ell_cmp_with_icov_alpha_cpp <- function(alpha, deltas, disps, betas, data, i_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_ell_cmp_with_icov_alpha_cpp`, alpha, deltas, disps, betas, data, i_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+ell_cmp_with_icov_nu_cpp <- function(alphas, deltas, disp, betas, data, i_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu, max_nu, min_nu) {
+    .Call(`_countirt_ell_cmp_with_icov_nu_cpp`, alphas, deltas, disp, betas, data, i_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu, max_nu, min_nu)
 }
 
 e_values_newem_cpp <- function(data, alphas, deltas, disps, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {

@@ -398,19 +398,25 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   return(grads)
 }
 
+# TODO covaraites auf log_disp implementieren
+
 # grad_cmp_with_cov_samealphas -----------------------------------------------------
 grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
                                          weights_and_nodes, data,
                                          p_covariates, i_covariates,
-                                         i_cov_on = c("alpha", "delta", "log_disp")) {
+                                         i_cov_on = c("delta", "log_disp")) {
   
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that for item covariates, deltas is a scalar
+  # note that for item covariates on delta, deltas is a scalar
   n_items <- ncol(data)
   alpha <- item_params[grepl("alpha", names(item_params))]
   alphas <- rep(alpha, n_items)
+  # note: we can't have covariates on alpha if we have the constraint same_alpha
+  # as we would have different values for the items on the different covariates,
+  # implying different alphas
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  # note that for item covariates on log disp, disps is a scalar
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -456,7 +462,27 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           max_mu = 200,
           min_mu = 0.001
         )
-      } # TODO hier noch den fall implementieren fuer i_cov_on == "log_nu"
+      } else if (i_cov_on == "log_disp") {
+        grads <- grad_cmp_with_icov_nu_samealphas_cpp(
+          alphas = alphas, 
+          deltas = deltas, 
+          disp = disps, 
+          betas = betas_i,
+          data = as.matrix(data),
+          i_cov_data = as.matrix(i_covariates),
+          PPs = PPs,
+          nodes = weights_and_nodes$x,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001,
+          max_nu = 50,
+          min_nu = 0.001
+        )
+      }
     } # TODO den fall implementieren, dass wir kovaraiten auf allen parametern haben
   }
   
@@ -474,10 +500,12 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
                              i_cov_on = c("alpha", "delta", "log_disp") ) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
+  # note that akphas is a scalar if we have covariates on alpha
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that deltas is a scalar if we have item covariates
+  # note that deltas is a scalar if we have item covariates on delta
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  # disps will be a scalar if we have covariates on log disps
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -538,8 +566,28 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
           grid_logZ_long = grid_logZ_long,
           max_mu = 200,
           min_mu = 0.001)
+      } else if (i_cov_on == "log_disp") {
+        ell <- ell_cmp_with_icov_nu_cpp(
+          alphas = alphas,
+          deltas = deltas,
+          disp = disps,
+          betas = betas_i,
+          data = as.matrix(data),
+          i_cov_data = as.matrix(i_covariates),
+          PPs = PPs,
+          weights = weights_and_nodes$w,
+          nodes = weights_and_nodes$x,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001,
+          max_nu = 50,
+          min_nu = 0.001)
       }
-    } # 
+    } # TODO implement case where we have item covariates on all paramatere
     
   }
   
@@ -723,13 +771,14 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that deltas will be a scalar if we have item covariates
+  # note that deltas will be a scalar if we have item covariates on delta
   if (is.null(fix_alphas)) {
     if (same_alphas) {
       alpha <- item_params[grepl("alpha", names(item_params))]
       alphas <- rep(alpha, n_items)
     } else {
       alphas <- item_params[grepl("alpha", names(item_params))]
+      # alphas will be a scalar if we have item covariates on alpha
     }
   } else {
      alphas <- fix_alphas
@@ -741,6 +790,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
     } else {
       log_disps <- item_params[grepl("log_disp", names(item_params))]
       disps <- exp(log_disps)
+      # disps will be a scalar if we have item covariates on log_disp
     }
   } else {
     disps <- fix_disps
@@ -796,7 +846,24 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                               grid_log_lambda_long = grid_log_lambda_long,
                                               max_mu = 150,
                                               min_mu = 0.001)
-      } # TODO den fall einfuegen fuer kovariaten auf nu
+      } else if (i_cov_on == "log_disp") {
+        ll <- marg_ll_cmp_with_icov_nu_cpp(data = as.matrix(data),
+                                              alphas = alphas,
+                                              deltas = deltas, 
+                                              disp = disps, 
+                                              betas = betas_i,
+                                              i_cov_data = as.matrix(i_covariates),
+                                              nodes = weights_and_nodes$x,
+                                              weights = weights_and_nodes$w,
+                                              grid_mus = grid_mus,  
+                                              grid_nus = grid_nus, 
+                                              grid_logZ_long = grid_logZ_long,
+                                              grid_log_lambda_long = grid_log_lambda_long,
+                                              max_mu = 150,
+                                              min_mu = 0.001,
+                                           max_nu = 50,
+                                           min_nu = 0.001)
+      }
     } # TODO den fall einfuegen dass wir auf allen item parametern kovaraiten haben
   }
     
@@ -908,8 +975,6 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
   return(out)
 
 }
-
-# TODO covaraites auf log_disp implementieren
 
 # get_start_values_cmp_with_cov ---------------------------------------------------------------------
 
@@ -1039,15 +1104,16 @@ get_start_values_cmp_with_cov <- function(data,
         init_logdisps <- mean(init_logdisps)
         # we need one log nu and then the covariate weights on nu
         predict_log_disp_df <- data.frame(
-          count_var = apply(data, 2, var)
+          count_var = log(apply(data, 2, var))
         )
         predict_log_disp_df <- as.data.frame(cbind(predict_log_disp_df, i_covariates))
         # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
         # of the M items on those I covariates
+        colnames(predict_log_disp_df)[-1] <- paste0("covar_", colnames(predict_log_disp_df)[-1])
         fit_log_disp <- lm(paste0("count_var ~", 
-                                  paste(colnames(i_covariates), collapse = "+" )),
+                                  paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
                            data = predict_log_disp_df)
-        init_betas_i <- log(fit_log_disp$coefficients[-1])
+        init_betas_i <- fit_log_disp$coefficients[-1]
       }
     }
     

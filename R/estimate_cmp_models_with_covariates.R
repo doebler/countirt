@@ -950,7 +950,8 @@ get_start_values_cmp_with_cov <- function(data,
         )
         fit_pois <- run_em_poisson(
           data = data,
-          init_params = init_values_pois
+          init_params = init_values_pois,
+          n_nodes = nodes
         )
       } else {
         init_values_pois <- get_start_values_poisson_with_cov(
@@ -1026,7 +1027,7 @@ get_start_values_cmp_with_cov <- function(data,
           mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
                      # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
         } else if (i_cov_on == "log_disp") {
-          mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+          mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
         } 
       } # TODO hier ein else einfuegen und den fall behandeln, dass ich auf allen
       # parametern kovariaten habe

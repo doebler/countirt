@@ -4480,6 +4480,7 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
   // trick / porblem: wir brauchen hier den nu gradienten und der hat ja A und B und ich sollte das nicht
   // dippelt berechnen, also entweder lege ich ne matrix dafuer an oder ich ziehe das hier in die loop oben
   // aber ich glaube matrix ist leichter
+  // dran denken: ich muss hier auch noch den output der funktion anpassen
   
   // gradients for item covariate weights
   for (int c=0; c<I; c++) {

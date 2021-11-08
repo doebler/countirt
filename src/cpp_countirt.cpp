@@ -2494,7 +2494,7 @@ NumericVector grad_cmp_with_icov_alpha_cpp(double alpha,
   int n_nodes = nodes.size();
   int I = betas.size();
   double grad_alpha;
-  NumericVector grad_deltas;
+  NumericVector grad_deltas(m);
   NumericVector grad_disps(m);
   NumericVector grad_betas(I);
   NumericVector out(2*m + 1 + I);

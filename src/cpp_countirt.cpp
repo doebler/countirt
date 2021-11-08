@@ -4874,7 +4874,7 @@ NumericMatrix estep_cmp_with_icov_delta_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas; // deltas is a scalar for item covariates
+      double log_mu = alphas[j] * nodes[k] + delta; // deltas is a scalar for item covariates
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         // (for the specific item j we are currently looking at)

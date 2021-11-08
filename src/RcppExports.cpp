@@ -1243,15 +1243,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// estep_cmp_with_icov_cpp
-NumericMatrix estep_cmp_with_icov_cpp(NumericMatrix data, NumericVector alphas, double deltas, NumericVector disps, NumericVector betas, NumericMatrix i_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
-RcppExport SEXP _countirt_estep_cmp_with_icov_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP betasSEXP, SEXP i_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+// estep_cmp_with_icov_delta_cpp
+NumericMatrix estep_cmp_with_icov_delta_cpp(NumericMatrix data, NumericVector alphas, double delta, NumericVector disps, NumericVector betas, NumericMatrix i_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_estep_cmp_with_icov_delta_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltaSEXP, SEXP dispsSEXP, SEXP betasSEXP, SEXP i_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type alphas(alphasSEXP);
-    Rcpp::traits::input_parameter< double >::type deltas(deltasSEXP);
+    Rcpp::traits::input_parameter< double >::type delta(deltaSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type disps(dispsSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type betas(betasSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type i_cov_data(i_cov_dataSEXP);
@@ -1263,7 +1263,31 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type grid_log_lambda_long(grid_log_lambda_longSEXP);
     Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
     Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
-    rcpp_result_gen = Rcpp::wrap(estep_cmp_with_icov_cpp(data, alphas, deltas, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
+    rcpp_result_gen = Rcpp::wrap(estep_cmp_with_icov_delta_cpp(data, alphas, delta, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// estep_cmp_with_icov_alpha_cpp
+NumericMatrix estep_cmp_with_icov_alpha_cpp(NumericMatrix data, double alpha, NumericVector deltas, NumericVector disps, NumericVector betas, NumericMatrix i_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_estep_cmp_with_icov_alpha_cpp(SEXP dataSEXP, SEXP alphaSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP betasSEXP, SEXP i_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type deltas(deltasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type disps(dispsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type i_cov_data(i_cov_dataSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_logZ_long(grid_logZ_longSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_log_lambda_long(grid_log_lambda_longSEXP);
+    Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
+    Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
+    rcpp_result_gen = Rcpp::wrap(estep_cmp_with_icov_alpha_cpp(data, alpha, deltas, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1353,7 +1377,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_countirt_ell_cmp_with_icov_alpha_cpp", (DL_FUNC) &_countirt_ell_cmp_with_icov_alpha_cpp, 16},
     {"_countirt_e_values_newem_cpp", (DL_FUNC) &_countirt_e_values_newem_cpp, 12},
     {"_countirt_e_values_newem_cpp2", (DL_FUNC) &_countirt_e_values_newem_cpp2, 12},
-    {"_countirt_estep_cmp_with_icov_cpp", (DL_FUNC) &_countirt_estep_cmp_with_icov_cpp, 14},
+    {"_countirt_estep_cmp_with_icov_delta_cpp", (DL_FUNC) &_countirt_estep_cmp_with_icov_delta_cpp, 14},
+    {"_countirt_estep_cmp_with_icov_alpha_cpp", (DL_FUNC) &_countirt_estep_cmp_with_icov_alpha_cpp, 14},
     {"_countirt_estep_cmp_with_pcov_cpp", (DL_FUNC) &_countirt_estep_cmp_with_pcov_cpp, 14},
     {NULL, NULL, 0}
 };

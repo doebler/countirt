@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-        "file_last_write": 1636132437.0,
+        "file_last_write": 1636133313.0,
         "definitions": [
             {
                 "usr": "c:@F@logFactorial#I#",
@@ -544,12 +544,21 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_cpp#I#I#d#I#I#I#I#I#I#I#I#I#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_delta_cpp#I#I#d#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "estep_cmp_with_icov_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
+                "name": "estep_cmp_with_icov_delta_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
                 "line": 4848,
+                "column": 15
+            },
+            {
+                "usr": "c:@F@estep_cmp_with_icov_alpha_cpp#I#d#I#I#I#I#I#I#I#I#I#I#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "estep_cmp_with_icov_alpha_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
+                "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
+                "line": 4934,
                 "column": 15
             },
             {
@@ -558,7 +567,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_pcov_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 4934,
+                "line": 5020,
                 "column": 15
             }
         ]

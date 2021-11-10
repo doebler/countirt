@@ -463,6 +463,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           min_mu = 0.001
         )
       } else if (i_cov_on == "log_disp") {
+        # TODO hier weiter machen diesen gradienten in c++ fertig zu implementieren
         grads <- grad_cmp_with_icov_nu_samealphas_cpp(
           alphas = alphas, 
           deltas = deltas, 

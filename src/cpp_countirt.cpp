@@ -4451,6 +4451,8 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
   
   grad_alpha = 0;
   grad_disp = 0;
+  NumericMatrix A(n_nodes, m);
+  NumericMatrix B(n_nodes, m);
   // gradients for item parameters
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
@@ -4462,8 +4464,8 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
       
       // compute A and B for dispersion gradient
       double lambda = exp(log_lambda(k,i));
-      double A = computeA(lambda, mu_interp(k,i), disp_interp(k,i), log_Z(k,i), 10);
-      double B = computeB(lambda, mu_interp(k,i),disp_interp(k,i), log_Z(k,i), 10);
+      double A(k,i) = computeA(lambda, mu_interp(k,i), disp_interp(k,i), log_Z(k,i), 10);
+      double B(k,i) = computeB(lambda, mu_interp(k,i),disp_interp(k,i), log_Z(k,i), 10);
       
       for(int j=0;j<n;j++) {
         // loop over persons
@@ -4471,16 +4473,11 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
         // compute the gradients (summing over persons)
         grad_alpha += PPs(j,k) * (nodes[k]*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        grad_disp += PPs(j,k) * (disp_interp(k,i)*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+        grad_disp += PPs(j,k) * (disp_interp(k,i)*(A(k,i)*
+          (data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B(k,i))));
       }
     }
   }
-  
-  // TODO hier weiter machen und die gradienten funktion zu ende anpassen (in c++)
-  // trick / porblem: wir brauchen hier den nu gradienten und der hat ja A und B und ich sollte das nicht
-  // dippelt berechnen, also entweder lege ich ne matrix dafuer an oder ich ziehe das hier in die loop oben
-  // aber ich glaube matrix ist leichter
-  // dran denken: ich muss hier auch noch den output der funktion anpassen
   
   // gradients for item covariate weights
   for (int c=0; c<I; c++) {
@@ -4492,8 +4489,8 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
+          grad_betas[c] += PPs(j,k) * (i_cov_data(j,c)*disp_interp(k,j)*(A(k,j)*
+            (data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j))));
         } // end loop over m (items)
       } // end loop of n_nodes
     } // end loop over P (person covariates)
@@ -4501,10 +4498,10 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
   
   // fill up output vector
   out[0] = grad_alpha;
-  out[1] = grad_delta;
   for(int i=0;i<m;i++){
-    out[i + 2] = grad_disps[i];
+    out[i + 1] = grad_deltas[i];
   }
+  out[m + 1] = grad_disp;
   for(int c=0; c<I; c++) {
     out[2 + m + c] = grad_betas[c];
   }

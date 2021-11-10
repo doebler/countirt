@@ -77,16 +77,20 @@ estep_cmp_with_cov <- function(data, item_params,
   return(PPs)
 }
 
+# TODO covaraites auf log_disp implementieren
+
 # grad_cmp_with_cov ----------------------------------------------------------------------
 grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, 
                               p_covariates, i_covariates,
                               i_cov_on = c("alpha", "delta", "log_disp")) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
+  # alphas is a scalar if we have item covariates on alpha
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that for item covariates, deltas is just a scalar
+  # note that for item covariates on delta, deltas is just a scalar
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  # disps is a scalar if we have item covariates on nu
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -144,6 +148,25 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           grid_logZ_long = grid_logZ_long,
           max_mu = 200,
           min_mu = 0.001)
+      } else if (i_cov_on == "log_disp") {
+        grads <- grad_cmp_with_icov_nu_cpp(
+          alphas = alphas,
+          deltas = deltas,
+          disp = disps,
+          betas = betas_i,
+          data = as.matrix(data),
+          i_cov_data = as.matrix(i_covariates),
+          PPs = PPs,
+          nodes = weights_and_nodes$x,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001,
+          max_nu = 50,
+          min_nu = 0.001)
       }
     } # TODO implement case where we have covariates on all parameters
     
@@ -161,11 +184,12 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
 grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes, 
                                        data, fix_disps,
                                        p_covariates, i_covariates,
-                                       i_cov_on = c("alpha", "delta", "log_disp")) {
+                                       i_cov_on = c("alpha", "delta")) {
 
   alphas <- item_params[grepl("alpha", names(item_params))]
+  # note that alphas is a scalar if we have item covariates on alpha
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that deltas is a scalar if we have item covariates
+  # note that deltas is a scalar if we have item covariates on delta
   disps <- fix_disps
   n_items <- ncol(data)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -246,13 +270,14 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
 grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
                                         data, fix_alphas,
                                         p_covariates, i_covariates,
-                                        i_cov_on = c("alpha", "delta", "log_disp")) {
+                                        i_cov_on = c("delta", "log_disp")) {
   
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that deltas is a scalar if we have item covariates
+  # note that deltas is a scalar if we have item covariates on delta
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  # note that disps is a scalar if we have item covariates on nu
   n_items <- ncol(data)
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
@@ -298,7 +323,27 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
           max_mu = 200,
           min_mu = 0.001
         )
-      } # TODO implement case where we have covariate on log nu
+      } else if (i_cov_on == "log_disp") {
+        grads <- grad_cmp_with_icov_nu_fixalphas_cpp(
+          alphas = alphas, 
+          deltas = deltas, 
+          disp = disps, 
+          betas = betas_i,
+          data = as.matrix(data),
+          i_cov_data = as.matrix(i_covariates),
+          PPs = PPs,
+          nodes = weights_and_nodes$x,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001,
+          max_nu = 50,
+          min_nu = 0.001
+        )
+      }
     } # TODO implement case where we have covaraites on all item parameters
   }
   
@@ -317,8 +362,9 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
                                         i_cov_on = c("alpha", "delta", "log_disp")) {
   
   alphas <- item_params[grepl("alpha", names(item_params))]
+  # note that alphas is a scalar for item covariates on alpha
   deltas <- item_params[grepl("delta", names(item_params))]
-  # note that deltas is a scalar for item covariates
+  # note that deltas is a scalar for item covariates on delta
   n_items <- ncol(data)
   log_disp <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(rep(log_disp, n_items))
@@ -398,8 +444,6 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   return(grads)
 }
 
-# TODO covaraites auf log_disp implementieren
-
 # grad_cmp_with_cov_samealphas -----------------------------------------------------
 grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
                                          weights_and_nodes, data,
@@ -463,7 +507,6 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           min_mu = 0.001
         )
       } else if (i_cov_on == "log_disp") {
-        # TODO hier weiter machen diesen gradienten in c++ fertig zu implementieren
         grads <- grad_cmp_with_icov_nu_samealphas_cpp(
           alphas = alphas, 
           deltas = deltas, 

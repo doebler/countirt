@@ -2793,8 +2793,8 @@ NumericVector grad_cmp_with_icov_nu_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas[c] += PPs(j,k) * (i_cov_data(j,c)*disp_interp(k,j)*
-            (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j))));
+          grad_betas[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+            (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
     } // end loop over P (person covariates)
@@ -3748,8 +3748,8 @@ NumericVector grad_cmp_with_icov_nu_fixalphas_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas[c] += PPs(j,k) * (i_cov_data(j,c)*disp_interp(k,j)*(A(k,j)*
-            (data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j))));
+          grad_betas[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+            (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
     } // end loop over P (person covariates)
@@ -4761,8 +4761,8 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas[c] += PPs(j,k) * (i_cov_data(j,c)*disp_interp(k,j)*(A(k,j)*
-            (data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j))));
+          grad_betas[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+            (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
     } // end loop over P (person covariates)
@@ -5574,6 +5574,96 @@ NumericMatrix estep_cmp_with_icov_alpha_cpp(NumericMatrix data,
         // also additionally person specific
         log_resp_vector_prob(k) += data(i,j)*log_lambda(k,j) -
           log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k) + log(weights[k]));
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = (exp(log_resp_vector_prob(k) + log(weights[k]))) / marg_prob(i);
+    }
+  }
+  return(PPs);
+}
+
+// [[Rcpp::export]]
+NumericMatrix estep_cmp_with_icov_nu_cpp(NumericMatrix data,
+                                            NumericVector alphas,
+                                            NumericVector deltas,
+                                            double disp,
+                                            NumericVector betas,
+                                            NumericMatrix i_cov_data,
+                                            NumericVector nodes,
+                                            NumericVector weights,
+                                            NumericVector grid_mus,
+                                            NumericVector grid_nus,
+                                            NumericVector grid_logZ_long,
+                                            NumericVector grid_log_lambda_long,
+                                            double max_mu,
+                                            double min_mu,
+                                            double max_nu,
+                                            double min_nu) {
+  
+  int m = data.ncol();
+  int n_nodes = nodes.size();
+  int N = data.nrow();
+  int I = betas.size();
+  
+  // for item covariates we don't need person specificness (as we do for the person covariates)
+  // so our mu_interp and disp_interp can just be of the dimension KxM
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over nodes (rows)
+      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      double log_disp = log(disp);
+      for(int c=0; c<I; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_disp += betas[c] * i_cov_data(j,c); // for item j
+      }
+      disp_interp(k,j) = exp(log_disp);
+      if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
+      if (disp_interp(k,j) < min_nu) { disp_interp(k,j) = min_nu; }
+    }
+  }  // end loop over items
+  
+  NumericMatrix log_Z(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes and
+  // as many columns as we have 
+  
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // compute the marginal probability for each person 
+    // (which we need for the denominator of the posterior probabilities)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes); // created anew for each person i
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        // when we access nodes here note that we need to access the nodes for person i
+        // here because our lambda and Z values are not only node and item specific but
+        // also additionally person specific
+        log_resp_vector_prob(k) += data(i,j)*log_lambda(k,j) -
+          log_Z(k,j) - disp_interp(k,j)*lgamma(data(i,j)+1);
       }
       marg_prob(i) += exp(log_resp_vector_prob(k) + log(weights[k]));
     }

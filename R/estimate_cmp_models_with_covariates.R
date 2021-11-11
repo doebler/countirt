@@ -9,10 +9,12 @@ estep_cmp_with_cov <- function(data, item_params,
   
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
+  # alphas is a scalar if we have covariates on alpha
   deltas <- item_params[grepl("delta", names(item_params))]
-  # in case of item covariates, deltas will be ust a scalar
+  # in case of item covariates on delta, deltas will be ust a scalar
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
+  # in case of item covariates on nu, disps will be a scalar
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -70,14 +72,31 @@ estep_cmp_with_cov <- function(data, item_params,
           max_mu = 200,
           min_mu = 0.001
         )
-      } # TODO implement case where we have item covariates on log nu
+      } else if (i_cov_on == "log_disp") {
+        PPs <- estep_cmp_with_icov_nu_cpp(
+          data = as.matrix(data),
+          alphas = alphas,
+          deltas = deltas,
+          disp = disps,
+          betas = betas_i,
+          i_cov_data = as.matrix(i_covariates),
+          nodes = weights_and_nodes$x,
+          weights = weights_and_nodes$w,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_logZ_long = grid_logZ_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          max_mu = 200,
+          min_mu = 0.001,
+          max_nu = 50,
+          min_nu = 0.001
+        )
+      }
     } # TODO implement case where we have covariates on all item parameters
   }
   
   return(PPs)
 }
-
-# TODO covaraites auf log_disp implementieren
 
 # grad_cmp_with_cov ----------------------------------------------------------------------
 grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, 
@@ -1033,22 +1052,37 @@ get_start_values_cmp_with_cov <- function(data,
   if (same_alpha) {
     # just one alpha for all items
     # note that we can't have same alpha together with item covariates on alpha
-    init_values_pois <- get_start_values_poisson_with_cov(
-      data = data,
-      p_covariates = p_covariates,
-      i_covariates = i_covariates,
-      same_alpha = TRUE,
-      i_cov_on = "delta"
-      )
-    fit_pois <- run_em_poisson_with_cov(
-      data = data,
-      p_covariates = p_covariates,
-      i_covariates = i_covariates,
-      init_params = init_values_pois, 
-      n_nodes = nodes, 
-      same_alpha = TRUE,
-      i_cov_on = "delta"
-      )
+    if (length(i_cov_on) == 1) {
+      if (i_cov_on == "log_disp") {
+        init_values_pois <- get_start_values_pois(
+          data = data,
+          same_alpha = TRUE
+        )
+        fit_pois <- run_em_poisson(
+          data = data,
+          init_params = init_values_pois,
+          n_nodes = nodes,
+          same_alpha = TRUE
+        )
+      } else {
+        init_values_pois <- get_start_values_poisson_with_cov(
+          data = data,
+          p_covariates = p_covariates,
+          i_covariates = i_covariates,
+          same_alpha = TRUE,
+          i_cov_on = "delta"
+        )
+        fit_pois <- run_em_poisson_with_cov(
+          data = data,
+          p_covariates = p_covariates,
+          i_covariates = i_covariates,
+          init_params = init_values_pois, 
+          n_nodes = nodes,
+          same_alpha = TRUE,
+          i_cov_on = "delta"
+        )
+      }
+    } # TODO handle case where we want item covariates on all parameters
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
@@ -1136,7 +1170,11 @@ get_start_values_cmp_with_cov <- function(data,
           mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
                      # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
         } else if (i_cov_on == "log_disp") {
-          mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+          if (same_alpha) {
+            mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+          } else {
+            mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+          }
         } 
       } # TODO hier ein else einfuegen und den fall behandeln, dass ich auf allen
       # parametern kovariaten habe

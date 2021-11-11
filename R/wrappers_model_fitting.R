@@ -46,6 +46,10 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # TODO incorporate check that we only have item or person parameters as
   # we can only do one or the other atm
   
+  # TODO check for i_cov_on %in% c("alpha", "delta", "log_nu")
+  # also dass wir keinen unsinn haben als angegebenes element
+  # und auch entspr. fuer poisson
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

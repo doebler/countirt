@@ -1,4 +1,7 @@
 
+# TODO hier weitermachen und den fall mit kovariaten auf allen 3 parametern
+# fuer cmp implementieren
+
 # estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, 
                                p_covariates, i_covariates,
@@ -8,11 +11,14 @@ estep_cmp_with_cov <- function(data, item_params,
   # i_covariates is a matrix with the item covariates
   
   # prep item parameters
-  alphas <- item_params[grepl("alpha", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # alphas is a scalar if we have covariates on alpha
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # in case of item covariates on delta, deltas will be ust a scalar
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
+  log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                             !grepl("beta", names(item_params))]
   disps <- exp(log_disps)
   # in case of item covariates on nu, disps will be a scalar
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -92,7 +98,32 @@ estep_cmp_with_cov <- function(data, item_params,
           min_nu = 0.001
         )
       }
-    } # TODO implement case where we have covariates on all item parameters
+    } else if (length(i_cov_on) == 3) {
+      betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      PPs <- estep_cmp_with_icov_all_cpp(
+        data = as.matrix(data),
+        alpha = alphas,
+        delta = deltas,
+        disp = disps,
+        betas_alpha = betas_i_alpha,
+        betas_delta = betas_i_delta,
+        betas_logdisp = betas_i_logdisp,
+        i_cov_data = as.matrix(i_covariates),
+        nodes = weights_and_nodes$x,
+        weights = weights_and_nodes$w,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_logZ_long = grid_logZ_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        max_mu = 200,
+        min_mu = 0.001,
+        max_nu = 50,
+        min_nu = 0.001
+      )
+    } # TODO think about implementing covariates on two parameters at a time
   }
   
   return(PPs)
@@ -103,11 +134,14 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
                               p_covariates, i_covariates,
                               i_cov_on = c("alpha", "delta", "log_disp")) {
   # prep item parameters
-  alphas <- item_params[grepl("alpha", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # alphas is a scalar if we have item covariates on alpha
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # note that for item covariates on delta, deltas is just a scalar
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
+  log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                             !grepl("beta", names(item_params))]
   disps <- exp(log_disps)
   # disps is a scalar if we have item covariates on nu
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -132,7 +166,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       min_mu = 0.001)
   } else if (!is.null(i_covariates)) { 
     # distinguish between on which item parameter we have covariates
-    if (length(i_cov_on)) {
+    if (length(i_cov_on) == 1) {
       if (i_cov_on == "delta") {
         grads <- grad_cmp_with_icov_delta_cpp(
           alphas = alphas,
@@ -187,8 +221,33 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           max_nu = 50,
           min_nu = 0.001)
       }
-    } # TODO implement case where we have covariates on all parameters
-    
+    } else if (length(i_cov_on) == 3) {
+      betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      grads <- grad_cmp_with_icov_all_cpp(
+        alpha = alphas,
+        delta = deltas,
+        disp = disps,
+        betas_alpha = betas_i_alpha,
+        betas_delta = betas_i_delta,
+        betas_logdisp = betas_i_logdisp,
+        data = as.matrix(data),
+        i_cov_data = as.matrix(i_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001,
+        max_nu = 50,
+        min_nu = 0.001)
+    }
+    # TODO think about cases where we have covariates on two item params at a time
   }
   
   if (any(is.na(grads))) {
@@ -274,7 +333,11 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
       } 
       # note: we can't include item covariates on log nu if we fix dispersions
       # to a specific value
-    } # TODO implement the case where we have item covariates on all parameters
+    } # TODO think about implementing cases with covariates on two item params at a time
+    # note that we can't have item covariates on all item parameters if we have the
+    # constraint of fixed disps as predicting all parameters, i.e., including log_disp,
+    # through item covariates implies different disps for items with different
+    # values on the item covariates
   }
   
   if (any(is.na(grads))) {
@@ -363,7 +426,11 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
           min_nu = 0.001
         )
       }
-    } # TODO implement case where we have covaraites on all item parameters
+    } # TODO think about implementing covariates on two item parameters at a time
+    # note that we can't have item covariates on all item parameters if we have the
+    # constraint of same alphas as predicting all parameters, i.e., including alpha,
+    # through item covariates implies different alphas for items with different
+    # values on the item covariates
   }
   
   if (any(is.na(grads))) {
@@ -451,7 +518,11 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
       # note: we can't have covariates on log_nu if we have the constraint of
       # same disps as covaraites would have different values for the different
       # items and would then imply different disps
-    } # TODO implement case where we have covariates on all item parameters
+    } # TODO think about implementing cases with covariates on two item parameters at a time
+    # note that we can't have item covariates on all item parameters if we have the
+    # constraint of same disps as predicting all parameters, i.e., including log_disp,
+    # through item covariates implies different disps for items with different
+    # values on the item covariates
   }
   
   if (any(is.na(grads))) {
@@ -546,7 +617,11 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           min_nu = 0.001
         )
       }
-    } # TODO den fall implementieren, dass wir kovaraiten auf allen parametern haben
+    } # TODO think about case with covariates on two item parameters at a time
+    # note that we can't have item covariates on all item parameters if we have the
+    # constraint of same alphas as predicting all parameters, i.e., including alpha,
+    # through item covariates implies different alphas for items with different
+    # values on the item covariates
   }
   
   if (any(is.na(grads))) {
@@ -561,12 +636,17 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates,
                              i_cov_on = c("alpha", "delta", "log_disp") ) {
+  # ell without any restrictions
+  
   # prep item parameters
-  alphas <- item_params[grepl("alpha", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
   # note that akphas is a scalar if we have covariates on alpha
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # note that deltas is a scalar if we have item covariates on delta
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
+  log_disps <- item_params[grepl("log_disp", names(item_params)) 
+                           & !grepl("beta", names(item_params))]
   disps <- exp(log_disps)
   # disps will be a scalar if we have covariates on log disps
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -650,8 +730,34 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
           max_nu = 50,
           min_nu = 0.001)
       }
-    } # TODO implement case where we have item covariates on all paramatere
-    
+    } else if (length(i_cov_on) == 3) {
+      betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      ell <- ell_cmp_with_icov_all_cpp(
+        alpha = alphas,
+        delta = deltas,
+        disp = disps,
+        betas_alpha = betas_i_alpha,
+        betas_delta = betas_i_delta,
+        betas_logdisp = betas_i_logdisp,
+        data = as.matrix(data),
+        i_cov_data = as.matrix(i_covariates),
+        PPs = PPs,
+        weights = weights_and_nodes$w,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001,
+        max_nu = 50,
+        min_nu = 0.001)
+    }
+    # TODO think about implementing the covariates on two item parameters at a time
   }
   
   return(ell)
@@ -689,6 +795,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!same_disps & same_alphas) { 
+      # if we have same alphas, we can't have ite covariates on all three parameters
+      # TODO if i implement covariates on two, this needs to be adjusted because
+      # then the parameter names for the betas will include the item parameters' names
+      
       # prep for e step
       alpha <- item_params[grepl("alpha", names(item_params))]
       deltas <- item_params[grepl("delta", names(item_params))]
@@ -727,6 +837,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_disps & !same_alphas) {
+      # if we have same disps, we can't have ite covariates on all three parameters
+      # TODO if i implement covariates on two, this needs to be adjusted because
+      # then the parameter names for the betas will include the item parameters' names
+      
       # prep the parameters for the e-step
       alphas <- item_params[grepl("alpha", names(item_params))]
       deltas <- item_params[grepl("delta", names(item_params))]
@@ -767,6 +881,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
     }
   } else {
     if (!is.null(fix_disps)) {
+      # if we have fixed disps, we can't have ite covariates on all three parameters
+      # TODO if i implement covariates on two, this needs to be adjusted because
+      # then the parameter names for the betas will include the item parameters' names
+      
       # prep for e step
       item_params_fixdisps <- c(item_params, log(fix_disps))
       names(item_params_fixdisps ) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
@@ -793,6 +911,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!is.null(fix_alphas)) {
+      # if we have fixed alphas, we can't have ite covariates on all three parameters
+      # TODO if i implement covariates on two, this needs to be adjusted because
+      # then the parameter names for the betas will include the item parameters' names
+      
       # prep for e step
       item_params_fixalphas <- c(fix_alphas, item_params)
       names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), names(item_params))
@@ -833,14 +955,16 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                  same_disps = FALSE, same_alphas = FALSE) {
   n_items <- ncol(data)
   n_persons <- nrow(data)
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
   # note that deltas will be a scalar if we have item covariates on delta
   if (is.null(fix_alphas)) {
     if (same_alphas) {
       alpha <- item_params[grepl("alpha", names(item_params))]
       alphas <- rep(alpha, n_items)
     } else {
-      alphas <- item_params[grepl("alpha", names(item_params))]
+      alphas <- item_params[grepl("alpha", names(item_params)) &
+                              !grepl("beta", names(item_params))]
       # alphas will be a scalar if we have item covariates on alpha
     }
   } else {
@@ -851,7 +975,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       log_disp <- item_params[grepl("log_disp", names(item_params))]
       disps <- rep(exp(log_disp), n_items)
     } else {
-      log_disps <- item_params[grepl("log_disp", names(item_params))]
+      log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                                 !grepl("beta", names(item_params))]
       disps <- exp(log_disps)
       # disps will be a scalar if we have item covariates on log_disp
     }
@@ -927,7 +1052,30 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                            max_nu = 50,
                                            min_nu = 0.001)
       }
-    } # TODO den fall einfuegen dass wir auf allen item parametern kovaraiten haben
+    } else if (length(i_cov_on) == 3) {
+      betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      betas_i_log_disp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      ll <- marg_ll_cmp_with_icov_all_cpp(data = as.matrix(data),
+                                         alpha = alphas,
+                                         delta = deltas, 
+                                         disp = disps, 
+                                         betas_alpha = betas_i_alpha,
+                                         betas_delta = betas_i_delta,
+                                         betas_logdisp = betas_i_log_disp,
+                                         i_cov_data = as.matrix(i_covariates),
+                                         nodes = weights_and_nodes$x,
+                                         weights = weights_and_nodes$w,
+                                         grid_mus = grid_mus,  
+                                         grid_nus = grid_nus, 
+                                         grid_logZ_long = grid_logZ_long,
+                                         grid_log_lambda_long = grid_log_lambda_long,
+                                         max_mu = 150,
+                                         min_mu = 0.001,
+                                         max_nu = 50,
+                                         min_nu = 0.001)
+    } # TODO think about implementing cases with covariates on two item parameters
   }
     
   return(ll)
@@ -1082,10 +1230,14 @@ get_start_values_cmp_with_cov <- function(data,
           i_cov_on = "delta"
         )
       }
-    } # TODO handle case where we want item covariates on all parameters
+    } 
+    # if I have the constrained of same alpha, i can't have covariates on all three
+    # item parameters but only on two: log_disp and delta
+    # TODO think about implementing that case
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
+    # no constraint on alpha
     if (length(i_cov_on) == 1) {
       if (i_cov_on == "log_disp") {
         init_values_pois <- get_start_values_pois(
@@ -1112,10 +1264,27 @@ get_start_values_cmp_with_cov <- function(data,
           i_cov_on = i_cov_on
         )
       }
-    } # TODO handle case where we want item covariates on all parameters
+    } else if (length(i_cov_on) == 3) {
+      init_values_pois <- get_start_values_poisson_with_cov(
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = c("alpha", "delta")
+      )
+      fit_pois <- run_em_poisson_with_cov(
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        init_params = init_values_pois, 
+        n_nodes = nodes,
+        i_cov_on =  c("alpha", "delta")
+      )
+    } # TODO think about implementing all the two parameter combinations
     # different alpha for each item
-    init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
-    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
+    init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params)) &
+                                     !grepl("beta", names(fit_pois$params))]
+    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params)) &
+                                     !grepl("beta", names(fit_pois$params))]
   }
   
   if (!is.null(p_covariates)) {
@@ -1148,13 +1317,11 @@ get_start_values_cmp_with_cov <- function(data,
     # we have a model with item covariates
     init_logdisps<-c()
     sim_abilities=rnorm(nsim)
-    for (i in 1:ncol(data)) {
-      # TODO here, I can reduce case distinctions as I pretty much do the same in all the cases
-      # anyways
-      # distinguish between on which parameters we have item covariates
-      if (length(i_cov_on) == 1) {
-        if (i_cov_on == "delta") {
-          init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
+    # distinguish between on which parameters we have item covariates
+    if (length(i_cov_on) == 1) {
+      if (i_cov_on == "delta") {
+        init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
+        for (i in 1:ncol(data)) {
           if (same_alpha) {
             mu <- exp(init_deltas + init_alphas*sim_abilities)
                         # + sum(t(init_betas_i * t(i_covariates))))
@@ -1162,27 +1329,44 @@ get_start_values_cmp_with_cov <- function(data,
             mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
                         # + sum(t(init_betas_i * t(i_covariates))))
           }
-        } else if (i_cov_on == "alpha") {
-          init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
-          # we can't have the constraint of same alphas if we have covaraites on
-          # alpha because the covariates have different values for the different
-          # items implying different alphas
+          sim <- rpois(nsim, mu)
+          init_logdisps[i] <- log((var(sim) / var(data[,i])))
+        }
+        start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
+        names(start_values) <- c(
+          paste0("alpha", 1:length(init_alphas)),
+          paste0("delta", 1:length(init_deltas)),
+          paste0("log_disp", 1:length(init_logdisps)),
+          paste0("beta_i", 1:length(init_betas_i))
+        )
+      } else if (i_cov_on == "alpha") {
+        init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
+        # we can't have the constraint of same alphas if we have covaraites on
+        # alpha because the covariates have different values for the different
+        # items implying different alphas
+        for (i in 1:ncol(data)) {
           mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
                      # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
-        } else if (i_cov_on == "log_disp") {
+          sim <- rpois(nsim, mu)
+          init_logdisps[i] <- log((var(sim) / var(data[,i])))
+        }
+        start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
+        names(start_values) <- c(
+          paste0("alpha", 1:length(init_alphas)),
+          paste0("delta", 1:length(init_deltas)),
+          paste0("log_disp", 1:length(init_logdisps)),
+          paste0("beta_i", 1:length(init_betas_i))
+        )
+      } else if (i_cov_on == "log_disp") {
+        for (i in 1:ncol(data)) {
           if (same_alpha) {
             mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
           } else {
             mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
           }
-        } 
-      } # TODO hier ein else einfuegen und den fall behandeln, dass ich auf allen
-      # parametern kovariaten habe
-      sim <- rpois(nsim, mu)
-      init_logdisps[i] <- log((var(sim) / var(data[,i])))
-    }
-    if (length(i_cov_on) == 1) {
-      if (i_cov_on == "log_disp") {
+          sim <- rpois(nsim, mu)
+          init_logdisps[i] <- log((var(sim) / var(data[,i])))
+        }
         init_logdisps <- mean(init_logdisps)
         # we need one log nu and then the covariate weights on nu
         predict_log_disp_df <- data.frame(
@@ -1193,20 +1377,55 @@ get_start_values_cmp_with_cov <- function(data,
         # of the M items on those I covariates
         colnames(predict_log_disp_df)[-1] <- paste0("covar_", colnames(predict_log_disp_df)[-1])
         fit_log_disp <- lm(paste0("count_var ~", 
-                                  paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
-                           data = predict_log_disp_df)
+                                    paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
+                             data = predict_log_disp_df)
         init_betas_i <- fit_log_disp$coefficients[-1]
+        start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
+        names(start_values) <- c(
+          paste0("alpha", 1:length(init_alphas)),
+          paste0("delta", 1:length(init_deltas)),
+          paste0("log_disp", 1:length(init_logdisps)),
+          paste0("beta_i", 1:length(init_betas_i))
+        )
+      } 
+    } else if (length(i_cov_on) == 3) {
+      init_betas_i_delta <- fit_pois$params[grepl("beta_i_delta", names(fit_pois$params))]
+      init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
+      
+      for (i in 1:ncol(data)) {
+        # if we have covariates on all three item parameters, then we can't have any 
+        # constraints but as a consequence of having covariates on all item parameters,
+        # we have only scalars for init_alphas, init_deltas, and init_logdisps
+        mu <- exp(init_deltas + init_alphas*sim_abilities)
+        sim <- rpois(nsim, mu)
+        init_logdisps[i] <- log((var(sim) / var(data[,i])))
       }
+      
+      init_logdisps <- mean(init_logdisps)
+      # we need one log nu and then the covariate weights on nu
+      predict_log_disp_df <- data.frame(
+        count_var = log(apply(data, 2, var))
+      )
+      predict_log_disp_df <- as.data.frame(cbind(predict_log_disp_df, i_covariates))
+      # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
+      # of the M items on those I covariates
+      colnames(predict_log_disp_df)[-1] <- paste0("covar_", colnames(predict_log_disp_df)[-1])
+      fit_log_disp <- lm(paste0("count_var ~", 
+                                paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
+                         data = predict_log_disp_df)
+      init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
+      
+      start_values <- c(init_alphas, init_deltas, init_logdisps, 
+                        init_betas_i_alpha, init_betas_i_delta, init_betas_i_logdisp)
+      names(start_values) <- c(
+        paste0("alpha", 1:length(init_alphas)),
+        paste0("delta", 1:length(init_deltas)),
+        paste0("log_disp", 1:length(init_logdisps)),
+        paste0("beta_i_alpha", 1:length(init_betas_i_alpha)),
+        paste0("beta_i_delta", 1:length(init_betas_i_delta)),
+        paste0("beta_i_log_disp", 1:length(init_betas_i_logdisp))
+      )
     }
-    
-    start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
-    names(start_values) <- c(
-      paste0("alpha", 1:length(init_alphas)),
-      paste0("delta", 1:length(init_deltas)),
-      paste0("log_disp", 1:length(init_logdisps)),
-      paste0("beta_i", 1:length(init_betas_i))
-    )
-    
   }
   
   return(start_values)

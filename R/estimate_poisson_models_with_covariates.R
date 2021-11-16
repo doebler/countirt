@@ -7,8 +7,10 @@ estep_poisson_with_cov <- function(data, item_params,
                                    i_cov_on = c("alpha", "delta")) {
   
   data <- as.matrix(data)
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -102,14 +104,16 @@ estep_poisson_with_cov <- function(data, item_params,
   return(PPs)
 }
 
-# grad_poisson -----------------------------------------------------------------------
+# grad_poisson_with_cov -----------------------------------------------------------------------
 
 grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
                                   p_covariates, i_covariates,
                                   i_cov_on = c("alpha", "delta")) {
   data <- as.matrix(data)
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -200,6 +204,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       }
     } else {
       # the alternative is just that we have item parameters on all parameters
+      I <- length(betas_i)/2
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       grad_alpha <- 0
@@ -224,9 +229,9 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
                             nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates[j,])) +
                             sum(as.numeric(betas_i_delta*i_covariates[j,])))
             # alphas and deltas are covariates when we have covariates on both covariates
-            grad_betas_i_alpha[c] <- grad_betas_i[c] + 
+            grad_betas_i_alpha[c] <- grad_betas_i_alpha[c] + 
               sum(i_covariates[j,c]*nodes[k]*(data[,j] - lambda)*PPs[,k])
-            grad_betas_i_delta[c] <- grad_betas_i[c] +
+            grad_betas_i_delta[c] <- grad_betas_i_delta[c] +
               sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
           }
         }
@@ -398,8 +403,8 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
                                  data, p_covariates, i_covariates,
                                  i_cov_on = c("alpha", "delta")) {
   # prep item parameters
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) & !grepl("beta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) & !grepl("beta", names(item_params))]
   betas_p <- item_params[grepl("beta_p", names(item_params))]
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
@@ -585,7 +590,8 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
                                      fix_alphas = NULL, same_alphas = FALSE) {
   n_items <- ncol(data)
   n_persons <- nrow(data)
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # note that deltas will be a scalar if we have item parameters on delta,
   # otherwise a vector
   if (is.null(fix_alphas)) {
@@ -596,7 +602,8 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       alphas <- rep(alpha, n_items) 
     } else {
       # we have an alpha for each item
-      alphas <- item_params[grepl("alpha", names(item_params))]
+      alphas <- item_params[grepl("alpha", names(item_params)) &
+                              !grepl("beta", names(item_params))]
       # note that alphas will be a scalar if we have item parameters on alpha,
       # otherwise a vector
     }
@@ -899,7 +906,7 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
       # covariates would imply that they are different for items with different
       # covaraite values)
       
-      init_deltas <- log(apply(data, 2, mean))
+      init_deltas <- mean(log(apply(data, 2, mean)))
       
       # for covaruates on alpha, we just have one alpha
       init_alphas <- c()

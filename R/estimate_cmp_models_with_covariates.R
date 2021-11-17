@@ -632,6 +632,8 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   return(grads)
 }
 
+# TODO hier weiter machen und zweier kombis implementieren
+
 # ell_cmp_with_cov -------------------------------------------------------------------
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates,
@@ -921,15 +923,43 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
     }
   } else {
     if (!is.null(fix_disps)) {
-      # TODO hier weiter machen (s. oben)
-      
-      # if we have fixed disps, we can't have ite covariates on all three parameters
-      # TODO if i implement covariates on two, this needs to be adjusted because
-      # then the parameter names for the betas will include the item parameters' names
       
       # prep for e step
-      item_params_fixdisps <- c(item_params, log(fix_disps))
-      names(item_params_fixdisps ) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
+      alphas <- item_params[grepl("alpha", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      deltas <- item_params[grepl("delta", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      n_items <- ncol(data)
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      
+      # if we have the constraint of fixed alphas, we can either have person covariates,
+      # or item covariates on alpha or delta (then we just have betas_i) or we have
+      # item covariates on alpha and delta together
+      if (length(i_cov_on) == 2) {
+        betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        item_params_samedisp <- c(alphas, deltas, log(fix_disps), 
+                                  betas_i_alpha, betas_i_delta)
+        names(item_params_samedisp) <- c(
+          names(item_params[grepl("alpha", names(item_params))]),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items),
+          names(item_params[grepl("beta_i_alpha", names(item_params))]),
+          names(item_params[grepl("beta_i_delta", names(item_params))])
+        )
+      } else {
+        # either we have person covariates or just item covariates on one parameter, so just beta_i
+        item_params_samedisp <- c(alphas, deltas, log(fix_disps), betas_p, betas_i)
+        names(item_params_samedisp) <- c(
+          names(item_params[grepl("alpha", names(item_params))]),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items),
+          names(item_params[grepl("beta_p", names(item_params))]),
+          names(item_params[grepl("beta_i", names(item_params))])
+        )
+      }
+      
       # e step
       PPs <- estep_cmp_with_cov(
         data = data, 
@@ -953,13 +983,45 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!is.null(fix_alphas)) {
-      # if we have fixed alphas, we can't have ite covariates on all three parameters
-      # TODO if i implement covariates on two, this needs to be adjusted because
-      # then the parameter names for the betas will include the item parameters' names
       
       # prep for e step
-      item_params_fixalphas <- c(fix_alphas, item_params)
-      names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), names(item_params))
+      deltas <- item_params[grepl("delta", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      n_items <- ncol(data)
+      log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                                 !grepl("beta", names(item_params))]
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      
+      # if we have the constraint of fixed alphas, we can either have covariates
+      # on just delta or just log_disp, in which case we just have betas_i,
+      # or we could have covariates on delta and log_disp together (or person covariates)
+      if (length(i_cov_on) == 2) {
+        # must be covariates on delta and log_disp together
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+        item_params_samealph <- c(fix_alphas, deltas, log_disps,  
+                                  betas_i_delta, betas_i_logdisp)
+        names(item_params_samealph) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params)) & 
+                              !grepl("beta", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params))]),
+          names(item_params[grepl("beta_i_delta", names(item_params))]),
+          names(item_params[grepl("beta_i_log_disp", names(item_params))])
+        )
+      } else {
+        # either we have person covariates or just item covariates on one parameter, so just beta_i
+        item_params_samealph <- c(fix_alphas, deltas, log_disps, betas_p, betas_i)
+        names(item_params_samealph) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params))]),
+          names(item_params[grepl("beta_p", names(item_params))]),
+          names(item_params[grepl("beta_i", names(item_params))])
+        )
+      }
+
       # e step 
       PPs <- estep_cmp_with_cov(
         data = data, 

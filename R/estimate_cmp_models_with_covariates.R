@@ -1,14 +1,11 @@
 
-# TODO hier weitermachen und den fall mit kovariaten auf allen 3 parametern
-# fuer cmp implementieren
-
 # estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, 
                                p_covariates, i_covariates,
                                weights_and_nodes,
                                i_cov_on = c("alpha", "delta", "log_disp")) {
-  # p_covariates is a matrix with the person covariates
-  # i_covariates is a matrix with the item covariates
+  # p_covariates is a matrix with the person covariates (MxP)
+  # i_covariates is a matrix with the item covariates (M+I)
   
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params)) &
@@ -123,7 +120,81 @@ estep_cmp_with_cov <- function(data, item_params,
         max_nu = 50,
         min_nu = 0.001
       )
-    } # TODO think about implementing covariates on two parameters at a time
+    } else if (length(i_cov_on) == 2) {
+      if ("log_disp" %in% i_cov_on) {
+        if ("alpha" %in% i_cov_on) {
+          # we have covariates on alpha and log_disp
+          betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+          betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          PPs <- estep_cmp_with_icov_alpha_nu_cpp(
+            data = as.matrix(data),
+            alpha = alphas,
+            deltas = deltas,
+            disp = disps,
+            betas_alpha = betas_i_alpha,
+            betas_logdisp = betas_i_logdisp,
+            i_cov_data = as.matrix(i_covariates),
+            nodes = weights_and_nodes$x,
+            weights = weights_and_nodes$w,
+            grid_mus = grid_mus,
+            grid_nus = grid_nus,
+            grid_logZ_long = grid_logZ_long,
+            grid_log_lambda_long = grid_log_lambda_long,
+            max_mu = 200,
+            min_mu = 0.001,
+            max_nu = 50,
+            min_nu = 0.001
+          )
+        } else {
+          # we have covariates on delta and log_disp
+          betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+          betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          PPs <- estep_cmp_with_icov_delta_nu_cpp(
+            data = as.matrix(data),
+            alphas = alphas,
+            delta = deltas,
+            disp = disps,
+            betas_delta = betas_i_delta,
+            betas_logdisp = betas_i_logdisp,
+            i_cov_data = as.matrix(i_covariates),
+            nodes = weights_and_nodes$x,
+            weights = weights_and_nodes$w,
+            grid_mus = grid_mus,
+            grid_nus = grid_nus,
+            grid_logZ_long = grid_logZ_long,
+            grid_log_lambda_long = grid_log_lambda_long,
+            max_mu = 200,
+            min_mu = 0.001,
+            max_nu = 50,
+            min_nu = 0.001
+          )
+        }
+      } else {
+        # we have covariates on alpha and delta
+        betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        
+        PPs <- estep_cmp_with_icov_alpha_delta_cpp(
+          data = as.matrix(data),
+          alpha = alphas,
+          delta = deltas,
+          disps = disps,
+          betas_alpha = betas_i_alpha,
+          betas_delta = betas_i_delta,
+          i_cov_data = as.matrix(i_covariates),
+          nodes = weights_and_nodes$x,
+          weights = weights_and_nodes$w,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_logZ_long = grid_logZ_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          max_mu = 200,
+          min_mu = 0.001
+        )
+      }
+    }
   }
   
   return(PPs)
@@ -246,8 +317,81 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         min_mu = 0.001,
         max_nu = 50,
         min_nu = 0.001)
+    } else if (length(i_cov_on) == 2) {
+      if ("log_disp" %in% i_cov_on) {
+        if ("alpha" %in% i_cov_on) {
+          # we have covariates on log_disp and alpha together
+          betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+          betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          grads <- grad_cmp_with_icov_alpha_nu_cpp(
+            alpha = alphas,
+            deltas = deltas,
+            disp = disps,
+            betas_alpha = betas_i_alpha,
+            betas_logdisp = betas_i_logdisp,
+            data = as.matrix(data),
+            i_cov_data = as.matrix(i_covariates),
+            PPs = PPs,
+            nodes = weights_and_nodes$x,
+            grid_mus = grid_mus,
+            grid_nus = grid_nus,
+            grid_cmp_var_long = grid_cmp_var_long,
+            grid_log_lambda_long = grid_log_lambda_long,
+            grid_logZ_long = grid_logZ_long,
+            max_mu = 200,
+            min_mu = 0.001,
+            max_nu = 50,
+            min_nu = 0.001)
+        } else {
+          # we have covariates on log_disp and delta together
+          betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+          betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          grads <- grad_cmp_with_icov_delta_nu_cpp(
+            alphas = alphas,
+            delta = deltas,
+            disp = disps,
+            betas_delta = betas_i_delta,
+            betas_logdisp = betas_i_logdisp,
+            data = as.matrix(data),
+            i_cov_data = as.matrix(i_covariates),
+            PPs = PPs,
+            nodes = weights_and_nodes$x,
+            grid_mus = grid_mus,
+            grid_nus = grid_nus,
+            grid_cmp_var_long = grid_cmp_var_long,
+            grid_log_lambda_long = grid_log_lambda_long,
+            grid_logZ_long = grid_logZ_long,
+            max_mu = 200,
+            min_mu = 0.001,
+            max_nu = 50,
+            min_nu = 0.001)
+        }
+      } else {
+        # we have covariates on alpha and delta together
+        betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        
+        grads <- grad_cmp_with_icov_alpha_delta_cpp(
+          alpha = alphas,
+          delta = deltas,
+          disps = disps, 
+          betas_alpha = betas_i_alpha,
+          betas_delta = betas_i_delta,
+          data = as.matrix(data),
+          i_cov_data = as.matrix(i_covariates),
+          PPs = PPs,
+          nodes = weights_and_nodes$x,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001)
+      }
     }
-    # TODO think about cases where we have covariates on two item params at a time
   }
   
   if (any(is.na(grads))) {
@@ -333,7 +477,30 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
       } 
       # note: we can't include item covariates on log nu if we fix dispersions
       # to a specific value
-    } # TODO think about implementing cases with covariates on two item params at a time
+    } else if (length(i_cov_on) == 2) {
+      # if we have the constraint of fixed disps, we can only have item covariates on 
+      # alpha and delta
+      betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      
+      grads <- grad_cmp_with_icov_alpha_delta_fixdisps_cpp(
+        alpha = alphas,
+        delta = deltas,
+        disps = disps,
+        betas_alpha = betas_i_alpha,
+        betas_delta = betas_i_delta,
+        data = as.matrix(data),
+        i_cov_data = as.matrix(i_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    }
     # note that we can't have item covariates on all item parameters if we have the
     # constraint of fixed disps as predicting all parameters, i.e., including log_disp,
     # through item covariates implies different disps for items with different
@@ -355,9 +522,11 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
                                         i_cov_on = c("delta", "log_disp")) {
   
   alphas <- fix_alphas
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # note that deltas is a scalar if we have item covariates on delta
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
+  log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                             !grepl("beta", names(item_params))]
   disps <- exp(log_disps)
   # note that disps is a scalar if we have item covariates on nu
   n_items <- ncol(data)
@@ -426,7 +595,32 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
           min_nu = 0.001
         )
       }
-    } # TODO think about implementing covariates on two item parameters at a time
+    } else if (length(i_cov_on) == 2) {
+      # with the constraint same alphas, we can only have covariates on
+      # delta and log disp at the same time
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      grads <- grad_cmp_with_icov_delta_nu_fixalphas_cpp(
+        alphas = alphas,
+        delta = deltas,
+        disp = disps,
+        betas_delta = betas_i_delta,
+        betas_logdisp = betas_i_logdisp,
+        data = as.matrix(data),
+        i_cov_data = as.matrix(i_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001,
+        max_nu = 50,
+        min_nu = 0.001)
+    }
     # note that we can't have item covariates on all item parameters if we have the
     # constraint of same alphas as predicting all parameters, i.e., including alpha,
     # through item covariates implies different alphas for items with different
@@ -447,9 +641,11 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
                                         p_covariates, i_covariates,
                                         i_cov_on = c("alpha", "delta", "log_disp")) {
   
-  alphas <- item_params[grepl("alpha", names(item_params))]
+  alphas <- item_params[grepl("alpha", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # note that alphas is a scalar for item covariates on alpha
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
   # note that deltas is a scalar for item covariates on delta
   n_items <- ncol(data)
   log_disp <- item_params[grepl("log_disp", names(item_params))]
@@ -518,7 +714,30 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
       # note: we can't have covariates on log_nu if we have the constraint of
       # same disps as covaraites would have different values for the different
       # items and would then imply different disps
-    } # TODO think about implementing cases with covariates on two item parameters at a time
+    } else if (length(i_cov_on) == 2) {
+      # if we have the constraint of same disps, we can only have item covariates on 
+      # alpha and delta
+      betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      
+      grads <- grad_cmp_with_icov_alpha_delta_samedisps_cpp(
+        alpha = alphas,
+        delta = deltas,
+        disps = disps,
+        betas_alpha = betas_i_alpha,
+        betas_delta = betas_i_delta,
+        data = as.matrix(data),
+        i_cov_data = as.matrix(i_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    }
     # note that we can't have item covariates on all item parameters if we have the
     # constraint of same disps as predicting all parameters, i.e., including log_disp,
     # through item covariates implies different disps for items with different
@@ -540,7 +759,8 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
                                          p_covariates, i_covariates,
                                          i_cov_on = c("delta", "log_disp")) {
   
-  deltas <- item_params[grepl("delta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) & 
+                          !grepl("beta", names(item_params))]
   # note that for item covariates on delta, deltas is a scalar
   n_items <- ncol(data)
   alpha <- item_params[grepl("alpha", names(item_params))]
@@ -548,7 +768,8 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   # note: we can't have covariates on alpha if we have the constraint same_alpha
   # as we would have different values for the items on the different covariates,
   # implying different alphas
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
+  log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                             !grepl("beta", names(item_params))]
   disps <- exp(log_disps)
   # note that for item covariates on log disp, disps is a scalar
   betas_p <- item_params[grepl("beta_p", names(item_params))]
@@ -617,7 +838,32 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           min_nu = 0.001
         )
       }
-    } # TODO think about case with covariates on two item parameters at a time
+    } else if (length(i_cov_on) == 2) {
+      # with the constraint same alphas, we can only have covariates on
+      # delta and log disp at the same time
+      betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      grads <- grad_cmp_with_icov_delta_nu_samealphas_cpp(
+        alphas = alphas,
+        delta = deltas,
+        disp = disps,
+        betas_delta = betas_i_delta,
+        betas_logdisp = betas_i_logdisp,
+        data = as.matrix(data),
+        i_cov_data = as.matrix(i_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001,
+        max_nu = 50,
+        min_nu = 0.001)
+    }
     # note that we can't have item covariates on all item parameters if we have the
     # constraint of same alphas as predicting all parameters, i.e., including alpha,
     # through item covariates implies different alphas for items with different
@@ -631,8 +877,6 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   
   return(grads)
 }
-
-# TODO hier weiter machen und zweier kombis implementieren
 
 # ell_cmp_with_cov -------------------------------------------------------------------
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
@@ -758,8 +1002,84 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
         min_mu = 0.001,
         max_nu = 50,
         min_nu = 0.001)
+    } else if (length(i_cov_on) == 2) {
+      if ("log_disp" %in% i_cov_on) {
+        if ("alpha" %in% i_cov_on) {
+          # covariates on alpha and log disp
+          betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+          betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          ell <- ell_cmp_with_icov_alpha_nu_cpp(
+            alpha = alphas,
+            deltas = deltas,
+            disp = disps,
+            betas_alpha = betas_i_alpha,
+            betas_logdisp = betas_i_logdisp,
+            data = as.matrix(data),
+            i_cov_data = as.matrix(i_covariates),
+            PPs = PPs,
+            weights = weights_and_nodes$w,
+            nodes = weights_and_nodes$x,
+            grid_mus = grid_mus,
+            grid_nus = grid_nus,
+            grid_cmp_var_long = grid_cmp_var_long,
+            grid_log_lambda_long = grid_log_lambda_long,
+            grid_logZ_long = grid_logZ_long,
+            max_mu = 200,
+            min_mu = 0.001,
+            max_nu = 50,
+            min_nu = 0.001)
+        } else {
+          # covariates on delta and log disp
+          betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+          betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          ell <- ell_cmp_with_icov_delta_nu_cpp(
+            alphas = alphas,
+            delta = deltas,
+            disp = disps,
+            betas_delta = betas_i_delta,
+            betas_logdisp = betas_i_logdisp,
+            data = as.matrix(data),
+            i_cov_data = as.matrix(i_covariates),
+            PPs = PPs,
+            weights = weights_and_nodes$w,
+            nodes = weights_and_nodes$x,
+            grid_mus = grid_mus,
+            grid_nus = grid_nus,
+            grid_cmp_var_long = grid_cmp_var_long,
+            grid_log_lambda_long = grid_log_lambda_long,
+            grid_logZ_long = grid_logZ_long,
+            max_mu = 200,
+            min_mu = 0.001,
+            max_nu = 50,
+            min_nu = 0.001)
+        }
+      } else {
+        # covariates on alpha and delta together
+        betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        
+        ell <- ell_cmp_with_icov_all_cpp(
+          alpha = alphas,
+          delta = deltas,
+          disps = disps,
+          betas_alpha = betas_i_alpha,
+          betas_delta = betas_i_delta,
+          data = as.matrix(data),
+          i_cov_data = as.matrix(i_covariates),
+          PPs = PPs,
+          weights = weights_and_nodes$w,
+          nodes = weights_and_nodes$x,
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001)
+      }
     }
-    # TODO think about implementing the covariates on two item parameters at a time
   }
   
   return(ell)

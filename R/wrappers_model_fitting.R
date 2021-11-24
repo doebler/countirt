@@ -50,6 +50,9 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # also dass wir keinen unsinn haben als angegebenes element
   # und auch entspr. fuer poisson
   
+  # TODO fuer personen kovariaten mit p_cov_cat = TRUE sicherstellen, dass die 
+  # faktoren in der kovariaten matrix dummy coded sind
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

@@ -1787,6 +1787,106 @@ double marg_ll_cmp_with_pcov_cpp (NumericMatrix data,
 }
 
 // [[Rcpp::export]]
+double marg_ll_cmp_with_pcov_cat_cpp (NumericMatrix data,
+                                  NumericVector alphas,
+                                  NumericVector deltas,
+                                  NumericVector disps,
+                                  NumericVector betas,
+                                  NumericMatrix p_cov_data,
+                                  double num_p_cov,
+                                  IntegerVector num_levels_p_cov, 
+                                  NumericVector nodes,
+                                  NumericVector weights,
+                                  NumericVector grid_mus,
+                                  NumericVector grid_nus,
+                                  NumericVector grid_logZ_long,
+                                  NumericVector grid_log_lambda_long,
+                                  double max_mu,
+                                  double min_mu) {
+  
+  int N = data.nrow();
+  int M = data.ncol();
+  int K = nodes.size();
+  int P = betas.size();
+  // assume that p_cov is a matrix of dummy coded categorical predictors
+  // as we then don't know how many categorical factors there actually are, we
+  // also have the n_p_cov argument (because with dummy coding), we know that as one
+  // category is 1, the others must be zero (or all zero because we are in the reference group)
+  // so with the num_p_cov argument, we know how many p_cov we have,
+  // and with the vector num_levels_p_cov we know for each of those covariates
+  // how many levels it has
+  
+  // for person covariates, we need mus (and lambdas and Zs) for each node and
+  // and then also for both possible values of each covariate, those being 0 and 1
+  // as we dummy coded categorical person covariates
+  // now, they could be in different combinations across covariates, so what we need 
+  // is as many mu's as we have sum(covariate levels) across all covariates
+  // so first compute that
+  int cov_levels = 0;
+  int L = num_levels_p_cov.size();
+  for (int l=0; l<L; l++) {
+    cov_levels += num_levels_p_cov(l);
+  }
+  NumericMatrix mu(K*cov_levels, M);
+  NumericMatrix mu_interp(K*cov_levels, M);
+  NumericMatrix disp_interp(K*cov_levels, M);
+  for (int l=0; l<L; l++) {
+    for(int j=0; j<M; j++){
+      // loop over items (columns)
+      for(int k=0; k<K; k++) {
+        // loop over nodes (rows)
+        
+        // check which covariate we are on with the level
+        
+        
+        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        for(int p=0; p<P; p++) {
+          // add all the (weighted) covariate values for all covariates for the item j
+          // (for the specific person i we are currently looking at)
+          log_mu += betas[p] * alphas[j] * p_cov_data(i,p);
+        }
+        mu(k+i*K,j) = exp(log_mu);
+        mu_interp(k+i*K,j) = mu(k+i*K,j);
+        if (mu(k+i*K,j) > max_mu) { mu_interp(k+i*K,j) = max_mu; }
+        if (mu(k+i*K,j) < min_mu) { mu_interp(k+i*K,j) = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp(k+i*K,j) = disps[j];
+      }
+    }  // end loop over items
+  }
+  
+  
+  NumericMatrix log_lambda(K*N, M);
+  NumericMatrix log_Z(K*N, M);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have nodes*persons and
+  // as many columns as we have (same as mu_interp and nu_interp matrices)
+  
+  double log_marg_prob = 0;
+  
+  for(int i=0;i<N;i++){
+    double integral = 0;
+    for(int k=0;k<K;k++) {
+      // qudrature over nodes
+      double f = 0;
+      for(int j=0;j<M;j++) {
+        f = f + data(i,j)*log_lambda(k+i*K,j) - log_Z(k+i*K,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      integral = integral + exp(f + log(weights[k]));
+    }
+    log_marg_prob = log_marg_prob + log(integral);
+  }
+  
+  return(log_marg_prob);
+}
+
+// [[Rcpp::export]]
 double marg_ll_cmp_with_icov_delta_cpp (NumericMatrix data,
                                   NumericVector alphas,
                                   double delta,

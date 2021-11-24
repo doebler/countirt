@@ -1375,6 +1375,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 
                                  p_covariates, i_covariates, 
                                  i_cov_on = c("alpha", "delta", "log_disp"),
+                                 p_cov_cat = TRUE,
+                                 num_p_cov, num_levels_p_cov,
                                  fix_disps = NULL, fix_alphas = NULL, 
                                  same_disps = FALSE, same_alphas = FALSE) {
   n_items <- ncol(data)
@@ -1411,20 +1413,67 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    ll <- marg_ll_cmp_with_pcov_cpp(data = as.matrix(data),
-                                   alphas = alphas,
-                                   deltas = deltas, 
-                                   disps = disps, 
-                                   betas = betas_p,
-                                   p_cov_data = as.matrix(p_covariates),
-                                   nodes = weights_and_nodes$x,
-                                   weights = weights_and_nodes$w,
-                                   grid_mus = grid_mus,  
-                                   grid_nus = grid_nus, 
-                                   grid_logZ_long = grid_logZ_long,
-                                   grid_log_lambda_long = grid_log_lambda_long,
-                                   max_mu = 150,
-                                   min_mu = 0.001)
+    if (p_cov_cat) {
+      # assume that we have previously dummy coded our covariates, so we only have 0
+      # and 1's in our p_cov matrix
+      
+      # create a possible response patterns matrix for the dummy coded covariates
+      # TODO schuaen dass ich in cirt num_levels_p_cov und num_p_cov erstelle
+      n_resp_patterns <- prod(num_levels_p_cov)
+      # for each covariate, I first create a matrix with their possible response pattens
+      # the first is always 0 erevrywhere and then from level2 to highest level resp.
+      # one 1 and otherwise 0
+      cov_list_resp_patterns <- lapply(num_levels_p_cov, get_resp_patterns_pcov_cat)
+      resp_patterns_matrix <- make_resp_patterns_mat(
+        cov_list_resp_patterns, n_resp_patterns, num_levels_p_cov
+      )
+      
+      
+      # TODO when i have my response patterns matrix, i need to pass that to 
+      # my marg_ll (and all other) function (i don't need to pass num_levels_p_cov
+      # and num_p_cov then - i can get the number of level combinations from that matrix
+      # (for my interpolation loop) just from the number of rows in that matrix);
+      # in there, i just do the interpolation on that matrix instead of the p_cov matrix
+      # after the interpolation when i compute whatever my function computes, i then just
+      # need to check each row in my p_cov_data (or p_cov) matrix against my resp_patterns_amatrix
+      # (every possible reponse pattern is in there) and just select the correct row
+      ll <- marg_ll_cmp_with_pcov_cat_cpp(data = as.matrix(data),
+                                      alphas = alphas,
+                                      deltas = deltas, 
+                                      disps = disps, 
+                                      betas = betas_p,
+                                      p_cov_data = as.matrix(p_covariates),
+                                      # TODO hier in den funktionen zuvor diese argumente
+                                      # hinzufuegen und ein TODO in cirt reinsetzen, dass
+                                      # ich das abgreifen muss, bevor ich die ge dummy codete
+                                      # p_cov matrix erstelle
+                                      num_p_cov = num_p_cov,
+                                      num_levels_p_cov = num_levels_p_cov,
+                                      # TODO make sure in data prep that these are integers
+                                      nodes = weights_and_nodes$x,
+                                      weights = weights_and_nodes$w,
+                                      grid_mus = grid_mus,  
+                                      grid_nus = grid_nus, 
+                                      grid_logZ_long = grid_logZ_long,
+                                      grid_log_lambda_long = grid_log_lambda_long,
+                                      max_mu = 150,
+                                      min_mu = 0.001)
+    } else {
+      ll <- marg_ll_cmp_with_pcov_cpp(data = as.matrix(data),
+                                      alphas = alphas,
+                                      deltas = deltas, 
+                                      disps = disps, 
+                                      betas = betas_p,
+                                      p_cov_data = as.matrix(p_covariates),
+                                      nodes = weights_and_nodes$x,
+                                      weights = weights_and_nodes$w,
+                                      grid_mus = grid_mus,  
+                                      grid_nus = grid_nus, 
+                                      grid_logZ_long = grid_logZ_long,
+                                      grid_log_lambda_long = grid_log_lambda_long,
+                                      max_mu = 150,
+                                      min_mu = 0.001)
+    }
   } else if (!is.null(i_covariates)) {
     # distinguish between on which parameters we have item covariates
     if (length(i_cov_on) == 1) {
@@ -1572,6 +1621,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
                                 p_covariates, i_covariates, 
                                 i_cov_on = c("alpha", "delta", "log_disp"),
+                                p_cov_cat = TRUE,
                                 thres = Inf, prob = 0,
                                 maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                 m_method = "nleqslv", convcrit = "marglik",
@@ -1603,6 +1653,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
       p_covariates = p_covariates, 
       i_covariates = i_covariates,
       i_cov_on = i_cov_on,
+      p_cov_cat = p_cov_cat,
       ctol_maxstep = ctol_maxstep,
       m_method = m_method,
       fix_disps = fix_disps, 
@@ -1622,6 +1673,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         p_covariates = p_covariates, 
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
         same_disps = same_disps, 
@@ -1640,6 +1692,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         p_covariates = p_covariates, 
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
         same_disps = same_disps, 
@@ -1685,21 +1738,43 @@ get_start_values_cmp_with_cov <- function(data,
   # for CMP start values, we fit a Poisson model and get deltas and alphas 
   # and betas from there
   if (same_alpha) {
-    # just one alpha for all items
-    # note that we can't have same alpha together with item covariates on alpha
-    if (length(i_cov_on) == 1) {
-      if (i_cov_on == "log_disp") {
-        init_values_pois <- get_start_values_pois(
-          data = data,
-          same_alpha = TRUE
-        )
-        fit_pois <- run_em_poisson(
-          data = data,
-          init_params = init_values_pois,
-          n_nodes = nodes,
-          same_alpha = TRUE
-        )
+    if (!is.null(i_covariates)) {
+      # just one alpha for all items
+      # note that we can't have same alpha together with item covariates on alpha
+      if (length(i_cov_on) == 1) {
+        if (i_cov_on == "log_disp") {
+          init_values_pois <- get_start_values_pois(
+            data = data,
+            same_alpha = TRUE
+          )
+          fit_pois <- run_em_poisson(
+            data = data,
+            init_params = init_values_pois,
+            n_nodes = nodes,
+            same_alpha = TRUE
+          )
+        } else {
+          init_values_pois <- get_start_values_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            same_alpha = TRUE,
+            i_cov_on = "delta"
+          )
+          fit_pois <- run_em_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            init_params = init_values_pois, 
+            n_nodes = nodes,
+            same_alpha = TRUE,
+            i_cov_on = "delta"
+          )
+        }
       } else {
+        # if I have the constrained of same alpha, i can't have covariates on all three
+        # item parameters but only on two: log_disp and delta (also not on alpha and delta
+        # or alpha and log_disp pairing)
         init_values_pois <- get_start_values_poisson_with_cov(
           data = data,
           p_covariates = p_covariates,
@@ -1716,111 +1791,121 @@ get_start_values_cmp_with_cov <- function(data,
           same_alpha = TRUE,
           i_cov_on = "delta"
         )
-      }
-    } else {
-      # if I have the constrained of same alpha, i can't have covariates on all three
-      # item parameters but only on two: log_disp and delta (also not on alpha and delta
-      # or alpha and log_disp pairing)
-      init_values_pois <- get_start_values_poisson_with_cov(
+      } 
+    } else if (!is.null(p_covariates)) {
+      init_values_pois <- get_start_values_pois(
         data = data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        same_alpha = TRUE,
-        i_cov_on = "delta"
+        same_alpha = TRUE
       )
-      fit_pois <- run_em_poisson_with_cov(
+      fit_pois <- run_em_poisson(
         data = data,
-        p_covariates = p_covariates,
-        i_covariates = i_covariates,
-        init_params = init_values_pois, 
+        init_params = init_values_pois,
         n_nodes = nodes,
-        same_alpha = TRUE,
-        i_cov_on = "delta"
-      )
-    } 
-    init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
-    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
-  } else {
-    # no constraint on alpha
-    if (length(i_cov_on) == 1) {
-      if (i_cov_on == "log_disp") {
-        init_values_pois <- get_start_values_pois(
-          data = data
-        )
-        fit_pois <- run_em_poisson(
-          data = data,
-          init_params = init_values_pois,
-          n_nodes = nodes
-        )
-      } else {
-        init_values_pois <- get_start_values_poisson_with_cov(
-          data = data,
-          p_covariates = p_covariates,
-          i_covariates = i_covariates,
-          i_cov_on = i_cov_on
-        )
-        fit_pois <- run_em_poisson_with_cov(
-          data = data,
-          p_covariates = p_covariates,
-          i_covariates = i_covariates,
-          init_params = init_values_pois, 
-          n_nodes = nodes,
-          i_cov_on = i_cov_on
-        )
-      }
-    } else if (length(i_cov_on) == 3) {
-      init_values_pois <- get_start_values_poisson_with_cov(
-        data = data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = c("alpha", "delta")
+        same_alpha = TRUE
       )
-      fit_pois <- run_em_poisson_with_cov(
-        data = data,
-        p_covariates = p_covariates,
-        i_covariates = i_covariates,
-        init_params = init_values_pois, 
-        n_nodes = nodes,
-        i_cov_on =  c("alpha", "delta")
-      )
-    } else if (length(i_cov_on) == 2) {
-      if ("log_disp" %in% i_cov_on) {
-        init_values_pois <- get_start_values_poisson_with_cov(
-          data = data,
-          p_covariates = p_covariates,
-          i_covariates = i_covariates,
-          i_cov_on = i_cov_on[-which(i_cov_on == "log_disp")]
-        )
-        fit_pois <- run_em_poisson_with_cov(
-          data = data,
-          p_covariates = p_covariates,
-          i_covariates = i_covariates,
-          init_params = init_values_pois, 
-          n_nodes = nodes,
-          i_cov_on =  i_cov_on[-which(i_cov_on == "log_disp")]
-        )
-      } else {
-        init_values_pois <- get_start_values_poisson_with_cov(
-          data = data,
-          p_covariates = p_covariates,
-          i_covariates = i_covariates,
-          i_cov_on = i_cov_on
-        )
-        fit_pois <- run_em_poisson_with_cov(
-          data = data,
-          p_covariates = p_covariates,
-          i_covariates = i_covariates,
-          init_params = init_values_pois, 
-          n_nodes = nodes,
-          i_cov_on =  i_cov_on
-        )
-      }
     }
-    init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params)) &
-                                     !grepl("beta", names(fit_pois$params))]
-    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params)) &
-                                     !grepl("beta", names(fit_pois$params))]
+  } else {
+    if (!is.null(i_covariates)) {
+      # no constraint on alpha
+      if (length(i_cov_on) == 1) {
+        if (i_cov_on == "log_disp") {
+          init_values_pois <- get_start_values_pois(
+            data = data
+          )
+          fit_pois <- run_em_poisson(
+            data = data,
+            init_params = init_values_pois,
+            n_nodes = nodes
+          )
+        } else {
+          init_values_pois <- get_start_values_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            i_cov_on = i_cov_on
+          )
+          fit_pois <- run_em_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            init_params = init_values_pois, 
+            n_nodes = nodes,
+            i_cov_on = i_cov_on
+          )
+        }
+      } else if (length(i_cov_on) == 3) {
+        init_values_pois <- get_start_values_poisson_with_cov(
+          data = data,
+          p_covariates = p_covariates,
+          i_covariates = i_covariates,
+          i_cov_on = c("alpha", "delta")
+        )
+        fit_pois <- run_em_poisson_with_cov(
+          data = data,
+          p_covariates = p_covariates,
+          i_covariates = i_covariates,
+          init_params = init_values_pois, 
+          n_nodes = nodes,
+          i_cov_on =  c("alpha", "delta")
+        )
+      } else if (length(i_cov_on) == 2) {
+        if ("log_disp" %in% i_cov_on) {
+          init_values_pois <- get_start_values_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            i_cov_on = i_cov_on[-which(i_cov_on == "log_disp")]
+          )
+          fit_pois <- run_em_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            init_params = init_values_pois, 
+            n_nodes = nodes,
+            i_cov_on =  i_cov_on[-which(i_cov_on == "log_disp")]
+          )
+        } else {
+          init_values_pois <- get_start_values_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            i_cov_on = i_cov_on
+          )
+          fit_pois <- run_em_poisson_with_cov(
+            data = data,
+            p_covariates = p_covariates,
+            i_covariates = i_covariates,
+            init_params = init_values_pois, 
+            n_nodes = nodes,
+            i_cov_on =  i_cov_on
+          )
+        }
+    }
+    } else if (!is.null(p_covariates)) {
+      init_values_pois <- get_start_values_poisson_with_cov(
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = NULL
+      )
+      fit_pois <- run_em_poisson_with_cov(
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        init_params = init_values_pois, 
+        n_nodes = nodes,
+        i_cov_on =  NULL
+      )
+    }
   }
+  init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params)) &
+                                   !grepl("beta", names(fit_pois$params))]
+  init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params)) &
+                                   !grepl("beta", names(fit_pois$params))]
   
   if (!is.null(p_covariates)) {
     # we have a model with person covariates
@@ -1829,12 +1914,12 @@ get_start_values_cmp_with_cov <- function(data,
     sim_abilities=rnorm(nsim)
     for (i in 1:ncol(data)) { 
       if (same_alpha) {
-        mu <- exp(init_deltas[i] + init_alphas*sim_abilities + 
-                    init_alphas*sum(t(init_betas_p * t(p_covariates))))
+        mu <- exp(init_deltas[i] + init_alphas*sim_abilities) 
+                    # + init_alphas*sum(t(init_betas_p * t(p_covariates))))
         # here alphas is a scalar because we have the constraint same alpha here
       } else {
-        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities + 
-                    init_alphas[i]*sum(t(init_betas_p * t(p_covariates))))
+        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities) 
+                  # +  init_alphas[i]*sum(t(init_betas_p * t(p_covariates))))
       }
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))

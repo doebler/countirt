@@ -1085,10 +1085,18 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
   return(ell)
 }
 
+# TODO hier weitermachen und argumente p_cov_cat = TRUE,
+# num_levels_p_cov = num_levels_p_cov,
+# resp_patterns_matrix = resp_patterns_matrix, bei den funktionen ab hier einfuegen
+# und c++ code anpassen
+
 # newem_em_cycle ---------------------------------------------------------------------
 em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   p_covariates, i_covariates,
                                   i_cov_on = c("alpha", "delta", "log_disp"),
+                                  p_cov_cat = TRUE,
+                                  num_levels_p_cov = NULL,
+                                  resp_patterns_matrix = NULL,
                                   ctol_maxstep = 1e-8, m_method = "nleqslv",
                                   fix_disps = NULL, fix_alphas = NULL,
                                   same_disps = FALSE, same_alphas = FALSE) {
@@ -1102,7 +1110,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
       new_item_params <- nleqslv(
@@ -1376,7 +1387,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                  p_covariates, i_covariates, 
                                  i_cov_on = c("alpha", "delta", "log_disp"),
                                  p_cov_cat = TRUE,
-                                 num_p_cov, num_levels_p_cov,
+                                 num_levels_p_cov = NULL,
+                                 resp_patterns_matrix = NULL,
                                  fix_disps = NULL, fix_alphas = NULL, 
                                  same_disps = FALSE, same_alphas = FALSE) {
   n_items <- ncol(data)
@@ -1416,28 +1428,6 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
     if (p_cov_cat) {
       # assume that we have previously dummy coded our covariates, so we only have 0
       # and 1's in our p_cov matrix
-      
-      # create a possible response patterns matrix for the dummy coded covariates
-      # TODO schuaen dass ich in cirt num_levels_p_cov und num_p_cov erstelle
-      # TODO und schauen, dass ich das dann im spezialfall von kategorialen kovariaten
-      # in allen funktionen bis hierhin auch als argumente habe, also auch in em_cycle etc.
-      n_resp_patterns <- prod(num_levels_p_cov)
-      # for each covariate, I first create a matrix with their possible response pattens
-      # the first is always 0 erevrywhere and then from level2 to highest level resp.
-      # one 1 and otherwise 0
-      cov_list_resp_patterns <- lapply(num_levels_p_cov, get_resp_patterns_pcov_cat)
-      resp_patterns_matrix <- make_resp_patterns_mat(
-        cov_list_resp_patterns, n_resp_patterns, num_levels_p_cov
-      )
-      
-      # TODO when i have my response patterns matrix, i need to pass that to 
-      # my marg_ll (and all other) function (i don't need to pass num_levels_p_cov
-      # and num_p_cov then - i can get the number of level combinations from that matrix
-      # (for my interpolation loop) just from the number of rows in that matrix);
-      # in there, i just do the interpolation on that matrix instead of the p_cov matrix
-      # after the interpolation when i compute whatever my function computes, i then just
-      # need to check each row in my p_cov_data (or p_cov) matrix against my resp_patterns_amatrix
-      # (every possible reponse pattern is in there) and just select the correct row
       ll <- marg_ll_cmp_with_pcov_cat_cpp(data = as.matrix(data),
                                       alphas = alphas,
                                       deltas = deltas, 
@@ -1617,6 +1607,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
                                 p_covariates, i_covariates, 
                                 i_cov_on = c("alpha", "delta", "log_disp"),
                                 p_cov_cat = TRUE,
+                                num_levels_p_cov = NULL, # TODO einfuegen aus cirt, das muss dort berechnet werden
                                 thres = Inf, prob = 0,
                                 maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                 m_method = "nleqslv", convcrit = "marglik",
@@ -1635,6 +1626,19 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 
   new_ll <- 0
   marg_lls <- c()
+  
+  # prepare response patterns for categorical covariates
+  if (p_cov_cat) {
+    # create a possible response patterns matrix for the dummy coded covariates
+    n_resp_patterns <- prod(num_levels_p_cov)
+    # for each covariate, I first create a matrix with their possible response pattens
+    # the first is always 0 erevrywhere and then from level2 to highest level resp.
+    # one 1 and otherwise 0
+    cov_list_resp_patterns <- lapply(num_levels_p_cov, get_resp_patterns_pcov_cat)
+    resp_patterns_matrix <- make_resp_patterns_mat(
+      cov_list_resp_patterns, n_resp_patterns, num_levels_p_cov
+    )
+  }
 
   print("Start estimation...")
 
@@ -1649,6 +1653,8 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
       i_covariates = i_covariates,
       i_cov_on = i_cov_on,
       p_cov_cat = p_cov_cat,
+      num_levels_p_cov = num_levels_p_cov,
+      resp_patterns_matrix = resp_patterns_matrix,
       ctol_maxstep = ctol_maxstep,
       m_method = m_method,
       fix_disps = fix_disps, 
@@ -1669,6 +1675,8 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov,
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
         same_disps = same_disps, 
@@ -1688,6 +1696,8 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov,
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
         same_disps = same_disps, 
@@ -1730,6 +1740,10 @@ get_start_values_cmp_with_cov <- function(data,
                                           nodes = 121, nsim = 1000,
                                           same_alpha = FALSE,
                                           i_cov_on = c("alpha", "delta", "log_disp")) {
+  # p_covariates will work just like this, because poisson takes continuous or
+  # categorical with dummy coding as it is and over than that we're not using it
+  # here 
+  
   # for CMP start values, we fit a Poisson model and get deltas and alphas 
   # and betas from there
   if (same_alpha) {

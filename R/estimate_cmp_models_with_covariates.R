@@ -1428,7 +1428,6 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         cov_list_resp_patterns, n_resp_patterns, num_levels_p_cov
       )
       
-      
       # TODO when i have my response patterns matrix, i need to pass that to 
       # my marg_ll (and all other) function (i don't need to pass num_levels_p_cov
       # and num_p_cov then - i can get the number of level combinations from that matrix

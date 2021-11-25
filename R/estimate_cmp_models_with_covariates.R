@@ -1419,6 +1419,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       
       # create a possible response patterns matrix for the dummy coded covariates
       # TODO schuaen dass ich in cirt num_levels_p_cov und num_p_cov erstelle
+      # TODO und schauen, dass ich das dann im spezialfall von kategorialen kovariaten
+      # in allen funktionen bis hierhin auch als argumente habe, also auch in em_cycle etc.
       n_resp_patterns <- prod(num_levels_p_cov)
       # for each covariate, I first create a matrix with their possible response pattens
       # the first is always 0 erevrywhere and then from level2 to highest level resp.
@@ -1442,13 +1444,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                       disps = disps, 
                                       betas = betas_p,
                                       p_cov_data = as.matrix(p_covariates),
-                                      # TODO hier in den funktionen zuvor diese argumente
-                                      # hinzufuegen und ein TODO in cirt reinsetzen, dass
-                                      # ich das abgreifen muss, bevor ich die ge dummy codete
-                                      # p_cov matrix erstelle
-                                      num_p_cov = num_p_cov,
-                                      num_levels_p_cov = num_levels_p_cov,
-                                      # TODO make sure in data prep that these are integers
+                                      resp_pattern = resp_patterns_matrix,
                                       nodes = weights_and_nodes$x,
                                       weights = weights_and_nodes$w,
                                       grid_mus = grid_mus,  

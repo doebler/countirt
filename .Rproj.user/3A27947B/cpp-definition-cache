@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-        "file_last_write": 1637339232.0,
+        "file_last_write": 1637839036.0,
         "definitions": [
             {
                 "usr": "c:@F@logFactorial#I#",
@@ -58,7 +58,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@computepp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#",
+                "usr": "c:@F@computepp#I#d#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computepp(Rcpp::NumericVector, double, Rcpp::NumericVector)",
@@ -67,7 +67,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@computepp_allnodes#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#",
+                "usr": "c:@F@computepp_allnodes#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computepp_allnodes(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector)",
@@ -76,7 +76,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@computer#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#",
+                "usr": "c:@F@computer#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computer(Rcpp::NumericVector, Rcpp::NumericVector)",
@@ -85,7 +85,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@computer_allnodes#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "usr": "c:@F@computer_allnodes#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computer_allnodes(Rcpp::NumericVector, Rcpp::NumericMatrix)",
@@ -94,7 +94,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@computef#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "usr": "c:@F@computef#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computef(Rcpp::NumericVector)",
@@ -103,7 +103,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@computef_allnodes#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "usr": "c:@F@computef_allnodes#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computef_allnodes(Rcpp::NumericMatrix)",
@@ -112,7 +112,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@computeh#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#",
+                "usr": "c:@F@computeh#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computeh(Rcpp::NumericVector, Rcpp::NumericVector)",
@@ -121,7 +121,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@computeh_allnodes#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#",
+                "usr": "c:@F@computeh_allnodes#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "computeh_allnodes(Rcpp::NumericVector, Rcpp::NumericMatrix)",
@@ -130,7 +130,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@interp_from_grid#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#1d#1d#",
+                "usr": "c:@F@interp_from_grid#I#I#I#1d#1d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "interp_from_grid(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, const double, const double)",
@@ -139,7 +139,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@interp_from_grid_v#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#S0_#",
+                "usr": "c:@F@interp_from_grid_v#I#I#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "interp_from_grid_v(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector)",
@@ -148,7 +148,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@interp_from_grid_m#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#",
+                "usr": "c:@F@interp_from_grid_m#I#I#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "interp_from_grid_m(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix)",
@@ -157,7 +157,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@interp_from_grid_lin_m#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#",
+                "usr": "c:@F@interp_from_grid_lin_m#I#I#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "interp_from_grid_lin_m(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix)",
@@ -166,7 +166,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@dcmp_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#b#S0_#S0_#S0_#S0_#S0_#S0_#",
+                "usr": "c:@F@dcmp_cpp#I#I#I#b#I#I#I#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "dcmp_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, bool, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector)",
@@ -175,7 +175,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -184,7 +184,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_fixdisps_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#d#",
+                "usr": "c:@F@grad_cmp_fixdisps_cpp#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_fixdisps_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -193,7 +193,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_fixalphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#d#",
+                "usr": "c:@F@grad_cmp_fixalphas_cpp#I#I#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_fixalphas_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -202,7 +202,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_logdisps_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#d#",
+                "usr": "c:@F@grad_cmp_logdisps_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_logdisps_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -211,7 +211,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_samedisp_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_samedisp_cpp#I#I#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_samedisp_cpp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -220,7 +220,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_samedisp_cpp_lininterp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#",
+                "usr": "c:@F@grad_cmp_samedisp_cpp_lininterp#I#I#d#I#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_samedisp_cpp_lininterp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -229,7 +229,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_samealpha_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#d#",
+                "usr": "c:@F@grad_cmp_samealpha_cpp#d#I#I#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_samealpha_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -238,7 +238,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@ell_cmp_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#d#",
+                "usr": "c:@F@ell_cmp_cpp#I#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -247,7 +247,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@e_values_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@e_values_cpp#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "e_values_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -256,7 +256,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@e_values_cpp_lininterp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#S1_#S1_#d#",
+                "usr": "c:@F@e_values_cpp_lininterp#I#I#I#I#I#I#I#I#I#I#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "e_values_cpp_lininterp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double)",
@@ -265,7 +265,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@marg_ll_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@marg_ll_cpp#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -274,7 +274,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_pcov_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_pcov_cpp#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_pcov_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -283,16 +283,16 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_pcov_cat_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S0_#d#$@N@Rcpp@S@Vector>#VI13#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_pcov_cat_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
-                "name": "marg_ll_cmp_with_pcov_cat_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, double, Rcpp::IntegerVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
+                "name": "marg_ll_cmp_with_pcov_cat_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
                 "line": 1790,
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_delta_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_delta_cpp#I#I#d#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_delta_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -301,7 +301,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_alpha_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_alpha_cpp#I#d#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_alpha_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -310,7 +310,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_nu_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#d#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_nu_cpp#I#I#I#d#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_nu_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -319,7 +319,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_all_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_all_cpp#I#d#d#d#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_all_cpp(Rcpp::NumericMatrix, double, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -328,7 +328,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_alpha_nu_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_alpha_nu_cpp#I#d#I#d#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_alpha_nu_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -337,7 +337,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_delta_nu_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_delta_nu_cpp#I#I#d#d#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_delta_nu_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -346,7 +346,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cmp_with_icov_alpha_delta_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@marg_ll_cmp_with_icov_alpha_delta_cpp#I#d#d#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cmp_with_icov_alpha_delta_cpp(Rcpp::NumericMatrix, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -355,7 +355,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@marg_ll_cpp_lininterp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#S1_#S1_#",
+                "usr": "c:@F@marg_ll_cpp_lininterp#I#I#I#I#I#I#I#I#I#I#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "marg_ll_cpp_lininterp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector)",
@@ -364,7 +364,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@grad_cmp_newem_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_newem_cpp#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_newem_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -373,7 +373,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_newem_cpp2#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_newem_cpp2#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_newem_cpp2(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -382,7 +382,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_pcov_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_pcov_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_pcov_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -391,7 +391,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -400,7 +400,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_cpp#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -409,7 +409,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_nu_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#d#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_nu_cpp#I#I#d#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_nu_cpp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -418,7 +418,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_all_cpp#d#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_all_cpp#d#d#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_all_cpp(double, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -427,7 +427,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_nu_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_nu_cpp#d#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_nu_cpp(double, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -436,7 +436,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_nu_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_nu_cpp#I#d#d#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_nu_cpp(Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -445,7 +445,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_delta_cpp#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_delta_cpp#d#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_delta_cpp(double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -454,7 +454,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_fixdisps_newem_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_fixdisps_newem_cpp#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_fixdisps_newem_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -463,7 +463,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_pcov_fixdisps_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_pcov_fixdisps_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_pcov_fixdisps_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -472,7 +472,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_fixdisps_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_fixdisps_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_fixdisps_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -481,7 +481,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_fixdisps_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_fixdisps_cpp#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_fixdisps_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -490,7 +490,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_delta_fixdisps_cpp#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_delta_fixdisps_cpp#d#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -499,7 +499,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_fixalphas_newem_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_fixalphas_newem_cpp#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_fixalphas_newem_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -508,7 +508,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_pcov_fixalphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_pcov_fixalphas_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_pcov_fixalphas_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -517,7 +517,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_fixalphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_fixalphas_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_fixalphas_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -526,7 +526,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_nu_fixalphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#d#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_nu_fixalphas_cpp#I#I#d#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_nu_fixalphas_cpp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -535,7 +535,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_nu_fixalphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_nu_fixalphas_cpp#I#d#d#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_nu_fixalphas_cpp(Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -544,7 +544,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_samedisps_newem_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_samedisps_newem_cpp#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_samedisps_newem_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -553,7 +553,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_pcov_samedisps_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_pcov_samedisps_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_pcov_samedisps_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -562,7 +562,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_samedisps_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_samedisps_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_samedisps_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -571,7 +571,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_samedisps_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_samedisps_cpp#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_samedisps_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -580,7 +580,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_alpha_delta_samedisps_cpp#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_alpha_delta_samedisps_cpp#d#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_alpha_delta_samedisps_cpp(double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -589,7 +589,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_samealphas_newem_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_samealphas_newem_cpp#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_samealphas_newem_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -598,7 +598,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_pcov_samealphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_pcov_samealphas_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_pcov_samealphas_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -607,7 +607,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_samealphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_samealphas_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_samealphas_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -616,7 +616,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_nu_samealphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#d#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_nu_samealphas_cpp#I#I#d#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_nu_samealphas_cpp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -625,7 +625,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_cmp_with_icov_delta_nu_samealphas_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@grad_cmp_with_icov_delta_nu_samealphas_cpp#I#d#d#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_cmp_with_icov_delta_nu_samealphas_cpp(Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -634,7 +634,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@grad_ll_cmp_ability_1P_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@grad_ll_cmp_ability_1P_cpp#d#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "grad_ll_cmp_ability_1P_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -643,7 +643,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_newem_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@ell_cmp_newem_cpp#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_newem_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -652,7 +652,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_pcov_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@ell_cmp_with_pcov_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_pcov_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -661,7 +661,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_delta_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_delta_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_delta_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -670,7 +670,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_alpha_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_alpha_cpp#d#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_alpha_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -679,7 +679,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_nu_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#d#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_nu_cpp#I#I#d#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_nu_cpp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -688,7 +688,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_all_cpp#d#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_all_cpp#d#d#d#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_all_cpp(double, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -697,7 +697,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_alpha_nu_cpp#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_alpha_nu_cpp#d#I#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_alpha_nu_cpp(double, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -706,7 +706,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_delta_nu_cpp#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_delta_nu_cpp#I#d#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_delta_nu_cpp(Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -715,7 +715,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@ell_cmp_with_icov_alpha_delta_cpp#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S0_#S0_#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#S0_#d#d#",
+                "usr": "c:@F@ell_cmp_with_icov_alpha_delta_cpp#d#d#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_alpha_delta_cpp(double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -724,7 +724,7 @@
                 "column": 8
             },
             {
-                "usr": "c:@F@e_values_newem_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@e_values_newem_cpp#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "e_values_newem_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -733,7 +733,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@e_values_newem_cpp2#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@e_values_newem_cpp2#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "e_values_newem_cpp2(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -742,7 +742,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_delta_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_delta_cpp#I#I#d#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_delta_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -751,7 +751,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_alpha_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_alpha_cpp#I#d#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_alpha_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
@@ -760,7 +760,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_nu_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#d#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_nu_cpp#I#I#I#d#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_nu_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -769,7 +769,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_all_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_all_cpp#I#d#d#d#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_all_cpp(Rcpp::NumericMatrix, double, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -778,7 +778,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_alpha_nu_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_alpha_nu_cpp#I#d#I#d#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_alpha_nu_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -787,7 +787,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_delta_nu_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_delta_nu_cpp#I#I#d#d#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_delta_nu_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -796,7 +796,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_icov_alpha_delta_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#d#d#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#d#d#",
+                "usr": "c:@F@estep_cmp_with_icov_alpha_delta_cpp#I#d#d#I#I#I#I#I#I#I#I#I#I#d#d#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_alpha_delta_cpp(Rcpp::NumericMatrix, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
@@ -805,7 +805,7 @@
                 "column": 15
             },
             {
-                "usr": "c:@F@estep_cmp_with_pcov_cpp#$@N@Rcpp@S@Matrix>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#$@N@Rcpp@S@Vector>#VI14#@N@Rcpp@ST>1#T@PreserveStorage#S1_#S1_#S1_#S0_#S1_#S1_#S1_#S1_#S1_#S1_#d#d#",
+                "usr": "c:@F@estep_cmp_with_pcov_cpp#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "estep_cmp_with_pcov_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",

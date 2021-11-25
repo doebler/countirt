@@ -24,6 +24,8 @@ make_resp_patterns_mat <- function(resp_pattern_list, n_resp_patterns, num_level
       lapply(1:n_cov, function(x){resp_pattern_list[[x]][index_combis[l,x],,drop=FALSE]})
     )
   }
+  # remove the columns for the reference groups where all entries are 0
+  out <- out[,colSums(out) > 0]
   return(out)
 }
 

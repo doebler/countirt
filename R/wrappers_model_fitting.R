@@ -51,7 +51,8 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # und auch entspr. fuer poisson
   
   # TODO fuer personen kovariaten mit p_cov_cat = TRUE sicherstellen, dass die 
-  # faktoren in der kovariaten matrix dummy coded sind
+  # faktoren in der kovariaten matrix dummy coded sind; und zwar so wie ich das
+  # erwarte also mit ohne die spalten der referenzkategorien
   
   if (family == "cmp") {
     print("Start determining start values.")
@@ -59,7 +60,7 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
       data = data, init_disp_one = control$init_disp_one
     )
     
-    print("Start model fitting. This will at least take a little bit of time.")
+    print("Start model fitting. This will take a little bit of time.")
     fit <- run_newem(
       data = data, 
       init_params = start_values, 

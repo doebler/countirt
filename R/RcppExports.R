@@ -125,6 +125,10 @@ marg_ll_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, p_cov_
     .Call(`_countirt_marg_ll_cmp_with_pcov_cpp`, data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
+marg_ll_cmp_with_pcov_cat_cpp <- function(data, alphas, deltas, disps, betas, p_cov_data, resp_pattern, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_marg_ll_cmp_with_pcov_cat_cpp`, data, alphas, deltas, disps, betas, p_cov_data, resp_pattern, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
 marg_ll_cmp_with_icov_delta_cpp <- function(data, alphas, delta, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_marg_ll_cmp_with_icov_delta_cpp`, data, alphas, delta, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }

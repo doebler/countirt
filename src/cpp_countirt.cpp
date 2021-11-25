@@ -1793,8 +1793,7 @@ double marg_ll_cmp_with_pcov_cat_cpp (NumericMatrix data,
                                   NumericVector disps,
                                   NumericVector betas,
                                   NumericMatrix p_cov_data,
-                                  double num_p_cov,
-                                  IntegerVector num_levels_p_cov, 
+                                  NumericMatrix resp_pattern, 
                                   NumericVector nodes,
                                   NumericVector weights,
                                   NumericVector grid_mus,
@@ -1803,80 +1802,81 @@ double marg_ll_cmp_with_pcov_cat_cpp (NumericMatrix data,
                                   NumericVector grid_log_lambda_long,
                                   double max_mu,
                                   double min_mu) {
+  // assume that p_cov is a matrix of dummy coded categorical predictors
+  // resp_pattern is a matrix of the same no. of cols than p_cov
+  // and as many rows as we have distinct possible response patterns
   
   int N = data.nrow();
   int M = data.ncol();
   int K = nodes.size();
-  int P = betas.size();
-  // assume that p_cov is a matrix of dummy coded categorical predictors
-  // as we then don't know how many categorical factors there actually are, we
-  // also have the n_p_cov argument (because with dummy coding), we know that as one
-  // category is 1, the others must be zero (or all zero because we are in the reference group)
-  // so with the num_p_cov argument, we know how many p_cov we have,
-  // and with the vector num_levels_p_cov we know for each of those covariates
-  // how many levels it has
+  int P = betas.size(); 
+  int n_resp_patterns = resp_pattern.nrow();
   
   // for person covariates, we need mus (and lambdas and Zs) for each node and
-  // and then also for both possible values of each covariate, those being 0 and 1
-  // as we dummy coded categorical person covariates
-  // now, they could be in different combinations across covariates, so what we need 
-  // is as many mu's as we have sum(covariate levels) across all covariates
+  // and then also for each response pattern
   // so first compute that
-  int cov_levels = 0;
-  int L = num_levels_p_cov.size();
-  for (int l=0; l<L; l++) {
-    cov_levels += num_levels_p_cov(l);
-  }
-  NumericMatrix mu(K*cov_levels, M);
-  NumericMatrix mu_interp(K*cov_levels, M);
-  NumericMatrix disp_interp(K*cov_levels, M);
-  for (int l=0; l<L; l++) {
+  NumericMatrix mu(K*n_resp_patterns, M);
+  NumericMatrix mu_interp(K*n_resp_patterns, M);
+  NumericMatrix disp_interp(K*n_resp_patterns, M);
+  for (int l=0; l<n_resp_patterns; l++) {
     for(int j=0; j<M; j++){
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        
-        // check which covariate we are on with the level
-        
-        
         double log_mu = alphas[j] * nodes[k] + deltas[j];
         for(int p=0; p<P; p++) {
-          // add all the (weighted) covariate values for all covariates for the item j
-          // (for the specific person i we are currently looking at)
-          log_mu += betas[p] * alphas[j] * p_cov_data(i,p);
+          // this works because only includes columns for none-reference categories
+          // for all covs in ref categories, resp_pattern will just always be zero in that row
+          log_mu += betas[p] * alphas[j] * resp_pattern(l,p);
         }
-        mu(k+i*K,j) = exp(log_mu);
-        mu_interp(k+i*K,j) = mu(k+i*K,j);
-        if (mu(k+i*K,j) > max_mu) { mu_interp(k+i*K,j) = max_mu; }
-        if (mu(k+i*K,j) < min_mu) { mu_interp(k+i*K,j) = min_mu; }
+        
+        mu(k+l*K,j) = exp(log_mu);
+        mu_interp(k+l*K,j) = mu(k+l*K,j);
+        if (mu(k+l*K,j) > max_mu) { mu_interp(k+l*K,j) = max_mu; }
+        if (mu(k+l*K,j) < min_mu) { mu_interp(k+l*K,j) = min_mu; }
         // we need to set maximum for mu to max_mu so that the interpolation will
         // work, max_mu is the maximum mu value in our grid for interpolation
-        disp_interp(k+i*K,j) = disps[j];
+        disp_interp(k+l*K,j) = disps[j];
       }
     }  // end loop over items
   }
   
-  
-  NumericMatrix log_lambda(K*N, M);
-  NumericMatrix log_Z(K*N, M);
+  NumericMatrix log_lambda(K*n_resp_patterns, M);
+  NumericMatrix log_Z(K*n_resp_patterns, M);
   log_lambda = interp_from_grid_m(grid_mus, grid_nus,
                                   grid_log_lambda_long,
                                   mu_interp, disp_interp);
   log_Z = interp_from_grid_m(grid_mus, grid_nus,
                              grid_logZ_long,
                              mu_interp, disp_interp);
-  // V and log_lambda are matrices with as many rows as we have nodes*persons and
-  // as many columns as we have (same as mu_interp and nu_interp matrices)
   
   double log_marg_prob = 0;
   
   for(int i=0;i<N;i++){
+    // check what response pattern person i had
+    int l = 0;
+    bool pattern_match = false;
+    while (!pattern_match && l<n_resp_patterns) {
+      // the second condition is just for safety that we don't get an eternal while loop
+      // but we should always find a pattern match
+      for (int p=0; p<P; p++) {
+        pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
+      }
+      // if the rows are the same, i am going to get out the foor loop with
+      // pattern_match = TRUE and have l at the row of the pattern matrix
+      // otherwise I am going to increase l by 1 and stay in the while loop to see if
+      // the next row in the pattern matrix is a match for i
+      if (!pattern_match) { l += 1; }
+    }
+    
+    // we now know that person i has a response pattern like in row l of resp_pattern matrix
+    // so their mu (and lambda, etc.) should be at row k+l*K
     double integral = 0;
     for(int k=0;k<K;k++) {
       // qudrature over nodes
       double f = 0;
       for(int j=0;j<M;j++) {
-        f = f + data(i,j)*log_lambda(k+i*K,j) - log_Z(k+i*K,j) - disps[j]*lgamma(data(i,j)+1);
+        f = f + data(i,j)*log_lambda(k+l*K,j) - log_Z(k+l*K,j) - disps[j]*lgamma(data(i,j)+1);
       }
       integral = integral + exp(f + log(weights[k]));
     }

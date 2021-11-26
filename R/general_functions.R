@@ -50,8 +50,6 @@ get_var_cmp <- function(mu, nu){
   # current fineness of the gridded pre-computed values
   mu <- ifelse(mu > 200, 200, mu)
   
-  grid_cmp_var_long <- as.vector(grid_cmp_var)
-  
   # perform bicubic interpolant on logLambda and logZ
   var <- interp_from_grid_v(grid_mus, grid_nus, grid_cmp_var_long, mu, nu)
   return(var)
@@ -60,6 +58,8 @@ get_var_cmp <- function(mu, nu){
 # dcmp --------------------------------------------------------------------------
 dcmp <- function(data, mu, nu, logprob = FALSE) {
   # only works for length(data) = length(mu) = length(nu)
+  # TODO besser vektorisieren und die truncation in c++ machen und hier
+  # mit min_mu und max_mu arbeiten wie auch in meinen gradienten
   
   mu <- ifelse(mu > 200, 200, mu)
   

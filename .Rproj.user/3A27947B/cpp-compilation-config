@@ -2,8 +2,9 @@
     "args": [
         "-I/Library/Developer/CommandLineTools/usr/lib/clang/10.0.1/include",
         "-I/usr/local/clang6/include/c++/v1",
+        "-I/usr/local/include",
         "-I/usr/local/clang6/lib/clang/6.0.0/include",
-        "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+        "-I/usr/include",
         "-I/Library/Frameworks/R.framework/Versions/4.0/Resources/library/Rcpp/include",
         "-I/Library/Frameworks/R.framework/Versions/4.0/Resources/library/RcppGSL/include",
         "-std=gnu++11",
@@ -15,5 +16,5 @@
     ],
     "pch": "Rcpp",
     "is_cpp": true,
-    "hash": "163179321316318658411629645100"
+    "hash": "163179321316378390611629645100"
 }

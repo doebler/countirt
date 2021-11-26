@@ -1,21 +1,7 @@
-# set up the tables ------------------------------------------------------------------
-
-# set_up_interp_tables <- function() {
-#   grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
-#   grid_nus <- c(1e-100, seq(0.01, 1, by = 0.01), seq(1.1,50,0.1))
-#   grid_log_lambda_long <- as.vector(grid_log_lambda)
-#   grid_logZ_long <- as.vector(grid_log_Z)
-#   grid_cmp_var_long <- as.vector(grid_cmp_var)
-# }
-
 
 # log_lambda_from_grid --------------------------------------------------------------
 log_lambda_from_grid <- function(mu, nu){
   
-  # for numerical stability, set mu > 500 to 500
-  # Warning: only works if in comparison to mean, observation is negligably small
-  # and density will be 0 anyways; dcmp is not a stable implementation of density
-  # if mean > 500 and density is actually relevant and different from 0
   mu <- ifelse(mu > 200, 200, mu)
   
   if (length(nu) == 1) {
@@ -33,10 +19,6 @@ log_lambda_from_grid <- function(mu, nu){
 # lambda_from_grid -----------------------------------------------------------------
 lambda_from_grid <- function(mu, nu){
   
-  # for numerical stability, set mu > 500 to 500
-  # Warning: only works if in comparison to mean, observation is negligably small
-  # and density will be 0 anyways; dcmp is not a stable implementation of density
-  # if mean > 500 and density is actually relevant and different from 0
   mu <- ifelse(mu > 200, 200, mu)
   
   lambda_grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))
@@ -101,10 +83,6 @@ get_var_cmp <- function(mu, nu){
 dcmp <- function(data, mu, nu, logprob = FALSE) {
   # only works for length(data) = length(mu) = length(nu)
   
-  # for numerical stability, set mu > 500 to 500
-  # Warning: only works if in comparison to mean, observation is negligably small
-  # and density will be 0 anyways; dcmp is not a stable implementation of density
-  # if mean > 500 and density is actually relevant and different from 0
   mu <- ifelse(mu > 200, 200, mu)
   
   grid_mus <- c(1e-100, seq(0.001, 1, by = 0.001), as.numeric(2:200))

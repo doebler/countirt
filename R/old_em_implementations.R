@@ -190,37 +190,6 @@ grad_cmp <- function(item_params, e_values, weights_and_nodes) {
   return(grads)
 }
 
-grad_e_ll_cmp_fixdisps <- function(item_params, e_values, weights_and_nodes, fix_disps) {
-  #print("item params:")
-  #print(item_params)
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
-  disps <- fix_disps
-  n_items <- length(alphas)
-  
-  grads <- numeric(length(item_params))
-  for(j in 1:length(item_params)) {
-    # for all nodes compute cmp mean
-    if(grepl("alpha", names(item_params)[j])) {
-      mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-      V_j <- get_var_cmp(mu_j, disps[j])
-      # compute lambdas for current item parameter and all nodes
-      # we need the expected counts for the current item j at each of node k
-      # lambda_j is a vector with k elements here, as is r_j and f_j
-      grads[j] <- sum((weights_and_nodes$x * mu_j / V_j) * (e_values[[j]][["r_j"]] -
-                                                              mu_j * e_values[[j]][["f_j"]]))
-    } else if (grepl("delta", names(item_params)[j])){
-      mu_j <- exp(alphas[j - n_items] * weights_and_nodes$x + deltas[j - n_items])
-      V_j <- get_var_cmp(mu_j, disps[j - n_items])
-      # compute lambdas for current item parameter and all nodes
-      grads[j] <- sum((mu_j / V_j) * (e_values[[j - n_items]][["r_j"]] -
-                                        mu_j * e_values[[j - n_items]][["f_j"]]))
-    } 
-  }
-  #print(grads)
-  return(grads)
-}
-
 grad_cmp_fixdisps <- function(item_params, e_values, weights_and_nodes, fix_disps) {
   # print(item_params)
   alphas <- item_params[grepl("alpha", names(item_params))]

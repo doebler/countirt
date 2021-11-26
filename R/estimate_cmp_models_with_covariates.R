@@ -1,11 +1,12 @@
 
+# TODO weitermachen mit tests der item und personen parameter
+
 # estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, 
                                p_covariates, i_covariates,
                                weights_and_nodes,
                                i_cov_on = c("alpha", "delta", "log_disp"),
                                p_cov_cat = TRUE,
-                               num_levels_p_cov = NULL,
                                resp_patterns_matrix = NULL) {
   # p_covariates is a matrix with the person covariates (MxP)
   # i_covariates is a matrix with the item covariates (M+I)
@@ -226,10 +227,14 @@ estep_cmp_with_cov <- function(data, item_params,
   return(PPs)
 }
 
+# TODO num_levels_p_cov rausnehmen aus allem bis auf run_em weil ich das glaube ich gar nicht brauche
+
 # grad_cmp_with_cov ----------------------------------------------------------------------
 grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, 
                               p_covariates, i_covariates,
-                              i_cov_on = c("alpha", "delta", "log_disp")) {
+                              i_cov_on = c("alpha", "delta", "log_disp"),
+                              p_cov_cat = TRUE,
+                              resp_patterns_matrix = NULL) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params)) &
                           !grepl("beta", names(item_params))]
@@ -245,22 +250,42 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    grads <- grad_cmp_with_pcov_cpp(
-      alphas = alphas,
-      deltas = deltas,
-      disps = disps,
-      betas = betas_p,
-      data = as.matrix(data),
-      p_cov_data = as.matrix(p_covariates),
-      PPs = PPs,
-      nodes = weights_and_nodes$x,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_cmp_var_long = grid_cmp_var_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      grid_logZ_long = grid_logZ_long,
-      max_mu = 200,
-      min_mu = 0.001)
+    if (p_cov_cat) {
+      grads <- grad_cmp_with_pcov_cat_cpp(
+        alphas = alphas,
+        deltas = deltas,
+        disps = disps,
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    } else {
+      grads <- grad_cmp_with_pcov_cpp(
+        alphas = alphas,
+        deltas = deltas,
+        disps = disps,
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    }
   } else if (!is.null(i_covariates)) { 
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
@@ -432,7 +457,9 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
 grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes, 
                                        data, fix_disps,
                                        p_covariates, i_covariates,
-                                       i_cov_on = c("alpha", "delta")) {
+                                       i_cov_on = c("alpha", "delta"),
+                                       p_cov_cat = TRUE,
+                                       resp_patterns_matrix = NULL) {
 
   alphas <- item_params[grepl("alpha", names(item_params))]
   # note that alphas is a scalar if we have item covariates on alpha
@@ -444,23 +471,44 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    grads <- grad_cmp_with_pcov_fixdisps_cpp(
-      alphas = alphas, 
-      deltas = deltas, 
-      disps = disps, 
-      betas = betas_p,
-      data = as.matrix(data),
-      p_cov_data = as.matrix(p_covariates),
-      PPs = PPs,
-      nodes = weights_and_nodes$x,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_cmp_var_long = grid_cmp_var_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      grid_logZ_long = grid_logZ_long,
-      max_mu = 200,
-      min_mu = 0.001
-    )
+    if (p_cov_cat) {
+      grads <- grad_cmp_with_pcov_cat_fixdisps_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    } else {
+      grads <- grad_cmp_with_pcov_fixdisps_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    }
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameters we have the covariates
     if (length(i_cov_on) == 1) {
@@ -545,7 +593,9 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
 grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
                                         data, fix_alphas,
                                         p_covariates, i_covariates,
-                                        i_cov_on = c("delta", "log_disp")) {
+                                        i_cov_on = c("delta", "log_disp"),
+                                        p_cov_cat = TRUE, 
+                                        resp_patterns_matrix = NULL) {
   
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params)) &
@@ -560,23 +610,44 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    grads <- grad_cmp_with_pcov_fixalphas_cpp(
-      alphas = alphas, 
-      deltas = deltas, 
-      disps = disps, 
-      betas = betas_p,
-      data = as.matrix(data),
-      p_cov_data = as.matrix(p_covariates),
-      PPs = PPs,
-      nodes = weights_and_nodes$x,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_cmp_var_long = grid_cmp_var_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      grid_logZ_long = grid_logZ_long,
-      max_mu = 200,
-      min_mu = 0.001
-    )
+    if (p_cov_cat) {
+      grads <- grad_cmp_with_pcov_cat_fixalphas_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    } else {
+      grads <- grad_cmp_with_pcov_fixalphas_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    }
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have the covariates
     if (length(i_cov_on) == 1) {
@@ -665,7 +736,9 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
 grad_cmp_with_cov_samedisps <- function(item_params, PPs, 
                                         weights_and_nodes, data,
                                         p_covariates, i_covariates,
-                                        i_cov_on = c("alpha", "delta", "log_disp")) {
+                                        i_cov_on = c("alpha", "delta"),
+                                        p_cov_cat = TRUE,
+                                        resp_patterns_matrix = NULL) {
   
   alphas <- item_params[grepl("alpha", names(item_params)) &
                           !grepl("beta", names(item_params))]
@@ -680,23 +753,44 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    grads <- grad_cmp_with_pcov_samedisps_cpp(
-      alphas = alphas, 
-      deltas = deltas, 
-      disps = disps, 
-      betas = betas_p,
-      data = as.matrix(data),
-      p_cov_data = as.matrix(p_covariates),
-      PPs = PPs,
-      nodes = weights_and_nodes$x,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_cmp_var_long = grid_cmp_var_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      grid_logZ_long = grid_logZ_long,
-      max_mu = 200,
-      min_mu = 0.001
-    )
+    if (p_cov_cat) {
+      grads <- grad_cmp_with_pcov_cat_samedisps_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    } else {
+      grads <- grad_cmp_with_pcov_samedisps_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    }
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
@@ -779,16 +873,13 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   return(grads)
 }
 
-# TODO hier weitermachen und argumente p_cov_cat = TRUE,
-# num_levels_p_cov = num_levels_p_cov,
-# resp_patterns_matrix = resp_patterns_matrix, bei den funktionen ab hier einfuegen
-# und c++ code anpassen
-
 # grad_cmp_with_cov_samealphas -----------------------------------------------------
 grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
                                          weights_and_nodes, data,
                                          p_covariates, i_covariates,
-                                         i_cov_on = c("delta", "log_disp")) {
+                                         i_cov_on = c("delta", "log_disp"),
+                                         p_cov_cat = TRUE, 
+                                         resp_patterns_matrix = NULL) {
   
   deltas <- item_params[grepl("delta", names(item_params)) & 
                           !grepl("beta", names(item_params))]
@@ -807,23 +898,44 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    grads <- grad_cmp_with_pcov_samealphas_cpp(
-      alphas = alphas, 
-      deltas = deltas, 
-      disps = disps, 
-      betas = betas_p,
-      data = as.matrix(data),
-      p_cov_data = as.matrix(p_covariates),
-      PPs = PPs,
-      nodes = weights_and_nodes$x,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_cmp_var_long = grid_cmp_var_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      grid_logZ_long = grid_logZ_long,
-      max_mu = 200,
-      min_mu = 0.001
-    )
+    if (p_cov_cat) {
+      grads <- grad_cmp_with_pcov_cat_samealphas_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    } else {
+      grads <- grad_cmp_with_pcov_samealphas_cpp(
+        alphas = alphas, 
+        deltas = deltas, 
+        disps = disps, 
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        PPs = PPs,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    }
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
@@ -914,7 +1026,6 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
                              data, p_covariates, i_covariates,
                              i_cov_on = c("alpha", "delta", "log_disp"),
                              p_cov_cat = TRUE,
-                             num_levels_p_cov = NULL,
                              resp_patterns_matrix = NULL) {
   # ell without any restrictions
   
@@ -1145,7 +1256,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   p_covariates, i_covariates,
                                   i_cov_on = c("alpha", "delta", "log_disp"),
                                   p_cov_cat = TRUE,
-                                  num_levels_p_cov = NULL,
                                   resp_patterns_matrix = NULL,
                                   ctol_maxstep = 1e-8, m_method = "nleqslv",
                                   fix_disps = NULL, fix_alphas = NULL,
@@ -1162,7 +1272,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
@@ -1176,7 +1285,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
       )$x
@@ -1232,7 +1340,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
@@ -1246,7 +1353,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
       )$x
@@ -1300,7 +1406,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
@@ -1314,7 +1419,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
       )$x
@@ -1368,7 +1472,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
@@ -1382,7 +1485,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps,
         control = list(xtol = ctol_maxstep)
@@ -1437,7 +1539,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
@@ -1451,7 +1552,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov, 
         resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas,
         control = list(xtol = ctol_maxstep)
@@ -1468,7 +1568,6 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                  p_covariates, i_covariates, 
                                  i_cov_on = c("alpha", "delta", "log_disp"),
                                  p_cov_cat = TRUE,
-                                 num_levels_p_cov = NULL,
                                  resp_patterns_matrix = NULL,
                                  fix_disps = NULL, fix_alphas = NULL, 
                                  same_disps = FALSE, same_alphas = FALSE) {
@@ -1683,7 +1782,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   return(ll)
 }
 
-# run_newem ----------------------------------------------------------------------
+# run_em_cmp_with_cov ----------------------------------------------------------------------
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
                                 p_covariates, i_covariates, 
                                 i_cov_on = c("alpha", "delta", "log_disp"),
@@ -1734,7 +1833,6 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
       i_covariates = i_covariates,
       i_cov_on = i_cov_on,
       p_cov_cat = p_cov_cat,
-      num_levels_p_cov = num_levels_p_cov,
       resp_patterns_matrix = resp_patterns_matrix,
       ctol_maxstep = ctol_maxstep,
       m_method = m_method,
@@ -1756,7 +1854,6 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
@@ -1777,7 +1874,6 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
-        num_levels_p_cov = num_levels_p_cov,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,

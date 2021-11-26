@@ -54,6 +54,12 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # faktoren in der kovariaten matrix dummy coded sind; und zwar so wie ich das
   # erwarte also mit ohne die spalten der referenzkategorien
   
+  # TODO in dem fall von p_cov_cat = TRUE muss ich fuer die run_em funktion das
+  # argument num_levels_p_cov setzen und dafuer bestimmen wie viele levels ich 
+  # pro faktor habe
+  
+  # TODO die fallunterscheidung fuer run_em normal vs mit covaraites einbauchen
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(

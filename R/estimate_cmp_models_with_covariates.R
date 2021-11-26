@@ -3,7 +3,10 @@
 estep_cmp_with_cov <- function(data, item_params, 
                                p_covariates, i_covariates,
                                weights_and_nodes,
-                               i_cov_on = c("alpha", "delta", "log_disp")) {
+                               i_cov_on = c("alpha", "delta", "log_disp"),
+                               p_cov_cat = TRUE,
+                               num_levels_p_cov = NULL,
+                               resp_patterns_matrix = NULL) {
   # p_covariates is a matrix with the person covariates (MxP)
   # i_covariates is a matrix with the item covariates (M+I)
   
@@ -22,22 +25,45 @@ estep_cmp_with_cov <- function(data, item_params,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    PPs <- estep_cmp_with_pcov_cpp(
-      data = as.matrix(data),
-      alphas = alphas,
-      deltas = deltas,
-      disps = disps,
-      betas = betas_p,
-      p_cov_data = as.matrix(p_covariates),
-      nodes = weights_and_nodes$x,
-      weights = weights_and_nodes$w,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_logZ_long = grid_logZ_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      max_mu = 200,
-      min_mu = 0.001
-    )
+    if (p_cov_cat) {
+      PPs <- estep_cmp_with_pcov_cat_cpp(
+        data = as.matrix(data),
+        alphas = alphas,
+        deltas = deltas,
+        disps = disps,
+        betas = betas_p,
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        nodes = weights_and_nodes$x,
+        weights = weights_and_nodes$w,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_logZ_long = grid_logZ_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+      # note: within the estep function, we work with response patterns here but
+      # we then already select the correct response pattern for each person, so 
+      # as always, we return a NxK matrix here
+    } else {
+      PPs <- estep_cmp_with_pcov_cpp(
+        data = as.matrix(data),
+        alphas = alphas,
+        deltas = deltas,
+        disps = disps,
+        betas = betas_p,
+        p_cov_data = as.matrix(p_covariates),
+        nodes = weights_and_nodes$x,
+        weights = weights_and_nodes$w,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_logZ_long = grid_logZ_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        max_mu = 200,
+        min_mu = 0.001
+      )
+    }
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have the covaraites
     if (length(i_cov_on) == 1) {
@@ -753,6 +779,11 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   return(grads)
 }
 
+# TODO hier weitermachen und argumente p_cov_cat = TRUE,
+# num_levels_p_cov = num_levels_p_cov,
+# resp_patterns_matrix = resp_patterns_matrix, bei den funktionen ab hier einfuegen
+# und c++ code anpassen
+
 # grad_cmp_with_cov_samealphas -----------------------------------------------------
 grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
                                          weights_and_nodes, data,
@@ -881,7 +912,10 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
 # ell_cmp_with_cov -------------------------------------------------------------------
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates,
-                             i_cov_on = c("alpha", "delta", "log_disp") ) {
+                             i_cov_on = c("alpha", "delta", "log_disp"),
+                             p_cov_cat = TRUE,
+                             num_levels_p_cov = NULL,
+                             resp_patterns_matrix = NULL) {
   # ell without any restrictions
   
   # prep item parameters
@@ -899,23 +933,44 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) {
-    ell <- ell_cmp_with_pcov_cpp(
-      alphas = alphas,
-      deltas = deltas,
-      disps = disps,
-      betas = betas_p,
-      data = as.matrix(data),
-      p_cov_data = as.matrix(p_covariates),
-      PPs = PPs,
-      weights = weights_and_nodes$w,
-      nodes = weights_and_nodes$x,
-      grid_mus = grid_mus,
-      grid_nus = grid_nus,
-      grid_cmp_var_long = grid_cmp_var_long,
-      grid_log_lambda_long = grid_log_lambda_long,
-      grid_logZ_long = grid_logZ_long,
-      max_mu = 200,
-      min_mu = 0.001)
+    if (p_cov_cat) {
+      ell <- ell_cmp_with_pcov_cat_cpp(
+        alphas = alphas,
+        deltas = deltas,
+        disps = disps,
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        resp_pattern = resp_patterns_matrix,
+        PPs = PPs,
+        weights = weights_and_nodes$w,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    } else {
+      ell <- ell_cmp_with_pcov_cpp(
+        alphas = alphas,
+        deltas = deltas,
+        disps = disps,
+        betas = betas_p,
+        data = as.matrix(data),
+        p_cov_data = as.matrix(p_covariates),
+        PPs = PPs,
+        weights = weights_and_nodes$w,
+        nodes = weights_and_nodes$x,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    }
   } else if (!is.null(i_covariates)) { 
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
@@ -1085,11 +1140,6 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
   return(ell)
 }
 
-# TODO hier weitermachen und argumente p_cov_cat = TRUE,
-# num_levels_p_cov = num_levels_p_cov,
-# resp_patterns_matrix = resp_patterns_matrix, bei den funktionen ab hier einfuegen
-# und c++ code anpassen
-
 # newem_em_cycle ---------------------------------------------------------------------
 em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   p_covariates, i_covariates,
@@ -1125,6 +1175,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!same_disps & same_alphas) { 
@@ -1143,6 +1196,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # if we have the constraint of same alphas, we can either have covariates
       # on just delta or just log_disp, in which case we just have betas_i,
       # or we could have covariates on delta and log_disp together (or person covariates)
+      # with the constraint, we can't have item covariates on all three parameters
       if (length(i_cov_on) == 2) {
         # must be covariates on delta and log_disp together
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
@@ -1176,7 +1230,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
       new_item_params <- nleqslv(
@@ -1188,6 +1245,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_disps & !same_alphas) {
@@ -1206,6 +1266,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # if we have the constraint of same disps, we can either have item covariates 
       # on just alpha or just delta or both together (can't have covariates on all three)
       # (or person covariates)
+      # but with the constraint, we can't have item covariates on all three parameters
       if (length(i_cov_on) == 2) {
         betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
@@ -1237,7 +1298,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
       new_item_params <- nleqslv(
@@ -1249,6 +1313,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -1267,6 +1334,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # if we have the constraint of fixed alphas, we can either have person covariates,
       # or item covariates on alpha or delta (then we just have betas_i) or we have
       # item covariates on alpha and delta together
+      # but with the constraint, we can't have item covriates on all three parameters
       if (length(i_cov_on) == 2) {
         betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
@@ -1298,7 +1366,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
       new_item_params <- nleqslv(
@@ -1310,6 +1381,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps,
         control = list(xtol = ctol_maxstep)
       )$x
@@ -1327,6 +1401,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # if we have the constraint of fixed alphas, we can either have covariates
       # on just delta or just log_disp, in which case we just have betas_i,
       # or we could have covariates on delta and log_disp together (or person covariates)
+      # but with the constraint, we can't have item covaraites on all three parameters
       if (length(i_cov_on) == 2) {
         # must be covariates on delta and log_disp together
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
@@ -1360,7 +1435,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix
       )
       # m step
       new_item_params <- nleqslv(
@@ -1372,6 +1450,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        num_levels_p_cov = num_levels_p_cov, 
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas,
         control = list(xtol = ctol_maxstep)
       )$x

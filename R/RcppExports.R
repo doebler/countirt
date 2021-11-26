@@ -293,6 +293,10 @@ ell_cmp_with_pcov_cpp <- function(alphas, deltas, disps, betas, data, p_cov_data
     .Call(`_countirt_ell_cmp_with_pcov_cpp`, alphas, deltas, disps, betas, data, p_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+ell_cmp_with_pcov_cat_cpp <- function(alphas, deltas, disps, betas, data, p_cov_data, resp_pattern, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_ell_cmp_with_pcov_cat_cpp`, alphas, deltas, disps, betas, data, p_cov_data, resp_pattern, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 ell_cmp_with_icov_delta_cpp <- function(alphas, delta, disps, betas, data, i_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_ell_cmp_with_icov_delta_cpp`, alphas, delta, disps, betas, data, i_cov_data, PPs, weights, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
@@ -359,5 +363,9 @@ estep_cmp_with_icov_alpha_delta_cpp <- function(data, alpha, delta, disps, betas
 
 estep_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_estep_cmp_with_pcov_cpp`, data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
+estep_cmp_with_pcov_cat_cpp <- function(data, alphas, deltas, disps, betas, p_cov_data, resp_pattern, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_cmp_with_pcov_cat_cpp`, data, alphas, deltas, disps, betas, p_cov_data, resp_pattern, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 

@@ -1,7 +1,7 @@
 [
     {
         "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-        "file_last_write": 1637839036.0,
+        "file_last_write": 1637931872.0,
         "definitions": [
             {
                 "usr": "c:@F@logFactorial#I#",
@@ -661,12 +661,21 @@
                 "column": 8
             },
             {
+                "usr": "c:@F@ell_cmp_with_pcov_cat_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "ell_cmp_with_pcov_cat_cpp(Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
+                "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
+                "line": 6563,
+                "column": 8
+            },
+            {
                 "usr": "c:@F@ell_cmp_with_icov_delta_cpp#I#d#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_delta_cpp(Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 6563,
+                "line": 6662,
                 "column": 8
             },
             {
@@ -675,7 +684,7 @@
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_alpha_cpp(double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 6644,
+                "line": 6743,
                 "column": 8
             },
             {
@@ -684,7 +693,7 @@
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_nu_cpp(Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 6725,
+                "line": 6824,
                 "column": 8
             },
             {
@@ -693,7 +702,7 @@
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_all_cpp(double, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 6810,
+                "line": 6909,
                 "column": 8
             },
             {
@@ -702,7 +711,7 @@
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_alpha_nu_cpp(double, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 6901,
+                "line": 7000,
                 "column": 8
             },
             {
@@ -711,7 +720,7 @@
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_delta_nu_cpp(Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 6990,
+                "line": 7089,
                 "column": 8
             },
             {
@@ -720,7 +729,7 @@
                 "parent_name": "",
                 "name": "ell_cmp_with_icov_alpha_delta_cpp(double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7079,
+                "line": 7178,
                 "column": 8
             },
             {
@@ -729,7 +738,7 @@
                 "parent_name": "",
                 "name": "e_values_newem_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7160,
+                "line": 7259,
                 "column": 15
             },
             {
@@ -738,7 +747,7 @@
                 "parent_name": "",
                 "name": "e_values_newem_cpp2(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7250,
+                "line": 7349,
                 "column": 15
             },
             {
@@ -747,7 +756,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_delta_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7328,
+                "line": 7427,
                 "column": 15
             },
             {
@@ -756,7 +765,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_alpha_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7414,
+                "line": 7513,
                 "column": 15
             },
             {
@@ -765,7 +774,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_nu_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7500,
+                "line": 7599,
                 "column": 15
             },
             {
@@ -774,7 +783,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_all_cpp(Rcpp::NumericMatrix, double, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7590,
+                "line": 7689,
                 "column": 15
             },
             {
@@ -783,7 +792,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_alpha_nu_cpp(Rcpp::NumericMatrix, double, Rcpp::NumericVector, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7687,
+                "line": 7786,
                 "column": 15
             },
             {
@@ -792,7 +801,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_delta_nu_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7782,
+                "line": 7881,
                 "column": 15
             },
             {
@@ -801,7 +810,7 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_icov_alpha_delta_cpp(Rcpp::NumericMatrix, double, double, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7877,
+                "line": 7976,
                 "column": 15
             },
             {
@@ -810,7 +819,16 @@
                 "parent_name": "",
                 "name": "estep_cmp_with_pcov_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
                 "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
-                "line": 7966,
+                "line": 8065,
+                "column": 15
+            },
+            {
+                "usr": "c:@F@estep_cmp_with_pcov_cat_cpp#I#I#I#I#I#I#I#I#I#I#I#I#I#d#d#",
+                "kind": 6,
+                "parent_name": "",
+                "name": "estep_cmp_with_pcov_cat_cpp(Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::NumericMatrix, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, Rcpp::NumericVector, double, double)",
+                "file": "/Users/mariebeisemann/Documents/14_countirt/countirt/src/cpp_countirt.cpp",
+                "line": 8164,
                 "column": 15
             }
         ]

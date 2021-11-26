@@ -163,71 +163,6 @@ grad_e_ll_pois_fixa <- function(item_params, e_values, weights_and_nodes, alphas
   return(grads)
 }
 
-# grad_e_ll_cmp <- function(item_params, e_values, weights_and_nodes) {
-#   alphas <- item_params[grepl("alpha", names(item_params))]
-#   deltas <- item_params[grepl("delta", names(item_params))]
-#   disps <- item_params[grepl("disp", names(item_params))]
-#   n_items <- length(alphas)
-#   
-#   grads <- numeric(length(item_params))
-#   for(j in 1:length(item_params)) {
-#     # for all nodes compute cmp mean
-#     if(grepl("alpha", names(item_params)[j])) {
-#       mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-#       V_j <- BayesComp_var(mu_j, disps[j])
-#       # compute lambdas for current item parameter and all nodes
-#       # we need the expected counts for the current item j at each of node k
-#       # lambda_j is a vector with k elements here, as is r_j and f_j
-#       grads[j] <- sum((weights_and_nodes$x * mu_j / V_j) * (e_values[[j]][["r_j"]] -
-#                                         - mu_j * e_values[[j]][["f_j"]]))
-#     } else if (grepl("delta", names(item_params)[j])){
-#       mu_j <- exp(alphas[j - n_items] * weights_and_nodes$x + deltas[j - n_items])
-#       V_j <- BayesComp_var(mu_j, disps[j - n_items])
-#       # compute lambdas for current item parameter and all nodes
-#       grads[j] <- sum((mu_j / V_j) * (e_values[[j - n_items]][["r_j"]] -
-#                                          - mu_j * e_values[[j - n_items]][["f_j"]]))
-#     } else {
-#       mu_j <- exp(alphas[j - 2*n_items] * weights_and_nodes$x + deltas[j - 2*n_items])
-#       V_j <- BayesComp_var(mu_j, disps[j - 2*n_items])
-#       # dispersion parameters
-#       # FIXME new version of BayesComp_lambdaZ returns lambda not logLambda
-#       lambda <- exp(BayesComp_lambdaZ(mu_j, disps[j - 2*n_items])$logLambda)
-#       e_logfac <- tmbElogFactorial(lambda, disps[j - 2*n_items])
-#       # to avoid getting NAs at the borders which will cause gradient to fail,
-#       # we will set them to 0 when they will be multiplied with a 0 in the gradient anyways
-#       # (or with a values as good as zero, i.e., 2e-52, double precision)
-#       e_logfac <- ifelse(
-#         e_values[[j - 2*n_items]][["f_j"]] <= 2e-52,
-#         ifelse(
-#           e_values[[j - 2*n_items]][["f_j"]] == 0,
-#           0, 
-#           2e-52
-#         ),
-#         e_logfac
-#       )
-#       e_logfac_x <- tmbYlogFactorial(lambda, disps[j - 2*n_items])
-#       e_logfac_x <- ifelse(
-#         (e_values[[j - 2*n_items]][["r_j"]] -
-#           mu_j * e_values[[j - 2*n_items]][["f_j"]]) <= 2e-52,
-#         ifelse(
-#           (e_values[[j - 2*n_items]][["r_j"]] -
-#              mu_j * e_values[[j - 2*n_items]][["f_j"]]) == 0,
-#           0,
-#           2e-52
-#         ),
-#         e_logfac_x
-#       )
-#       grads[j] <- sum((e_logfac * e_values[[j - 2*n_items]][["f_j"]]) - 
-#                         e_values[[j - 2*n_items]][["h_j"]] +
-#                         ((e_logfac_x - mu_j * e_logfac) / V_j) * 
-#                         (e_values[[j - 2*n_items]][["r_j"]] -
-#                         mu_j * e_values[[j - 2*n_items]][["f_j"]]))
-#     }
-#   }
-#   print(grads)
-#   return(grads)
-# }
-
 # we estimate the log dispersion instead of the dispersion because we need the
 # to bound the parameter space 
 grad_e_ll_cmp_logdisp <- function(item_params, e_values, weights_and_nodes) {
@@ -244,7 +179,6 @@ grad_e_ll_cmp_logdisp <- function(item_params, e_values, weights_and_nodes) {
     # for all nodes compute cmp mean
     if(grepl("alpha", names(item_params)[j])) {
       mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-      #V_j <- BayesComp_var(mu_j, disps[j])
       V_j <- get_var_cmp(mu_j, disps[j])
       # compute lambdas for current item parameter and all nodes
       # we need the expected counts for the current item j at each of node k

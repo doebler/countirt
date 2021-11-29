@@ -8840,9 +8840,7 @@ NumericMatrix estep_cmp_with_icov_alpha_delta_cpp(NumericMatrix data,
                                           NumericVector grid_logZ_long,
                                           NumericVector grid_log_lambda_long,
                                           double max_mu,
-                                          double min_mu,
-                                          double max_nu,
-                                          double min_nu) {
+                                          double min_mu) {
   
   int m = data.ncol();
   int n_nodes = nodes.size();

@@ -1315,7 +1315,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
           paste0("alpha", 1:n_items),
           names(item_params[grepl("delta", names(item_params)) & 
                               !grepl("beta", names(item_params))]),
-          names(item_params[grepl("log_disp", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params)) & 
+                              !grepl("beta", names(item_params))]),
           names(item_params[grepl("beta_i_delta", names(item_params))]),
           names(item_params[grepl("beta_i_log_disp", names(item_params))])
         )
@@ -2277,8 +2278,13 @@ get_start_values_cmp_with_cov <- function(data,
           # have covariates on delta then here
           # initial values for intercept on log disp
           for (i in 1:ncol(data)) {
-            mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
-            # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+            if (same_alpha) {
+              mu <- exp(init_deltas + init_alphas*sim_abilities)
+              # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+            } else {
+              mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
+              # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+            }
             sim <- rpois(nsim, mu)
             init_logdisps[i] <- log((var(sim) / var(data[,i])))
           }
@@ -2302,7 +2308,7 @@ get_start_values_cmp_with_cov <- function(data,
             paste0("alpha", 1:length(init_alphas)),
             paste0("delta", 1:length(init_deltas)),
             paste0("log_disp", 1:length(init_logdisps)),
-            paste0("beta_i_delta", 1:length(init_betas_i_alpha)),
+            paste0("beta_i_delta", 1:length(init_betas_i_delta)),
             paste0("beta_i_log_disp", 1:length(init_betas_i_logdisp))
           )
         }

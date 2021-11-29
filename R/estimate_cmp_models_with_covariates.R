@@ -2236,7 +2236,9 @@ get_start_values_cmp_with_cov <- function(data,
         # item covariates on alpha and log_disp or delta and log_disp
         if ("alpha" %in% i_cov_on) {
           # initial values for beta on alpha
-          init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
+          init_betas_i_alpha <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
+          # the b weight won't be named after alpha here because in this poisson model, we only
+          # have covariates on alpha then here
           # initial values for intercept on log_disp
           for (i in 1:ncol(data)) {
             mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
@@ -2270,7 +2272,9 @@ get_start_values_cmp_with_cov <- function(data,
         } else {
           # then we have the pairing delta and log_disp
           # initial values for bet on delta
-          init_betas_i_delta <- fit_pois$params[grepl("beta_i_delta", names(fit_pois$params))]
+          init_betas_i_delta <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
+          # the b weight won't be named after delta here because in this poisson model, we only
+          # have covariates on delta then here
           # initial values for intercept on log disp
           for (i in 1:ncol(data)) {
             mu <- exp(init_deltas + init_alphas[i]*sim_abilities)

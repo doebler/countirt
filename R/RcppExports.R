@@ -377,8 +377,8 @@ estep_cmp_with_icov_delta_nu_cpp <- function(data, alphas, delta, disp, betas_de
     .Call(`_countirt_estep_cmp_with_icov_delta_nu_cpp`, data, alphas, delta, disp, betas_delta, betas_logdisp, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu, max_nu, min_nu)
 }
 
-estep_cmp_with_icov_alpha_delta_cpp <- function(data, alpha, delta, disps, betas_alpha, betas_delta, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu, max_nu, min_nu) {
-    .Call(`_countirt_estep_cmp_with_icov_alpha_delta_cpp`, data, alpha, delta, disps, betas_alpha, betas_delta, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu, max_nu, min_nu)
+estep_cmp_with_icov_alpha_delta_cpp <- function(data, alpha, delta, disps, betas_alpha, betas_delta, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_cmp_with_icov_alpha_delta_cpp`, data, alpha, delta, disps, betas_alpha, betas_delta, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
 estep_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {

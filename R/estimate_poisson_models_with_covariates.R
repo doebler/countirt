@@ -145,7 +145,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
           # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
           # our lambda is person specific
-          grad_betas_p[p] <- grad_betas_i[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
+          grad_betas_p[p] <- grad_betas_p[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
         }
       }
     }

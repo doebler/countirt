@@ -1808,7 +1808,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
   marg_lls <- c()
   
   # prepare response patterns for categorical covariates
-  if (p_cov_cat) {
+  if (!is.null(p_covariates) & p_cov_cat) {
     # create a possible response patterns matrix for the dummy coded covariates
     n_resp_patterns <- prod(num_levels_p_cov)
     # for each covariate, I first create a matrix with their possible response pattens

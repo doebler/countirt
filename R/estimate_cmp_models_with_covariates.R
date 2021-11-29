@@ -2321,7 +2321,7 @@ get_start_values_cmp_with_cov <- function(data,
           paste0("delta", 1:length(init_deltas)),
           paste0("log_disp", 1:length(init_logdisps)),
           paste0("beta_i_alpha", 1:length(init_betas_i_alpha)),
-          paste0("beta_i_delta", 1:length(init_betas_i_logdisp))
+          paste0("beta_i_delta", 1:length(init_betas_i_delta))
         )
       }
     }

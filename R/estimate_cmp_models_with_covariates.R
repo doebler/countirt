@@ -227,8 +227,6 @@ estep_cmp_with_cov <- function(data, item_params,
   return(PPs)
 }
 
-# TODO num_levels_p_cov rausnehmen aus allem bis auf run_em weil ich das glaube ich gar nicht brauche
-
 # grad_cmp_with_cov ----------------------------------------------------------------------
 grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, 
                               p_covariates, i_covariates,

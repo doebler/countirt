@@ -27,7 +27,7 @@ estep_poisson_with_cov <- function(data, item_params,
     
     for (j in 1:ncol(data)) {
       lambdas <- exp(outer(
-        as.numeric(p_covariates %*% betas_p),
+        alphas[j] * as.numeric(p_covariates %*% betas_p),
         alphas[j] * weights_and_nodes$x + deltas[j],
         "+"
       ))
@@ -132,20 +132,26 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
     p_covariates <- as.matrix(p_covariates)
     for (j in 1:M) {
       for (k in 1:K) {
-        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
-        # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] +
+                        # alphas[j] * rowSums(t(apply(p_covariates, 1, function(x){x*betas_p}))))
+                        as.numeric(p_covariates%*%betas_p * alphas[j]))
+        # 2nd line is going to yield a vector of length N which we want so that then
         # our lambda is person specific
         grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
-        grad_alphas[j] <- grad_alphas[j] + sum((nodes[k]+p_covariates%*%betas_p)*(data[,j] - lambda)*PPs[,k])
+        grad_alphas[j] <- grad_alphas[j] + sum((nodes[k] +  as.numeric(p_covariates%*%betas_p))*
+                                                  #rowSums(t(apply(p_covariates, 1, function(x){x*betas_p}))))*
+                                                 (data[,j] - lambda)*PPs[,k])
       }
     }
     for (p in 1:P) {
       for (k in 1:K) {
         for (j in 1:M) {
-          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] +
+                          # alphas[j] * rowSums(t(apply(p_covariates, 1, function(x){x*betas_p}))))
+                           as.numeric(p_covariates%*%betas_p * alphas[j]))
           # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
           # our lambda is person specific
-          grad_betas_p[p] <- grad_betas_p[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
+          grad_betas_p[p] <- grad_betas_p[p] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
         }
       }
     }
@@ -615,9 +621,11 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
   betas_i <- item_params[grepl("beta_i", names(item_params))]
   
   if (!is.null(p_covariates)) { # case of person covariates
+    p_covariates <- as.matrix(p_covariates)
     # function to compute integral with quadrature over
     f <- function(z, data, p_cov_data, alphas, deltas, betas_p) {
-      sum_p_cov <- sum(betas_p * as.numeric(t(p_cov_data)))
+      # sum_p_cov <- sum(betas_p * as.numeric(t(p_cov_data)))
+      sum_p_cov <- as.numeric(p_cov_data%*%betas_p)
       out <- 0
       for (j in 1:n_items) {
         lambda <- exp(alphas[j] * z + deltas[j] + alphas[j] * sum_p_cov)

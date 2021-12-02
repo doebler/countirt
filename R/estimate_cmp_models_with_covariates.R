@@ -1,5 +1,5 @@
 
-# TODO weitermachen mit tests der item und personen parameter
+# TODO problem mit personen parametern fixen und testen
 
 # estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, 

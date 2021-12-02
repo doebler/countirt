@@ -1857,15 +1857,17 @@ double marg_ll_cmp_with_pcov_cat_cpp (NumericMatrix data,
     int l = 0;
     bool pattern_match = false;
     while (!pattern_match && l<n_resp_patterns) {
-      // the second condition is just for safety that we don't get an eternal while loop
+      // the second condition is just for safety that we dont get an eternal while loop
       // but we should always find a pattern match
+      LogicalVector check_resp(P);
       for (int p=0; p<P; p++) {
-        pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
       }
-      // if the rows are the same, i am going to get out the foor loop with
-      // pattern_match = TRUE and have l at the row of the pattern matrix
-      // otherwise I am going to increase l by 1 and stay in the while loop to see if
-      // the next row in the pattern matrix is a match for i
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
       if (!pattern_match) { l += 1; }
     }
     
@@ -2780,6 +2782,21 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
                              mu_interp, disp_interp);
   // V and log_lambda are matrices with as many rows as we have nodes*persons and
   // as many columns as we have (same as mu_interp and nu_interp matrices)
+  
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(n_nodes*n, m);
+  NumericMatrix B(n_nodes*n, m);
+  for (int j=0; j<m; j++) {
+    for (int i=0; i<n; i++) {
+      for (int k=0; k<n_nodes; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+i*n_nodes,j));
+        A(k+i*n_nodes,j) = computeA(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+        B(k+i*n_nodes,j) = computeB(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+      }
+    }
+  }
 
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
@@ -2795,11 +2812,6 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
       // as we now have (additionally) person specific mus and Vs
       for(int j=0;j<n;j++) {
         // loop over persons
-      
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+j*n_nodes,i));
-        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
         
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
@@ -2815,8 +2827,8 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
           PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*
           (data(j,i) - mu_interp(k+j*n_nodes,i));
         grad_disps[i] = grad_disps[i] +
-          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
-          (logFactorial(data(j,i))-B)));
+          PPs(j,k) * (disps[i]*(A(k+j*n_nodes,i)*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B(k+j*n_nodes,i))));
       }
     }
   }
@@ -2921,7 +2933,45 @@ NumericVector grad_cmp_with_pcov_cat_cpp(NumericVector alphas,
   V = interp_from_grid_m(grid_mus, grid_nus,
                          grid_cmp_var_long,
                          mu_interp, disp_interp);
-
+  
+  // compute A and B for all patterns just once so we don't have to compute them for each
+  // person again and again
+  NumericMatrix A(K*n_resp_patterns, M);
+  NumericMatrix B(K*n_resp_patterns, M);
+  for (int j=0; j<M; j++) {
+    for (int l=0; l<n_resp_patterns; l++) {
+      for (int k=0; k<K; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+l*K,j));
+        A(k+l*K,j) = computeA(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+        B(k+l*K,j) = computeB(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+      }
+    }
+  }
+  
+  // check what response pattern which person has once and save in a vector of length N 
+  // so that I only have to run this pattern matching once for all persons
+  NumericVector pattern_indices(N);
+  for (int i=0; i<N; i++) {
+    int l = 0;
+    bool pattern_match = false;
+    while (!pattern_match && l<n_resp_patterns) {
+      // the second condition is just for safety that we dont get an eternal while loop
+      // but we should always find a pattern match
+      LogicalVector check_resp(P);
+      for (int p=0; p<P; p++) {
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
+      }
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
+      if (!pattern_match) { l += 1; }
+    }
+    // we exit this while loop knowing that person i has pattern l
+    pattern_indices(i) = l;
+  }
   
   for(int i=0;i<M;i++){
     // over items (columns in my matrices)
@@ -2936,29 +2986,8 @@ NumericVector grad_cmp_with_pcov_cat_cpp(NumericVector alphas,
       for(int j=0;j<N;j++) {
         // loop over persons
         
-        // check what response pattern person i had
-        int l = 0;
-        bool pattern_match = false;
-        while (!pattern_match && l<n_resp_patterns) {
-          // the second condition is just for safety that we dont get an eternal while loop
-          // but we should always find a pattern match
-          for (int p=0; p<P; p++) {
-            pattern_match = p_cov_data(j,p) == resp_pattern(l,p);
-          }
-          // if the rows are the same, i am going to get out the foor loop with
-          // pattern_match = TRUE and have l at the row of the pattern matrix
-          // otherwise I am going to increase l by 1 and stay in the while loop to see if
-          // the next row in the pattern matrix is a match for i
-          if (!pattern_match) { l += 1; }
-        }
-        
-        // we now know that person i has a response pattern like in row l of resp_pattern matrix
-        // so their mu (and lambda, etc.) should be at row k+l*K
-        
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+l*K,i));
-        double A = computeA(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
-        double B = computeB(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
+        // get person j's response pattern index
+        int l = pattern_indices(j);
         
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
@@ -2971,8 +3000,8 @@ NumericVector grad_cmp_with_pcov_cat_cpp(NumericVector alphas,
           (data(j,i) -  mu_interp(k+l*K,i));
         grad_deltas[i] += PPs(j,k) * (mu_interp(k+l*K,i) / V(k+l*K,i))*
           (data(j,i) - mu_interp(k+l*K,i));
-        grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
-          (logFactorial(data(j,i))-B)));
+        grad_disps[i] += PPs(j,k) * (disps[i]*(A(k+l*K,i)*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
+          (logFactorial(data(j,i))-B(k+l*K,i))));
       }
     }
   }
@@ -2983,24 +3012,8 @@ NumericVector grad_cmp_with_pcov_cat_cpp(NumericVector alphas,
     for (int j=0; j<M; j++) { // over items
       for (int k=0; k<K; k++) { // over nodes (rows in my matrices)
         for (int i=0; i<N; i++) { // over persons
-          // check what response pattern person i had
-          int l = 0;
-          bool pattern_match = false;
-          while (!pattern_match && l<n_resp_patterns) {
-            // the second condition is just for safety that we dont get an eternal while loop
-            // but we should always find a pattern match
-            for (int p=0; p<P; p++) {
-              pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
-            }
-            // if the rows are the same, i am going to get out the foor loop with
-            // pattern_match = TRUE and have l at the row of the pattern matrix
-            // otherwise I am going to increase l by 1 and stay in the while loop to see if
-            // the next row in the pattern matrix is a match for i
-            if (!pattern_match) { l += 1; }
-          }
-          
-          // we now know that person i has a response pattern like in row l of resp_pattern matrix
-          // so their mu (and lambda, etc.) should be at row k+l*K
+          // get person i's response pattern index
+          int l = pattern_indices(i);
           
           grad_betas[p] += PPs(i,k) * (mu_interp(k+l*K,j) * alphas[j] * p_cov_data(i,p) / V(k+l*K,j)) *
             (data(i,j) - mu_interp(k+l*K,j));
@@ -4302,6 +4315,31 @@ NumericVector grad_cmp_with_pcov_cat_fixdisps_cpp(NumericVector alphas,
                          grid_cmp_var_long,
                          mu_interp, disp_interp);
   
+  // check what response pattern which person has once and save in a vector of length N 
+  // so that I only have to run this pattern matching once for all persons
+  NumericVector pattern_indices(N);
+  for (int i=0; i<N; i++) {
+    int l = 0;
+    bool pattern_match = false;
+    while (!pattern_match && l<n_resp_patterns) {
+      // the second condition is just for safety that we dont get an eternal while loop
+      // but we should always find a pattern match
+      LogicalVector check_resp(P);
+      for (int p=0; p<P; p++) {
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
+      }
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
+      if (!pattern_match) { l += 1; }
+    }
+    // we exit this while loop knowing that person i has pattern l
+    pattern_indices(i) = l;
+  }
+  
+  
   for(int i=0;i<M;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
@@ -4314,24 +4352,8 @@ NumericVector grad_cmp_with_pcov_cat_fixdisps_cpp(NumericVector alphas,
       for(int j=0; j<N; j++) {
         // loop over persons
         
-        // check what response pattern person i had
-        int l = 0;
-        bool pattern_match = false;
-        while (!pattern_match && l<n_resp_patterns) {
-          // the second condition is just for safety that we dont get an eternal while loop
-          // but we should always find a pattern match
-          for (int p=0; p<P; p++) {
-            pattern_match = p_cov_data(j,p) == resp_pattern(l,p);
-          }
-          // if the rows are the same, i am going to get out the foor loop with
-          // pattern_match = TRUE and have l at the row of the pattern matrix
-          // otherwise I am going to increase l by 1 and stay in the while loop to see if
-          // the next row in the pattern matrix is a match for i
-          if (!pattern_match) { l += 1; }
-        }
-        
-        // we now know that person i has a response pattern like in row l of resp_pattern matrix
-        // so their mu (and lambda, etc.) should be at row k+l*K
+        // get person j's response pattern index
+        int l = pattern_indices(j);
         
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
@@ -4354,24 +4376,8 @@ NumericVector grad_cmp_with_pcov_cat_fixdisps_cpp(NumericVector alphas,
     for (int j=0; j<M; j++) { // over items
       for (int k=0; k<K; k++) { // over nodes (rows in my matrices)
         for (int i=0; i<N; i++) { // over persons
-          // check what response pattern person i had
-          int l = 0;
-          bool pattern_match = false;
-          while (!pattern_match && l<n_resp_patterns) {
-            // the second condition is just for safety that we dont get an eternal while loop
-            // but we should always find a pattern match
-            for (int p=0; p<P; p++) {
-              pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
-            }
-            // if the rows are the same, i am going to get out the foor loop with
-            // pattern_match = TRUE and have l at the row of the pattern matrix
-            // otherwise I am going to increase l by 1 and stay in the while loop to see if
-            // the next row in the pattern matrix is a match for i
-            if (!pattern_match) { l += 1; }
-          }
-          
-          // we now know that person i has a response pattern like in row l of resp_pattern matrix
-          // so their mu (and lambda, etc.) should be at row k+l*K
+          // get person 's response pattern index
+          int l = pattern_indices(i);
           
           grad_betas[p] += PPs(i,k) * (mu_interp(k+l*K,j) * alphas[j] * p_cov_data(i,p) / V(k+l*K,j)) *
             (data(i,j) - mu_interp(k+l*K,j));
@@ -4930,6 +4936,21 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
   // V and log_lambda are matrices with as many rows as we have nodes*persons and
   // as many columns as we have (same as mu_interp and nu_interp matrices)
   
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(n_nodes*n, m);
+  NumericMatrix B(n_nodes*n, m);
+  for (int j=0; j<m; j++) {
+    for (int i=0; i<n; i++) {
+      for (int k=0; k<n_nodes; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+i*n_nodes,j));
+        A(k+i*n_nodes,j) = computeA(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+        B(k+i*n_nodes,j) = computeB(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+      }
+    }
+  }
+  
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
@@ -4944,17 +4965,12 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
       for(int j=0;j<n;j++) {
         // loop over persons
         
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+j*n_nodes,i));
-        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        
         grad_deltas[i] = grad_deltas[i] +
           PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
           mu_interp(k+j*n_nodes,i));
         grad_disps[i] = grad_disps[i] +
-          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
-          (logFactorial(data(j,i))-B)));
+          PPs(j,k) * (disps[i]*(A(k+j*n_nodes,i)*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B(k+j*n_nodes,i))));
       }
     }
   }
@@ -5058,6 +5074,45 @@ NumericVector grad_cmp_with_pcov_cat_fixalphas_cpp(NumericVector alphas,
                          grid_cmp_var_long,
                          mu_interp, disp_interp);
   
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(K*n_resp_patterns, M);
+  NumericMatrix B(K*n_resp_patterns, M);
+  for (int j=0; j<M; j++) {
+    for (int l=0; l<n_resp_patterns; l++) {
+      for (int k=0; k<K; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+l*K,j));
+        A(k+l*K,j) = computeA(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+        B(k+l*K,j) = computeB(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+      }
+    }
+  }
+  
+  // check what response pattern which person has once and save in a vector of length N 
+  // so that I only have to run this pattern matching once for all persons
+  NumericVector pattern_indices(N);
+  for (int i=0; i<N; i++) {
+    int l = 0;
+    bool pattern_match = false;
+    while (!pattern_match && l<n_resp_patterns) {
+      // the second condition is just for safety that we dont get an eternal while loop
+      // but we should always find a pattern match
+      LogicalVector check_resp(P);
+      for (int p=0; p<P; p++) {
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
+      }
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
+      if (!pattern_match) { l += 1; }
+    }
+    // we exit this while loop knowing that person i has pattern l
+    pattern_indices(i) = l;
+  }
+  
   for(int i=0; i<M; i++){
     // over items (columns in my matrices)
     // so that we get one gradient per item
@@ -5072,34 +5127,16 @@ NumericVector grad_cmp_with_pcov_cat_fixalphas_cpp(NumericVector alphas,
       for(int j=0;j<N;j++) {
         // loop over persons
         
-        // check what response pattern person j had
-        int l = 0;
-        bool pattern_match = false;
-        while (!pattern_match && l<n_resp_patterns) {
-          // the second condition is just for safety that we dont get an eternal while loop
-          // but we should always find a pattern match
-          for (int p=0; p<P; p++) {
-            pattern_match = p_cov_data(j,p) == resp_pattern(l,p);
-          }
-          // if the rows are the same, i am going to get out the foor loop with
-          // pattern_match = TRUE and have l at the row of the pattern matrix
-          // otherwise I am going to increase l by 1 and stay in the while loop to see if
-          // the next row in the pattern matrix is a match for i
-          if (!pattern_match) { l += 1; }
-        }
+        // get person js response pattern index
+        int l = pattern_indices(j);
         
         // we now know that person i has a response pattern like in row l of resp_pattern matrix
         // so their mu (and lambda, etc.) should be at row k+l*K
         
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+l*K,i));
-        double A = computeA(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
-        double B = computeB(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
-        
         grad_deltas[i] += PPs(j,k) * (mu_interp(k+l*K,i) / V(k+l*K,i))*(data(j,i) - 
           mu_interp(k+l*K,i));
-        grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
-          (logFactorial(data(j,i))-B)));
+        grad_disps[i] += PPs(j,k) * (disps[i]*(A(k+l*K,i)*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
+          (logFactorial(data(j,i))-B(k+l*K,i))));
       }
     }
   }
@@ -5117,13 +5154,15 @@ NumericVector grad_cmp_with_pcov_cat_fixalphas_cpp(NumericVector alphas,
           while (!pattern_match && l<n_resp_patterns) {
             // the second condition is just for safety that we dont get an eternal while loop
             // but we should always find a pattern match
+            LogicalVector check_resp(P);
             for (int p=0; p<P; p++) {
-              pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
+              check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
             }
-            // if the rows are the same, i am going to get out the foor loop with
-            // pattern_match = TRUE and have l at the row of the pattern matrix
-            // otherwise I am going to increase l by 1 and stay in the while loop to see if
-            // the next row in the pattern matrix is a match for i
+            bool sum_check_resp = true;
+            for (int p=0; p<P; p++) {
+              sum_check_resp &= check_resp[p];
+            }
+            pattern_match = sum_check_resp;
             if (!pattern_match) { l += 1; }
           }
           
@@ -5724,6 +5763,21 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
   // V and log_lambda are matrices with as many rows as we have nodes*persons and
   // as many columns as we have (same as mu_interp and nu_interp matrices)
   
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(n_nodes*n, m);
+  NumericMatrix B(n_nodes*n, m);
+  for (int j=0; j<m; j++) {
+    for (int i=0; i<n; i++) {
+      for (int k=0; k<n_nodes; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+i*n_nodes,j));
+        A(k+i*n_nodes,j) = computeA(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+        B(k+i*n_nodes,j) = computeB(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+      }
+    }
+  }
+  
   grad_disp = 0;
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
@@ -5739,11 +5793,6 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
       for(int j=0;j<n;j++) {
         // loop over persons
         
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+j*n_nodes,i));
-        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
         for (int p=0; p<P; p++) {
@@ -5758,8 +5807,8 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
           PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
           mu_interp(k+j*n_nodes,i));
         grad_disp = grad_disp +
-          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
-          (logFactorial(data(j,i))-B)));
+          PPs(j,k) * (disps[i]*(A(k+j*n_nodes,i)*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B(k+j*n_nodes,i))));
       }
     }
   }
@@ -5865,6 +5914,45 @@ NumericVector grad_cmp_with_pcov_cat_samedisps_cpp(NumericVector alphas,
                          grid_cmp_var_long,
                          mu_interp, disp_interp);
   
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(K*n_resp_patterns, M);
+  NumericMatrix B(K*n_resp_patterns, M);
+  for (int j=0; j<M; j++) {
+    for (int l=0; l<n_resp_patterns; l++) {
+      for (int k=0; k<K; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+l*K,j));
+        A(k+l*K,j) = computeA(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+        B(k+l*K,j) = computeB(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+      }
+    }
+  }
+  
+  // check what response pattern which person has once and save in a vector of length N 
+  // so that I only have to run this pattern matching once for all persons
+  NumericVector pattern_indices(N);
+  for (int i=0; i<N; i++) {
+    int l = 0;
+    bool pattern_match = false;
+    while (!pattern_match && l<n_resp_patterns) {
+      // the second condition is just for safety that we dont get an eternal while loop
+      // but we should always find a pattern match
+      LogicalVector check_resp(P);
+      for (int p=0; p<P; p++) {
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
+      }
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
+      if (!pattern_match) { l += 1; }
+    }
+    // we exit this while loop knowing that person i has pattern l
+    pattern_indices(i) = l;
+  }
+  
   grad_disp = 0;
   for(int i=0;i<M;i++){
     // over items (columns in my matrices)
@@ -5878,29 +5966,8 @@ NumericVector grad_cmp_with_pcov_cat_samedisps_cpp(NumericVector alphas,
       for(int j=0;j<N;j++) {
         // loop over persons
         
-        // check what response pattern person j had
-        int l = 0;
-        bool pattern_match = false;
-        while (!pattern_match && l<n_resp_patterns) {
-          // the second condition is just for safety that we dont get an eternal while loop
-          // but we should always find a pattern match
-          for (int p=0; p<P; p++) {
-            pattern_match = p_cov_data(j,p) == resp_pattern(l,p);
-          }
-          // if the rows are the same, i am going to get out the foor loop with
-          // pattern_match = TRUE and have l at the row of the pattern matrix
-          // otherwise I am going to increase l by 1 and stay in the while loop to see if
-          // the next row in the pattern matrix is a match for i
-          if (!pattern_match) { l += 1; }
-        }
-        
-        // we now know that person i has a response pattern like in row l of resp_pattern matrix
-        // so their mu (and lambda, etc.) should be at row k+l*K
-        
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+l*K,i));
-        double A = computeA(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
-        double B = computeB(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
+        // get person js response pattern index
+        int l = pattern_indices(j); 
         
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
@@ -5913,8 +5980,8 @@ NumericVector grad_cmp_with_pcov_cat_samedisps_cpp(NumericVector alphas,
           (data(j,i) -  mu_interp(k+l*K,i));
         grad_deltas[i] += PPs(j,k) * (mu_interp(k+l*K,i) / V(k+l*K,i))*(data(j,i) - 
           mu_interp(k+l*K,i));
-        grad_disp += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
-          (logFactorial(data(j,i))-B)));
+        grad_disp += PPs(j,k) * (disps[i]*(A(k+l*K,i)*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
+          (logFactorial(data(j,i))-B(k+l*K,i))));
       }
     }
   }
@@ -5925,24 +5992,8 @@ NumericVector grad_cmp_with_pcov_cat_samedisps_cpp(NumericVector alphas,
     for (int j=0; j<M; j++) { // over items
       for (int k=0; k<K; k++) { // over nodes (rows in my matrices)
         for (int i=0; i<N; i++) { // over persons
-          // check what response pattern person i had
-          int l = 0;
-          bool pattern_match = false;
-          while (!pattern_match && l<n_resp_patterns) {
-            // the second condition is just for safety that we dont get an eternal while loop
-            // but we should always find a pattern match
-            for (int p=0; p<P; p++) {
-              pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
-            }
-            // if the rows are the same, i am going to get out the foor loop with
-            // pattern_match = TRUE and have l at the row of the pattern matrix
-            // otherwise I am going to increase l by 1 and stay in the while loop to see if
-            // the next row in the pattern matrix is a match for i
-            if (!pattern_match) { l += 1; }
-          }
-          
-          // we now know that person i has a response pattern like in row l of resp_pattern matrix
-          // so their mu (and lambda, etc.) should be at row k+l*K
+          // get person js response pattern index
+          int l = pattern_indices(i);  
           
           grad_betas[p] += PPs(i,k) * (mu_interp(k+l*K,j) * alphas[j] * p_cov_data(i,p) / V(k+l*K,j)) *
             (data(i,j) - mu_interp(k+l*K,j));
@@ -6538,6 +6589,21 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
   // V and log_lambda are matrices with as many rows as we have nodes*persons and
   // as many columns as we have (same as mu_interp and nu_interp matrices)
   
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(n_nodes*n, m);
+  NumericMatrix B(n_nodes*n, m);
+  for (int j=0; j<m; j++) {
+    for (int i=0; i<n; i++) {
+      for (int k=0; k<n_nodes; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+i*n_nodes,j));
+        A(k+i*n_nodes,j) = computeA(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+        B(k+i*n_nodes,j) = computeB(lambda, mu_interp(k+i*n_nodes,j), disps[j], log_Z(k+i*n_nodes,j), 10);
+      }
+    }
+  }
+  
   grad_alpha = 0;
   for(int i=0;i<m;i++){
     // over items (columns in my matrices)
@@ -6553,11 +6619,6 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
       for(int j=0;j<n;j++) {
         // loop over persons
         
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+j*n_nodes,i));
-        double A = computeA(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        double B = computeB(lambda, mu_interp(k+j*n_nodes,i), disps[i], log_Z(k+j*n_nodes,i), 10);
-        
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
         for (int p=0; p<P; p++) {
@@ -6572,8 +6633,8 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
           PPs(j,k) * (mu_interp(k+j*n_nodes,i) / V(k+j*n_nodes,i))*(data(j,i) - 
           mu_interp(k+j*n_nodes,i));
         grad_disps[i] = grad_disps[i] +
-          PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
-          (logFactorial(data(j,i))-B)));
+          PPs(j,k) * (disps[i]*(A(k+j*n_nodes,i)*(data(j,i) - mu_interp(k+j*n_nodes,i))/V(k+j*n_nodes,i) - 
+          (logFactorial(data(j,i))-B(k+j*n_nodes,i))));
       }
     }
   }
@@ -6679,6 +6740,45 @@ NumericVector grad_cmp_with_pcov_cat_samealphas_cpp(NumericVector alphas,
                          grid_cmp_var_long,
                          mu_interp, disp_interp);
   
+  // compute A and B for all patterns just once so we dont have to compute them for each
+  // person again and again
+  NumericMatrix A(K*n_resp_patterns, M);
+  NumericMatrix B(K*n_resp_patterns, M);
+  for (int j=0; j<M; j++) {
+    for (int l=0; l<n_resp_patterns; l++) {
+      for (int k=0; k<K; k++) {
+        // compute A and B for dispersion gradient
+        double lambda = exp(log_lambda(k+l*K,j));
+        A(k+l*K,j) = computeA(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+        B(k+l*K,j) = computeB(lambda, mu_interp(k+l*K,j), disps[j], log_Z(k+l*K,j), 10);
+      }
+    }
+  }
+  
+  // check what response pattern which person has once and save in a vector of length N 
+  // so that I only have to run this pattern matching once for all persons
+  NumericVector pattern_indices(N);
+  for (int i=0; i<N; i++) {
+    int l = 0;
+    bool pattern_match = false;
+    while (!pattern_match && l<n_resp_patterns) {
+      // the second condition is just for safety that we dont get an eternal while loop
+      // but we should always find a pattern match
+      LogicalVector check_resp(P);
+      for (int p=0; p<P; p++) {
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
+      }
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
+      if (!pattern_match) { l += 1; }
+    }
+    // we exit this while loop knowing that person i has pattern l
+    pattern_indices(i) = l;
+  }
+  
   grad_alpha = 0;
   for(int i=0;i<M;i++){
     // over items (columns in my matrices)
@@ -6694,29 +6794,8 @@ NumericVector grad_cmp_with_pcov_cat_samealphas_cpp(NumericVector alphas,
       for(int j=0;j<N;j++) {
         // loop over persons
         
-        // check what response pattern person i had
-        int l = 0;
-        bool pattern_match = false;
-        while (!pattern_match && l<n_resp_patterns) {
-          // the second condition is just for safety that we dont get an eternal while loop
-          // but we should always find a pattern match
-          for (int p=0; p<P; p++) {
-            pattern_match = p_cov_data(j,p) == resp_pattern(l,p);
-          }
-          // if the rows are the same, i am going to get out the foor loop with
-          // pattern_match = TRUE and have l at the row of the pattern matrix
-          // otherwise I am going to increase l by 1 and stay in the while loop to see if
-          // the next row in the pattern matrix is a match for i
-          if (!pattern_match) { l += 1; }
-        }
-        
-        // we now know that person i has a response pattern like in row l of resp_pattern matrix
-        // so their mu (and lambda, etc.) should be at row k+l*K
-        
-        // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k+l*K,i));
-        double A = computeA(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
-        double B = computeB(lambda, mu_interp(k+l*K,i), disps[i], log_Z(k+l*K,i), 10);
+        // get person js response pattern index
+        int l = pattern_indices(j); 
         
         // compute the sum over the weightes covariates for the gradient for alpha
         double sum_over_pcov = 0;
@@ -6729,8 +6808,8 @@ NumericVector grad_cmp_with_pcov_cat_samealphas_cpp(NumericVector alphas,
           mu_interp(k+l*K,i));
         grad_deltas[i] += PPs(j,k) * (mu_interp(k+l*K,i) / V(k+l*K,i))*(data(j,i) - 
           mu_interp(k+l*K,i));
-        grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
-          (logFactorial(data(j,i))-B)));
+        grad_disps[i] += PPs(j,k) * (disps[i]*(A(k+l*K,i)*(data(j,i) - mu_interp(k+l*K,i))/V(k+l*K,i) - 
+          (logFactorial(data(j,i))-B(k+l*K,i))));
       }
     }
   }
@@ -6742,24 +6821,8 @@ NumericVector grad_cmp_with_pcov_cat_samealphas_cpp(NumericVector alphas,
       for (int k=0;k<K;k++) { // over nodes (rows in my matrices)
         for (int i=0; i<N; i++) { // over persons
           
-          // check what response pattern person i had
-          int l = 0;
-          bool pattern_match = false;
-          while (!pattern_match && l<n_resp_patterns) {
-            // the second condition is just for safety that we dont get an eternal while loop
-            // but we should always find a pattern match
-            for (int p=0; p<P; p++) {
-              pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
-            }
-            // if the rows are the same, i am going to get out the foor loop with
-            // pattern_match = TRUE and have l at the row of the pattern matrix
-            // otherwise I am going to increase l by 1 and stay in the while loop to see if
-            // the next row in the pattern matrix is a match for i
-            if (!pattern_match) { l += 1; }
-          }
-          
-          // we now know that person i has a response pattern like in row l of resp_pattern matrix
-          // so their mu (and lambda, etc.) should be at row k+l*K
+          // get person js response pattern index
+          int l = pattern_indices(i); 
           
           grad_betas[p] += PPs(i,k) * (mu_interp(k+l*K,j) * alphas[j] * p_cov_data(i,p) / V(k+l*K,j)) *
             (data(i,j) - mu_interp(k+l*K,j));
@@ -7488,13 +7551,15 @@ double ell_cmp_with_pcov_cat_cpp (NumericVector alphas,
       while (!pattern_match && l<n_resp_patterns) {
         // the second condition is just for safety that we dont get an eternal while loop
         // but we should always find a pattern match
+        LogicalVector check_resp(P);
         for (int p=0; p<P; p++) {
-          pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
+          check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
         }
-        // if the rows are the same, i am going to get out the foor loop with
-        // pattern_match = TRUE and have l at the row of the pattern matrix
-        // otherwise I am going to increase l by 1 and stay in the while loop to see if
-        // the next row in the pattern matrix is a match for i
+        bool sum_check_resp = true;
+        for (int p=0; p<P; p++) {
+          sum_check_resp &= check_resp[p];
+        }
+        pattern_match = sum_check_resp;
         if (!pattern_match) { l += 1; }
       }
       
@@ -9089,13 +9154,15 @@ NumericMatrix estep_cmp_with_pcov_cat_cpp(NumericMatrix data,
     while (!pattern_match && l<n_resp_patterns) {
       // the second condition is just for safety that we dont get an eternal while loop
       // but we should always find a pattern match
+      LogicalVector check_resp(P);
       for (int p=0; p<P; p++) {
-        pattern_match = p_cov_data(i,p) == resp_pattern(l,p);
+        check_resp[p] = p_cov_data(i,p) == resp_pattern(l,p);
       }
-      // if the rows are the same, i am going to get out the foor loop with
-      // pattern_match = TRUE and have l at the row of the pattern matrix
-      // otherwise I am going to increase l by 1 and stay in the while loop to see if
-      // the next row in the pattern matrix is a match for i
+      bool sum_check_resp = true;
+      for (int p=0; p<P; p++) {
+        sum_check_resp &= check_resp[p];
+      }
+      pattern_match = sum_check_resp;
       if (!pattern_match) { l += 1; }
     }
     

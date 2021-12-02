@@ -25,9 +25,11 @@ make_resp_patterns_mat <- function(resp_pattern_list, n_resp_patterns, num_level
     )
   }
   # remove the columns for the reference groups where all entries are 0
-  out <- out[,colSums(out) > 0]
+  out <- out[, colSums(out) > 0, drop = FALSE]
   return(out)
 }
+
+
 
 
 

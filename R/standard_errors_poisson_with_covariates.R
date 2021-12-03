@@ -1,29 +1,48 @@
 library(rootSolve)
 
-# gradients for full 2p poisson model standard errors -------------------------------------
-grad_for_se_poisson <- function(y, item_params, weights_and_nodes, data) {
-  post_probs <- e_step_poisson(data = data, 
-                               item_params = y, 
-                               weights_and_nodes = weights_and_nodes)
-  g <- grad_poisson(item_params = item_params,
-                    PPs = post_probs,
-                    weights_and_nodes = weights_and_nodes,
-                    data = data)
+# gradients for full 2p poisson model with covariats standard errors -------------------------------------
+grad_for_se_poisson_with_cov <- function(y, item_params, weights_and_nodes, data,
+                                p_covariates, i_covariates,
+                                i_cov_on = c("alpha", "delta")) {
+  post_probs <- estep_poisson_with_cov(
+    data = data, 
+    item_params = y, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
+  )
+  g <- grad_poisson_with_cov(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
+  )
   return(g)
 }
 
-wrap_grad_poisson <- function(y, PPs, weights_and_nodes, data) {
-  grad <- grad_poisson(
+wrap_grad_poisson_with_cov <- function(y, PPs, weights_and_nodes, data,
+                              p_covariates, i_covariates,
+                              i_cov_on = c("alpha", "delta")) {
+  grad <- grad_poisson_with_cov(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
   )
   return(grad)
 }
 
-# gradients for 2p poisson with constant alphas ----------------------------------------
-grad_for_se_poisson_same_alpha <- function(y, item_params, weights_and_nodes, data) {
+# gradients for 2p poisson with constant alphas with covariates ----------------------------------------
+grad_for_se_poisson_same_alpha_with_cov <- function(y, item_params, weights_and_nodes, data,
+                                                    p_covariates, i_covariates,
+                                                    i_cov_on = "delta") {
   # item params and y here only have one alpha at the start and 
   # then the remaining item parameters
   
@@ -33,31 +52,47 @@ grad_for_se_poisson_same_alpha <- function(y, item_params, weights_and_nodes, da
   names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
                                 names(item_params[-alpha]))
   
-  post_probs <- e_step_poisson(data = data, 
-                               item_params = item_params_samea, 
-                               weights_and_nodes = weights_and_nodes)
+  post_probs <- estep_poisson_with_cov(
+    data = data, 
+    item_params = item_params_samea, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
+  )
   
-  g <- grad_poisson_samealpha(item_params = item_params,
-                              PPs = post_probs,
-                              weights_and_nodes = weights_and_nodes,
-                              data = data)
+  g <- grad_poisson_with_cov_samealpha(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
+  )
   return(g)
 }
 
-wrap_grad_poisson_samealpha <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_poisson_samealpha_with_cov <- function(y, PPs, weights_and_nodes, data,
+                                        p_covariates, i_covariates,
+                                        i_cov_on = "delta") {
   # y just have one alpha and then the remaining item parameters
-  grad <- grad_poisson_samealpha(
+  grad <- grad_poisson_with_cov_samealpha(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
   )
   return(grad)
 }
 
-# gradients for 2p poisson model with fixed alphas standard errors ----------------------
-grad_for_se_poisson_fix_alphas <- function(y, item_params, weights_and_nodes, 
-                                           data, fix_alphas) {
+# gradients for 2p poisson model with fixed alphas with covariates standard errors ----------------------
+grad_for_se_poisson_fix_alphas_with_cov <- function(y, item_params, weights_and_nodes, 
+                                           data, p_covariates, i_covariates, fix_alphas,
+                                           i_cov_on = "delta") {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
   
@@ -65,33 +100,51 @@ grad_for_se_poisson_fix_alphas <- function(y, item_params, weights_and_nodes,
   item_params_fixalphas <- c(fix_alphas, item_params)
   names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), 
                                     names(item_params))
-  post_probs <- e_step_poisson(data, item_params_fixalphas, weights_and_nodes)
+  post_probs <- estep_poisson_with_cov(
+    data = data, 
+    item_params = item_params_fixalphas, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
+  )
   
-  g <- grad_poisson_fixalphas(item_params = item_params,
-                               PPs = post_probs,
-                               weights_and_nodes = weights_and_nodes,
-                               data = data,
-                               fix_alphas = fix_alphas)
+  g <- grad_poisson_with_cov_fixalphas(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    fix_alphas = fix_alphas
+    )
   return(g)
 }
 
-wrap_grad_poisson_fixalphas <- function(y, PPs, weights_and_nodes, data, fix_alphas) {
+wrap_grad_poisson_fixalphas_with_cov <- function(y, PPs, weights_and_nodes, data, 
+                                        p_covariates, i_covariates, fix_alphas,
+                                        i_cov_on = "delta") {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
   
-  grad <- grad_poisson_fixalphas(
+  grad <- grad_poisson_with_cov_fixalphas(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
     data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
     fix_alphas = fix_alphas
   )
   return(grad)
 }
 
 # compute_vcov_poisson -------------------------------------------------------------------
-compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
-                                 same_alphas = FALSE, fix_alphas = NULL) {
+compute_vcov_poisson_with_cov <- function(item_params, weights_and_nodes, data,
+                                          p_covariates, i_covariates, i_cov_on = c("alpha", "delta"),
+                                          same_alphas = FALSE, fix_alphas = NULL) {
   
   # computes vcov matrix with Oake's identity approximation (Chalmers, 2012)#
   
@@ -100,23 +153,36 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
     # e step
     item_params_fixa <- c(fix_alphas, item_params)
     names(item_params_fixa) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
-    post_probs <- e_step_poisson(data, item_params_fixa, weights_and_nodes)
+    post_probs <- estep_poisson_with_cov(
+      data = data, 
+      item_params =  item_params_fixa, 
+      weights_and_nodes = weights_and_nodes,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
+    )
     
     x <- numDeriv::jacobian(
-      wrap_grad_poisson_fixalphas,
+      wrap_grad_poisson_fixalphas_with_cov,
       item_params,
       PPs = post_probs, 
       weights_and_nodes = weights_and_nodes,
       data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on,
       fix_alphas = fix_alphas
     )
     
     x2 <- numDeriv::jacobian(
-      grad_for_se_poisson_fix_alphas,
+      grad_for_se_poisson_fix_alphas_with_cov,
       item_params, 
       item_params = item_params,
       weights_and_nodes = weights_and_nodes,
       data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on,
       fix_alphas = fix_alphas
     )
   } else if (same_alphas) {
@@ -127,43 +193,69 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
                            item_params[!grepl("alpha", names(item_params))])
     names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
                                   names(item_params)[!grepl("alpha", names(item_params))])
-    post_probs <- e_step_poisson(data, item_params_samea, weights_and_nodes)
+    post_probs <- estep_poisson_with_cov(
+      data = data,
+      item_params = item_params_samea,
+      weights_and_nodes = weights_and_nodes,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
+    )
     
     x <- numDeriv::jacobian(
-      wrap_grad_poisson_samealpha,
+      wrap_grad_poisson_samealpha_with_cov,
       item_params,
       PPs = post_probs, 
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
     )
     
     x2 <- numDeriv::jacobian(
-      grad_for_se_poisson_same_alpha,
+      grad_for_se_poisson_same_alpha_with_cov,
       item_params, 
       item_params = item_params,
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
     )
     
   } else {
     # fit a full two parameter model
     # e step
-    post_probs <- e_step_poisson(data, item_params, weights_and_nodes)
+    post_probs <- estep_poisson_with_cov(
+      data = data, 
+      item_params = item_params, 
+      weights_and_nodes = weights_and_nodes,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
+    )
     
     x <- numDeriv::jacobian(
-      wrap_grad_poisson,
+      wrap_grad_poisson_with_cov,
       item_params,
       PPs = post_probs, 
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
     )
     
     x2 <- numDeriv::jacobian(
-      grad_for_se_poisson,
+      grad_for_se_poisson_with_cov,
       item_params, 
       item_params = item_params,
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      p_covariates = p_covariates,
+      i_covariates = i_covariates,
+      i_cov_on = i_cov_on
     )
   }
   
@@ -190,12 +282,6 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
   return(vcov_matrix)
 }
 
-se_from_vcov <- function(vcov_matrix) {
-  if (any(diag(vcov_matrix) < 0)) {
-    warning("Some diagonal elements of the variance-covariance matrix were negative. NAs were returned.")
-  }
-  return(sqrt(diag(vcov_matrix)))
-}
   
 
 

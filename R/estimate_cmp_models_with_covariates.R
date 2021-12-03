@@ -1,6 +1,4 @@
 
-# TODO problem mit personen parametern fixen und testen
-
 # estep_cmp_with_cov ---------------------------------------------------------------------
 estep_cmp_with_cov <- function(data, item_params, 
                                p_covariates, i_covariates,
@@ -1249,7 +1247,7 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
   return(ell)
 }
 
-# newem_em_cycle ---------------------------------------------------------------------
+# em_cycle_cmp_with_cov ---------------------------------------------------------------------
 em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   p_covariates, i_covariates,
                                   i_cov_on = c("alpha", "delta", "log_disp"),
@@ -1434,7 +1432,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       betas_p <- item_params[grepl("beta_p", names(item_params))]
       betas_i <- item_params[grepl("beta_i", names(item_params))]
       
-      # if we have the constraint of fixed alphas, we can either have person covariates,
+      # if we have the constraint of fixed disps, we can either have person covariates,
       # or item covariates on alpha or delta (then we just have betas_i) or we have
       # item covariates on alpha and delta together
       # but with the constraint, we can't have item covriates on all three parameters

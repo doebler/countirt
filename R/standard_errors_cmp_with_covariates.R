@@ -1,164 +1,433 @@
 # gradients for full 2pcmp model standard errors -------------------------------------
-grad_for_se <- function(y, item_params, weights_and_nodes, data) {
-  post_probs <- newem_estep2(data = data, 
-                             item_params = y, 
-                             weights_and_nodes = weights_and_nodes)
-  g <- grad_cmp_newem2(item_params = item_params,
-                       PPs = post_probs,
-                       weights_and_nodes = weights_and_nodes,
-                       data = data)
+grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
+                                     p_covariates, i_covariates,
+                                     i_cov_on = c("alpha", "delta", "log_disp"),
+                                     p_cov_cat = TRUE,
+                                     resp_patterns_matrix = NULL) {
+  post_probs <- estep_cmp_with_cov(
+    data = data, 
+    item_params = y, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+    )
+  g <- grad_cmp_with_cov(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
   return(g)
 }
 
-wrap_grad_cmp_newem2 <- function(y, PPs, weights_and_nodes, data) {
-  grad <- grad_cmp_newem2(
+wrap_grad_cmp_with_cov <- function(y, PPs, weights_and_nodes, data,
+                                   p_covariates, i_covariates,
+                                   i_cov_on = c("alpha", "delta", "log_disp"),
+                                   p_cov_cat = TRUE,
+                                   resp_patterns_matrix = NULL) {
+  grad <- grad_cmp_with_cov(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
   )
   return(grad)
 }
 
 # gradients for 2pcmp with constant alphas ----------------------------------------
-grad_for_se_same_alpha <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se_cmp_samealpha_with_cov <- function(y, item_params, weights_and_nodes, data,
+                                               p_covariates, i_covariates,
+                                               i_cov_on = c("delta", "log_disp"),
+                                               p_cov_cat = TRUE, 
+                                               resp_patterns_matrix = NULL) {
   # item params and y here only have one alpha at the start and 
   # then the remaining item parameters
   
   # prep the parameters for the e-step
-  alpha <- y[grepl("alpha", names(y))]
-  deltas <- y[grepl("delta", names(y))]
-  n_items <- length(deltas)
-  log_disps <- y[grepl("log_disp", names(y))]
-  item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps)
-  names(item_params_samealph) <- c(
-    paste0("alpha", 1:n_items),
-    names(y[grepl("delta", names(y))]),
-    names(y[grepl("log_disp", names(y))])
-  )
+  alpha <- item_params[grepl("alpha", names(item_params)) &
+                         !grepl("beta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
+  n_items <- ncol(data)
+  log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                             !grepl("beta", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
-  post_probs <- newem_estep2(data = data, 
-                             item_params = item_params_samealph, 
-                             weights_and_nodes = weights_and_nodes)
-  g <- grad_cmp_samealphas_newem(item_params = item_params,
-                                 PPs = post_probs,
-                                 weights_and_nodes = weights_and_nodes,
-                                 data = data)
+  # if we have the constraint of same alphas, we can either have covariates
+  # on just delta or just log_disp, in which case we just have betas_i,
+  # or we could have covariates on delta and log_disp together (or person covariates)
+  # with the constraint, we can't have item covariates on all three parameters
+  if (length(i_cov_on) == 2) {
+    # must be covariates on delta and log_disp together
+    betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+    betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+    item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps,  
+                              betas_i_delta, betas_i_logdisp)
+    names(item_params_samealph) <- c(
+      paste0("alpha", 1:n_items),
+      names(item_params[grepl("delta", names(item_params)) & 
+                          !grepl("beta", names(item_params))]),
+      names(item_params[grepl("log_disp", names(item_params)) & 
+                          !grepl("beta", names(item_params))]),
+      names(item_params[grepl("beta_i_delta", names(item_params))]),
+      names(item_params[grepl("beta_i_log_disp", names(item_params))])
+    )
+  } else {
+    # either we have person covariates or just item covariates on one parameter, so just beta_i
+    item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps, betas_p, betas_i)
+    names(item_params_samealph) <- c(
+      paste0("alpha", 1:n_items),
+      names(item_params[grepl("delta", names(item_params))]),
+      names(item_params[grepl("log_disp", names(item_params))]),
+      names(item_params[grepl("beta_p", names(item_params))]),
+      names(item_params[grepl("beta_i", names(item_params))])
+    )
+  }
+  
+  post_probs <- estep_cmp_with_cov(
+    data = data, 
+    item_params = item_params_samealph, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates, 
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
+  g <- grad_cmp_with_cov_samealphas(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates, 
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
   return(g)
 }
 
-wrap_grad_cmp_samealphas_newem <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_cmp_samealpha_with_cov <- function(y, PPs, weights_and_nodes, data,
+                                             p_covariates, i_covariates,
+                                             i_cov_on = c("delta", "log_disp"),
+                                             p_cov_cat = TRUE, 
+                                             resp_patterns_matrix = NULL) {
   # y just have one alpha and then the remaining item parameters
-  grad <- grad_cmp_samealphas_newem(
+  grad <- grad_cmp_with_cov_samealphas(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    p_covariates = p_covariates, 
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with constant dispersions standard errors ------------
-grad_for_se_same_disp <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se_cmp_samedisp_with_cov <- function(y, item_params, weights_and_nodes, data,
+                                              p_covariates, i_covariates,
+                                              i_cov_on = c("alpha", "delta"),
+                                              p_cov_cat = TRUE,
+                                              resp_patterns_matrix = NULL) {
   # y and item parameters have alphas and deltas for each item but just one
   # disp parameter
   
   # prep the parameters for the e-step
-  alphas <- y[grepl("alpha", names(y))]
-  deltas <- y[grepl("delta", names(y))]
-  n_items <- length(deltas)
-  log_disp <- y[grepl("log_disp", names(y))]
-  item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items))
-  names(item_params_samedisp) <- c(
-    names(y[grepl("alpha", names(y))]),
-    names(y[grepl("delta", names(y))]),
-    paste0("log_disp", 1:n_items)
-  )
+  alphas <- item_params[grepl("alpha", names(item_params)) &
+                          !grepl("beta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
+  n_items <- ncol(data)
+  log_disp <- item_params[grepl("log_disp", names(item_params)) &
+                            !grepl("beta", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
-  post_probs <- newem_estep2(data = data, 
-                             item_params = item_params_samedisp, 
-                             weights_and_nodes = weights_and_nodes)
-  g <- grad_cmp_samedisps_newem(item_params = item_params,
-                                PPs = post_probs,
-                                weights_and_nodes = weights_and_nodes,
-                                data = data)
+  # if we have the constraint of same disps, we can either have item covariates 
+  # on just alpha or just delta or both together (can't have covariates on all three)
+  # (or person covariates)
+  # but with the constraint, we can't have item covariates on all three parameters
+  if (length(i_cov_on) == 2) {
+    betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+    betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+    item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items), 
+                              betas_i_alpha, betas_i_delta)
+    names(item_params_samedisp) <- c(
+      names(item_params[grepl("alpha", names(item_params))]),
+      names(item_params[grepl("delta", names(item_params))]),
+      paste0("log_disp", 1:n_items),
+      names(item_params[grepl("beta_i_alpha", names(item_params))]),
+      names(item_params[grepl("beta_i_delta", names(item_params))])
+    )
+  } else {
+    # either we have person covariates or just item covariates on one parameter, so just beta_i
+    item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items), betas_p, betas_i)
+    names(item_params_samedisp) <- c(
+      names(item_params[grepl("alpha", names(item_params))]),
+      names(item_params[grepl("delta", names(item_params))]),
+      paste0("log_disp", 1:n_items),
+      names(item_params[grepl("beta_p", names(item_params))]),
+      names(item_params[grepl("beta_i", names(item_params))])
+    )
+  }
+  
+  post_probs <- estep_cmp_with_cov(
+    data = data, 
+    item_params = item_params_samedisp, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates, 
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
+  g <- grad_cmp_with_cov_samedisps(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates, 
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
   return(g)
 }
 
-wrap_grad_cmp_samedisps_newem <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_cmp_samedisp_with_cov <- function(y, PPs, weights_and_nodes, data,
+                                            p_covariates, i_covariates,
+                                            i_cov_on = c("alpha", "delta"),
+                                            p_cov_cat = TRUE,
+                                            resp_patterns_matrix = NULL) {
   # y and item parameters have alphas and deltas for each item but just one
   # disp parameter
   
-  grad <- grad_cmp_samedisps_newem(
+  grad <- grad_cmp_with_cov_samedisps(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    p_covariates = p_covariates, 
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with fixed dispersions standard errors -----------------
-grad_for_se_fix_disps <- function(y, item_params, weights_and_nodes, data, fix_disps) {
+grad_for_se_cmp_fixdisps_with_cov <- function(y, item_params, weights_and_nodes, 
+                                              data, fix_disps,
+                                              p_covariates, i_covariates,
+                                              i_cov_on = c("alpha", "delta"),
+                                              p_cov_cat = TRUE,
+                                              resp_patterns_matrix = NULL) {
   # y and item parameters only have alphas and deltas, dispersions
   # are fixed an contained in fix_disps
   
   # prep the parameters for the e-step
-  item_params_fixdisps <- c(item_params, log(fix_disps))
-  names(item_params_fixdisps) <- c(names(item_params), 
-                                   paste0("log_disp", 1:length(fix_disps)))
-  post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes)
+  # prep for e step
+  alphas <- item_params[grepl("alpha", names(item_params)) &
+                          !grepl("beta", names(item_params))]
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
+  n_items <- ncol(data)
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
-  g <- grad_cmp_fixdisps_newem(item_params = item_params,
-                               PPs = post_probs,
-                               weights_and_nodes = weights_and_nodes,
-                               data = data,
-                               fix_disps = fix_disps)
+  # if we have the constraint of fixed disps, we can either have person covariates,
+  # or item covariates on alpha or delta (then we just have betas_i) or we have
+  # item covariates on alpha and delta together
+  # but with the constraint, we can't have item covriates on all three parameters
+  if (length(i_cov_on) == 2) {
+    betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+    betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+    item_params_samedisp <- c(alphas, deltas, log(fix_disps), 
+                              betas_i_alpha, betas_i_delta)
+    names(item_params_samedisp) <- c(
+      names(item_params[grepl("alpha", names(item_params))]),
+      names(item_params[grepl("delta", names(item_params))]),
+      paste0("log_disp", 1:n_items),
+      names(item_params[grepl("beta_i_alpha", names(item_params))]),
+      names(item_params[grepl("beta_i_delta", names(item_params))])
+    )
+  } else {
+    # either we have person covariates or just item covariates on one parameter, so just beta_i
+    item_params_samedisp <- c(alphas, deltas, log(fix_disps), betas_p, betas_i)
+    names(item_params_samedisp) <- c(
+      names(item_params[grepl("alpha", names(item_params))]),
+      names(item_params[grepl("delta", names(item_params))]),
+      paste0("log_disp", 1:n_items),
+      names(item_params[grepl("beta_p", names(item_params))]),
+      names(item_params[grepl("beta_i", names(item_params))])
+    )
+  }
+  
+  post_probs <- estep_cmp_with_cov(
+    data = data, 
+    item_params = item_params_fixdisps, 
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
+  
+  g <- grad_cmp_with_cov_fixdisps(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix,
+    fix_disps = fix_disps
+    )
   return(g)
 }
 
-wrap_grad_cmp_fixdisps_newem <- function(y, PPs, weights_and_nodes, data, fix_disps) {
+wrap_grad_cmp_fixdisps_with_cov <- function(y, PPs, weights_and_nodes, 
+                                            data, fix_disps,
+                                            p_covariates, i_covariates,
+                                            i_cov_on = c("alpha", "delta"),
+                                            p_cov_cat = TRUE,
+                                            resp_patterns_matrix = NULL) {
   # y and item parameters only have alphas and deltas, dispersions
   # are fixed an contained in fix_disps
   
-  grad <- grad_cmp_fixdisps_newem(
+  grad <- grad_cmp_with_cov_fixdisps(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
     data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix,
     fix_disps = fix_disps
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with fixed alphas standard errors -------------------
-grad_for_se_fix_alphas <- function(y, item_params, weights_and_nodes, data, fix_alphas) {
+grad_for_se_cmp_fixalphas_with_cov <- function(y, item_params, weights_and_nodes, 
+                                   data, fix_alphas,
+                                   p_covariates, i_covariates,
+                                   i_cov_on = c("delta", "log_disp"),
+                                   p_cov_cat = TRUE, 
+                                   resp_patterns_matrix = NULL) {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
   
-  # prep the parameters for the e-step
-  item_params_fixalphas <- c(fix_alphas, item_params)
-  names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), 
-                                    names(item_params))
-  post_probs <- newem_estep2(data, item_params_fixalphas, weights_and_nodes)
+  # prep for e step
+  deltas <- item_params[grepl("delta", names(item_params)) &
+                          !grepl("beta", names(item_params))]
+  n_items <- ncol(data)
+  log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                             !grepl("beta", names(item_params))]
+  betas_p <- item_params[grepl("beta_p", names(item_params))]
+  betas_i <- item_params[grepl("beta_i", names(item_params))]
   
-  g <- grad_cmp_fixalphas_newem(item_params = item_params,
-                                PPs = post_probs,
-                                weights_and_nodes = weights_and_nodes,
-                                data = data,
-                                fix_alphas = fix_alphas)
+  # if we have the constraint of fixed alphas, we can either have covariates
+  # on just delta or just log_disp, in which case we just have betas_i,
+  # or we could have covariates on delta and log_disp together (or person covariates)
+  # but with the constraint, we can't have item covaraites on all three parameters
+  if (length(i_cov_on) == 2) {
+    # must be covariates on delta and log_disp together
+    betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+    betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+    item_params_samealph <- c(fix_alphas, deltas, log_disps,  
+                              betas_i_delta, betas_i_logdisp)
+    names(item_params_samealph) <- c(
+      paste0("alpha", 1:n_items),
+      names(item_params[grepl("delta", names(item_params)) & 
+                          !grepl("beta", names(item_params))]),
+      names(item_params[grepl("log_disp", names(item_params))]),
+      names(item_params[grepl("beta_i_delta", names(item_params))]),
+      names(item_params[grepl("beta_i_log_disp", names(item_params))])
+    )
+  } else {
+    # either we have person covariates or just item covariates on one parameter, so just beta_i
+    item_params_samealph <- c(fix_alphas, deltas, log_disps, betas_p, betas_i)
+    names(item_params_samealph) <- c(
+      paste0("alpha", 1:n_items),
+      names(item_params[grepl("delta", names(item_params))]),
+      names(item_params[grepl("log_disp", names(item_params))]),
+      names(item_params[grepl("beta_p", names(item_params))]),
+      names(item_params[grepl("beta_i", names(item_params))])
+    )
+  }
+  
+  post_probs <- estep_cmp_with_cov(
+    data = data, 
+    item_params = item_params_fixalphas,
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix
+  )
+  
+  g <- grad_cmp_with_cov_fixalphas(
+    item_params = item_params,
+    PPs = post_probs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix,
+    fix_alphas = fix_alphas
+  )
   return(g)
 }
 
-wrap_grad_cmp_fixalphas_newem <- function(y, PPs, weights_and_nodes, data, fix_alphas) {
+wrap_grad_cmp_fixalphas_with_cov <- function(y, PPs, weights_and_nodes, 
+                                             data, fix_alphas,
+                                             p_covariates, i_covariates,
+                                             i_cov_on = c("delta", "log_disp"),
+                                             p_cov_cat = TRUE, 
+                                             resp_patterns_matrix = NULL) {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
   
-  grad <- grad_cmp_fixalphas_newem(
+  grad <- grad_cmp_with_cov_fixalphas(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
     data = data,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on,
+    p_cov_cat = p_cov_cat,
+    resp_patterns_matrix = resp_patterns_matrix,
     fix_alphas = fix_alphas
   )
   return(grad)
@@ -166,6 +435,10 @@ wrap_grad_cmp_fixalphas_newem <- function(y, PPs, weights_and_nodes, data, fix_a
 
 # compute_vcov -------------------------------------------------------------------
 compute_vcov <- function(item_params, weights_and_nodes, data,
+                         p_covariates, i_covariates,
+                         i_cov_on = c("alpha", "delta", "log_disp"),
+                         p_cov_cat = TRUE,
+                         resp_patterns_matrix = NULL,
                          same_alphas = FALSE, same_disps = FALSE,
                          fix_alphas = NULL, fix_disps = NULL) {
   
@@ -176,57 +449,124 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       # standard errors for full model
       
       # compute derivative of gradient with respect to new item params
-      post_probs <- newem_estep2(data, item_params, weights_and_nodes)
-      
+      post_probs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params, 
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
+      )
       
       x <- numDeriv::jacobian(
-        wrap_grad_cmp_newem2,
+        wrap_grad_cmp_with_cov,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
       
       x2 <- numDeriv::jacobian(
-        grad_for_se,
+        grad_for_se_cmp_with_cov,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
     } else if (same_alphas & !same_disps) {
       # standard errors for constant alphas across items
       
       # compute derivative of gradient with respect to new item params
       
-      # prep the parameters for the e-step
-      alpha <- item_params[grepl("alpha", names(item_params))]
-      deltas <- item_params[grepl("delta", names(item_params))]
-      n_items <- length(deltas)
-      log_disps <- item_params[grepl("log_disp", names(item_params))]
-      item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps)
-      names(item_params_samealph) <- c(
-        paste0("alpha", 1:n_items),
-        names(item_params[grepl("delta", names(item_params))]),
-        names(item_params[grepl("log_disp", names(item_params))])
-      )
-      post_probs <- newem_estep2(data, item_params_samealph, weights_and_nodes)
+      # prep for e step
+      alpha <- item_params[grepl("alpha", names(item_params)) &
+                             !grepl("beta", names(item_params))]
+      deltas <- item_params[grepl("delta", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      n_items <- ncol(data)
+      log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                                 !grepl("beta", names(item_params))]
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
       
+      # if we have the constraint of same alphas, we can either have covariates
+      # on just delta or just log_disp, in which case we just have betas_i,
+      # or we could have covariates on delta and log_disp together (or person covariates)
+      # with the constraint, we can't have item covariates on all three parameters
+      if (length(i_cov_on) == 2) {
+        # must be covariates on delta and log_disp together
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+        item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps,  
+                                  betas_i_delta, betas_i_logdisp)
+        names(item_params_samealph) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params)) & 
+                              !grepl("beta", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params)) & 
+                              !grepl("beta", names(item_params))]),
+          names(item_params[grepl("beta_i_delta", names(item_params))]),
+          names(item_params[grepl("beta_i_log_disp", names(item_params))])
+        )
+      } else {
+        # either we have person covariates or just item covariates on one parameter, so just beta_i
+        item_params_samealph <- c(rep(alpha, n_items), deltas, log_disps, betas_p, betas_i)
+        names(item_params_samealph) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params))]),
+          names(item_params[grepl("beta_p", names(item_params))]),
+          names(item_params[grepl("beta_i", names(item_params))])
+        )
+      }
+      
+      post_probs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_samealph, 
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
+      )
       
       x <- numDeriv::jacobian(
-        wrap_grad_cmp_samealphas_newem,
+        wrap_grad_cmp_samealpha_with_cov,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
       
       x2 <- numDeriv::jacobian(
-        grad_for_se_same_alpha,
+        grad_for_se_cmp_samealpha_with_cov,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
     } else if (!same_alphas & same_disps) {
       # standard errors for constant dispersions across items
@@ -234,33 +574,81 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       # compute derivative of gradient with respect to new item params
       
       # prep the parameters for the e-step
-      alphas <- item_params[grepl("alpha", names(item_params))]
-      deltas <- item_params[grepl("delta", names(item_params))]
-      n_items <- length(deltas)
-      log_disp <- item_params[grepl("log_disp", names(item_params))]
-      item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items))
-      names(item_params_samedisp) <- c(
-        names(item_params[grepl("alpha", names(item_params))]),
-        names(item_params[grepl("delta", names(item_params))]),
-        paste0("log_disp", 1:n_items)
+      # prep the parameters for the e-step
+      alphas <- item_params[grepl("alpha", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      deltas <- item_params[grepl("delta", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      n_items <- ncol(data)
+      log_disp <- item_params[grepl("log_disp", names(item_params)) &
+                                !grepl("beta", names(item_params))]
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      
+      # if we have the constraint of same disps, we can either have item covariates 
+      # on just alpha or just delta or both together (can't have covariates on all three)
+      # (or person covariates)
+      # but with the constraint, we can't have item covariates on all three parameters
+      if (length(i_cov_on) == 2) {
+        betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items), 
+                                  betas_i_alpha, betas_i_delta)
+        names(item_params_samedisp) <- c(
+          names(item_params[grepl("alpha", names(item_params))]),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items),
+          names(item_params[grepl("beta_i_alpha", names(item_params))]),
+          names(item_params[grepl("beta_i_delta", names(item_params))])
+        )
+      } else {
+        # either we have person covariates or just item covariates on one parameter, so just beta_i
+        item_params_samedisp <- c(alphas, deltas, rep(log_disp, n_items), betas_p, betas_i)
+        names(item_params_samedisp) <- c(
+          names(item_params[grepl("alpha", names(item_params))]),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items),
+          names(item_params[grepl("beta_p", names(item_params))]),
+          names(item_params[grepl("beta_i", names(item_params))])
+        )
+      }
+      
+      post_probs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_samedisp, 
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
-      post_probs <- newem_estep2(data, item_params_samedisp, weights_and_nodes)
       
       
       x <- numDeriv::jacobian(
-        wrap_grad_cmp_samedisps_newem,
+        wrap_grad_cmp_samedisp_with_cov,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
       
       x2 <- numDeriv::jacobian(
-        grad_for_se_same_disp,
+        grad_for_se_cmp_samedisp_with_cov,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
       )
     }
   } else {
@@ -270,26 +658,78 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       # in fix_disps
       
       # prep for e step
-      item_params_fixdisps <- c(item_params, log(fix_disps))
-      names(item_params_fixdisps) <- c(names(item_params), 
-                                       paste0("log_disp", 1:length(fix_disps)))
-      post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes)
+      alphas <- item_params[grepl("alpha", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      deltas <- item_params[grepl("delta", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      n_items <- ncol(data)
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      
+      # if we have the constraint of fixed disps, we can either have person covariates,
+      # or item covariates on alpha or delta (then we just have betas_i) or we have
+      # item covariates on alpha and delta together
+      # but with the constraint, we can't have item covriates on all three parameters
+      if (length(i_cov_on) == 2) {
+        betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        item_params_samedisp <- c(alphas, deltas, log(fix_disps), 
+                                  betas_i_alpha, betas_i_delta)
+        names(item_params_samedisp) <- c(
+          names(item_params[grepl("alpha", names(item_params))]),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items),
+          names(item_params[grepl("beta_i_alpha", names(item_params))]),
+          names(item_params[grepl("beta_i_delta", names(item_params))])
+        )
+      } else {
+        # either we have person covariates or just item covariates on one parameter, so just beta_i
+        item_params_samedisp <- c(alphas, deltas, log(fix_disps), betas_p, betas_i)
+        names(item_params_samedisp) <- c(
+          names(item_params[grepl("alpha", names(item_params))]),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items),
+          names(item_params[grepl("beta_p", names(item_params))]),
+          names(item_params[grepl("beta_i", names(item_params))])
+        )
+      }
+      
+      post_probs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_fixdisps, 
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
+      )
       
       x <- numDeriv::jacobian(
-        wrap_grad_cmp_fixdisps_newem,
+        wrap_grad_cmp_fixdisps_with_cov,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps
       )
       
       x2 <- numDeriv::jacobian(
-        grad_for_se_fix_disps,
+        grad_for_se_cmp_fixdisps_with_cov,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps
       )
     } else if (!is.null(fix_alphas)) {
@@ -297,26 +737,80 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       # in fix_alphas
       
       # prep for e step
-      item_params_fixalphas <- c(fix_alphas, item_params)
-      names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), 
-                                        names(item_params))
-      post_probs <- newem_estep2(data, item_params_fixalphas, weights_and_nodes)
+      deltas <- item_params[grepl("delta", names(item_params)) &
+                              !grepl("beta", names(item_params))]
+      n_items <- ncol(data)
+      log_disps <- item_params[grepl("log_disp", names(item_params)) &
+                                 !grepl("beta", names(item_params))]
+      betas_p <- item_params[grepl("beta_p", names(item_params))]
+      betas_i <- item_params[grepl("beta_i", names(item_params))]
+      
+      # if we have the constraint of fixed alphas, we can either have covariates
+      # on just delta or just log_disp, in which case we just have betas_i,
+      # or we could have covariates on delta and log_disp together (or person covariates)
+      # but with the constraint, we can't have item covaraites on all three parameters
+      if (length(i_cov_on) == 2) {
+        # must be covariates on delta and log_disp together
+        betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+        item_params_samealph <- c(fix_alphas, deltas, log_disps,  
+                                  betas_i_delta, betas_i_logdisp)
+        names(item_params_samealph) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params)) & 
+                              !grepl("beta", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params))]),
+          names(item_params[grepl("beta_i_delta", names(item_params))]),
+          names(item_params[grepl("beta_i_log_disp", names(item_params))])
+        )
+      } else {
+        # either we have person covariates or just item covariates on one parameter, so just beta_i
+        item_params_samealph <- c(fix_alphas, deltas, log_disps, betas_p, betas_i)
+        names(item_params_samealph) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params))]),
+          names(item_params[grepl("log_disp", names(item_params))]),
+          names(item_params[grepl("beta_p", names(item_params))]),
+          names(item_params[grepl("beta_i", names(item_params))])
+        )
+      }
+      
+      post_probs <- estep_cmp_with_cov(
+        data = data, 
+        item_params = item_params_fixalphas, 
+        weights_and_nodes = weights_and_nodes,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix
+      )
       
       x <- numDeriv::jacobian(
-        wrap_grad_cmp_fixalphas_newem,
+        wrap_grad_cmp_fixalphas_with_cov,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas
       )
       
       x2 <- numDeriv::jacobian(
-        grad_for_se_fix_alphas,
+        grad_for_se_cmp_fixalphas_with_cov,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        p_covariates = p_covariates,
+        i_covariates = i_covariates,
+        i_cov_on = i_cov_on,
+        p_cov_cat = p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas
       )
     }
@@ -345,9 +839,3 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
   return(vcov_matrix)
 }
 
-se_from_vcov <- function(vcov_matrix) {
-  if (any(diag(vcov_matrix) < 0)) {
-    warning("Some diagonal elements of the variance-covariance matrix were negative. NAs were returned.")
-  }
-  return(sqrt(diag(vcov_matrix)))
-}

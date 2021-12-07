@@ -78,10 +78,10 @@ grad_poisson_fixalphas <- function(item_params, PPs, weights_and_nodes,
   return(grad_deltas)
 }
 
-# grad_poisson_fixalphas --------------------------------------------------------------
+# grad_poisson_samealpha --------------------------------------------------------------
 
 grad_poisson_samealpha <- function(item_params, PPs, weights_and_nodes, 
-                                   data, fix_alphas) {
+                                   data) {
   data <- as.matrix(data)
   alphas <- rep(item_params[grepl("alpha", names(item_params))], ncol(data))
   deltas <- item_params[grepl("delta", names(item_params))]

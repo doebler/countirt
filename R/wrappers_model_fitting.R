@@ -29,13 +29,44 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
   
+  # TODO add some formula syntax to cirt
+  # and think about what makes sense for being able to add item and person covariates
+  
+  if (any(is.na(data))) {
+    # TODO remove rows with NAs and print warning that they were removed
+  }
+  
+  # TODO wenn ich hier das i_cov_on argument einbaue, so dass ich item kovariaten mit
+  # einbauen kann, dann sollte ich checken, dass wenn fix_alphas = TRUE, nur
+  # i_cov_on = "delta" ist; wenn nicht, das so setzen und eine warnung ausgeben, dass
+  # man bei fixierten alphas dann nur item kovaraiten auf den deltas haben kann
+  # (im poisson fall); analog auch im cmp fall unter beruecksichtigung von nu
+  # (same with same_alpha; and analgously fix_disps and same_disp)
+  
+  # TODO incorporate check that we only have item or person parameters as
+  # we can only do one or the other atm
+  
+  # TODO check for i_cov_on %in% c("alpha", "delta", "log_nu")
+  # also dass wir keinen unsinn haben als angegebenes element
+  # und auch entspr. fuer poisson
+  
+  # TODO fuer personen kovariaten mit p_cov_cat = TRUE sicherstellen, dass die 
+  # faktoren in der kovariaten matrix dummy coded sind; und zwar so wie ich das
+  # erwarte also mit ohne die spalten der referenzkategorien
+  
+  # TODO in dem fall von p_cov_cat = TRUE muss ich fuer die run_em funktion das
+  # argument num_levels_p_cov setzen und dafuer bestimmen wie viele levels ich 
+  # pro faktor habe
+  
+  # TODO die fallunterscheidung fuer run_em normal vs mit covaraites einbauchen
+  
   if (family == "cmp") {
     print("Start determining start values.")
     start_values <- get_start_values(
       data = data, init_disp_one = control$init_disp_one
     )
     
-    print("Start model fitting. This will at least take a little bit of time.")
+    print("Start model fitting. This will take a little bit of time.")
     fit <- run_newem(
       data = data, 
       init_params = start_values, 

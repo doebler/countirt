@@ -83,4 +83,98 @@ quad_rule <- function(n_nodes, thres = Inf, prob = 0) {
   return(weights_and_nodes)
 }
 
+# marg_ll2 --------------------------------------------------------------------------
+
+marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = NULL,
+                     fix_alphas = NULL, interp_method = "bicubic",
+                     same_disps = FALSE, same_alphas = FALSE) {
+  n_items <- ncol(data)
+  n_persons <- nrow(data)
+  deltas <- item_params[grepl("delta", names(item_params))]
+  if (family == "poisson") {
+    if (is.null(fix_alphas)) {
+      if (same_alphas) {
+        alpha <- item_params[grepl("alpha", names(item_params))]
+        alphas <- rep(alpha, n_items) 
+      } else {
+        alphas <- item_params[grepl("alpha", names(item_params))]
+      }
+    } else {
+      alphas <- fix_alphas
+    }
+  } else if (family == "cmp") {
+    if (is.null(fix_alphas)) {
+      if (same_alphas) {
+        alpha <- item_params[grepl("alpha", names(item_params))]
+        alphas <- rep(alpha, n_items)
+      } else {
+        alphas <- item_params[grepl("alpha", names(item_params))]
+      }
+    } else {
+      alphas <- fix_alphas
+    }
+    if (is.null(fix_disps)) {
+      if (same_disps) {
+        log_disp <- item_params[grepl("log_disp", names(item_params))]
+        disps <- rep(exp(log_disp), n_items)
+      } else {
+        log_disps <- item_params[grepl("log_disp", names(item_params))]
+        disps <- exp(log_disps)
+      }
+    } else {
+      disps <- fix_disps
+    }
+  }
+  
+  
+  if (family == "poisson") {
+    # function to compute integral with quadrature over
+    f <- function(z, data, alphas, deltas) {
+      out <- 0
+      for (j in 1:n_items) {
+        lambda <- exp(alphas[j] * z + deltas[j])
+        out <- out + (dpois(data[,j], lambda, log = TRUE))
+      }
+      return(exp(out))
+    }
+    
+    marg_prob <- numeric(n_persons)
+    for (i in 1:n_persons) {
+      marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
+                             data = data[i, , drop = FALSE], 
+                             alphas = alphas, deltas = deltas)
+    }
+    ll <- sum(log(marg_prob))
+  } else if (family == "cmp") {
+    if (interp_method == "bicubic") {
+      ll <- marg_ll_cpp(data = as.matrix(data),
+                        alphas = alphas,
+                        deltas = deltas, 
+                        disps = disps, 
+                        nodes = weights_and_nodes$x,
+                        weights = weights_and_nodes$w,
+                        grid_mus = grid_mus,  
+                        grid_nus = grid_nus, 
+                        grid_logZ_long = grid_logZ_long,
+                        grid_log_lambda_long = grid_log_lambda_long,
+                        max_mu = 150,
+                        min_mu = 0.001)
+    } else {
+      # then interpolation method is linear
+      # here we don't cap mu, so we extrapolate beyond grid values
+      ll <- marg_ll_cpp_lininterp(data = as.matrix(data),
+                                  alphas = alphas,
+                                  deltas = deltas, 
+                                  disps = disps,
+                                  nodes = weights_and_nodes$x,
+                                  weights = weights_and_nodes$w,
+                                  grid_mus = grid_mus,  
+                                  grid_nus = grid_nus, 
+                                  grid_logZ_long = grid_logZ_long,
+                                  grid_log_lambda_long = grid_log_lambda_long)
+    }
+    
+  }
+  return(ll)
+}
 

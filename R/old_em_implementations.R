@@ -163,174 +163,6 @@ grad_e_ll_pois_fixa <- function(item_params, e_values, weights_and_nodes, alphas
   return(grads)
 }
 
-# grad_e_ll_cmp <- function(item_params, e_values, weights_and_nodes) {
-#   alphas <- item_params[grepl("alpha", names(item_params))]
-#   deltas <- item_params[grepl("delta", names(item_params))]
-#   disps <- item_params[grepl("disp", names(item_params))]
-#   n_items <- length(alphas)
-#   
-#   grads <- numeric(length(item_params))
-#   for(j in 1:length(item_params)) {
-#     # for all nodes compute cmp mean
-#     if(grepl("alpha", names(item_params)[j])) {
-#       mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-#       V_j <- BayesComp_var(mu_j, disps[j])
-#       # compute lambdas for current item parameter and all nodes
-#       # we need the expected counts for the current item j at each of node k
-#       # lambda_j is a vector with k elements here, as is r_j and f_j
-#       grads[j] <- sum((weights_and_nodes$x * mu_j / V_j) * (e_values[[j]][["r_j"]] -
-#                                         - mu_j * e_values[[j]][["f_j"]]))
-#     } else if (grepl("delta", names(item_params)[j])){
-#       mu_j <- exp(alphas[j - n_items] * weights_and_nodes$x + deltas[j - n_items])
-#       V_j <- BayesComp_var(mu_j, disps[j - n_items])
-#       # compute lambdas for current item parameter and all nodes
-#       grads[j] <- sum((mu_j / V_j) * (e_values[[j - n_items]][["r_j"]] -
-#                                          - mu_j * e_values[[j - n_items]][["f_j"]]))
-#     } else {
-#       mu_j <- exp(alphas[j - 2*n_items] * weights_and_nodes$x + deltas[j - 2*n_items])
-#       V_j <- BayesComp_var(mu_j, disps[j - 2*n_items])
-#       # dispersion parameters
-#       # FIXME new version of BayesComp_lambdaZ returns lambda not logLambda
-#       lambda <- exp(BayesComp_lambdaZ(mu_j, disps[j - 2*n_items])$logLambda)
-#       e_logfac <- tmbElogFactorial(lambda, disps[j - 2*n_items])
-#       # to avoid getting NAs at the borders which will cause gradient to fail,
-#       # we will set them to 0 when they will be multiplied with a 0 in the gradient anyways
-#       # (or with a values as good as zero, i.e., 2e-52, double precision)
-#       e_logfac <- ifelse(
-#         e_values[[j - 2*n_items]][["f_j"]] <= 2e-52,
-#         ifelse(
-#           e_values[[j - 2*n_items]][["f_j"]] == 0,
-#           0, 
-#           2e-52
-#         ),
-#         e_logfac
-#       )
-#       e_logfac_x <- tmbYlogFactorial(lambda, disps[j - 2*n_items])
-#       e_logfac_x <- ifelse(
-#         (e_values[[j - 2*n_items]][["r_j"]] -
-#           mu_j * e_values[[j - 2*n_items]][["f_j"]]) <= 2e-52,
-#         ifelse(
-#           (e_values[[j - 2*n_items]][["r_j"]] -
-#              mu_j * e_values[[j - 2*n_items]][["f_j"]]) == 0,
-#           0,
-#           2e-52
-#         ),
-#         e_logfac_x
-#       )
-#       grads[j] <- sum((e_logfac * e_values[[j - 2*n_items]][["f_j"]]) - 
-#                         e_values[[j - 2*n_items]][["h_j"]] +
-#                         ((e_logfac_x - mu_j * e_logfac) / V_j) * 
-#                         (e_values[[j - 2*n_items]][["r_j"]] -
-#                         mu_j * e_values[[j - 2*n_items]][["f_j"]]))
-#     }
-#   }
-#   print(grads)
-#   return(grads)
-# }
-
-# we estimate the log dispersion instead of the dispersion because we need the
-# to bound the parameter space 
-grad_e_ll_cmp_logdisp <- function(item_params, e_values, weights_and_nodes) {
-  # print(item_params)
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
-  disps <- exp(log_disps)
-  n_items <- length(alphas)
-  n_nodes <- length(weights_and_nodes$x)
-  
-  grads <- numeric(length(item_params))
-  for(j in 1:length(item_params)) {
-    # for all nodes compute cmp mean
-    if(grepl("alpha", names(item_params)[j])) {
-      mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-      #V_j <- BayesComp_var(mu_j, disps[j])
-      V_j <- get_var_cmp(mu_j, disps[j])
-      # compute lambdas for current item parameter and all nodes
-      # we need the expected counts for the current item j at each of node k
-      # lambda_j is a vector with k elements here, as is r_j and f_j
-      grads[j] <- sum((weights_and_nodes$x * mu_j / V_j) * (e_values[[j]][["r_j"]] -
-                                                              mu_j * e_values[[j]][["f_j"]]))
-    } else if (grepl("delta", names(item_params)[j])){
-      mu_j <- exp(alphas[j - n_items] * weights_and_nodes$x + deltas[j - n_items])
-      V_j <- get_var_cmp(mu_j, disps[j - n_items])
-      # compute lambdas for current item parameter and all nodes
-      grads[j] <- sum((mu_j / V_j) * (e_values[[j - n_items]][["r_j"]] -
-                                        mu_j * e_values[[j - n_items]][["f_j"]]))
-    } else {
-      # dispersion parameters
-      mu_j <- exp(alphas[j - 2*n_items] * weights_and_nodes$x + deltas[j - 2*n_items])
-      V_j <- get_var_cmp(mu_j, disps[j - 2*n_items])
-      lambda <- lambda_from_grid(mu_j, disps[j - 2*n_items])
-      W_j <- rep(NA, length(n_nodes))
-      indexW <- (e_values[[j - 2*n_items]][["r_j"]] > 1e-8) | 
-        ((mu_j * e_values[[j - 2*n_items]][["f_j"]]) > 1e-8)
-      W_j[indexW] <- vcomputeW(lambda[indexW], mu_j[indexW], disps[j - 2*n_items])
-      # whenever W is NA, this should coincide with posterior porbabilities of next to 0
-      # so that we check how large r and f are and whenever they are 0 or next to 0, we set 
-      # to either a very small value or 0
-      frac_r_W <- rep(NA, length(n_nodes))
-      index1 <- (e_values[[j - 2*n_items]][["r_j"]] <= 1e-8)
-      index2 <- (e_values[[j - 2*n_items]][["r_j"]] == 0)
-      index3 <- (e_values[[j - 2*n_items]][["r_j"]] > 1e-8)
-      frac_r_W[index1] <- 1e-8
-      frac_r_W[index2] <- 0
-      frac_r_W[index3] <- e_values[[j - 2*n_items]][["r_j"]][index3] / W_j[index3]
-      # frac_r_W <- ifelse(
-      #   e_values[[j - 2*n_items]][["r_j"]] <= 1e-30,
-      #   ifelse(
-      #     e_values[[j - 2*n_items]][["r_j"]] == 0,
-      #     0, 
-      #     1e-30
-      #   ),
-      #   e_values[[j - 2*n_items]][["r_j"]] / W_j
-      # )
-      frac_muf_W <- rep(NA, length(n_nodes))
-      index3 <- ((mu_j * e_values[[j - 2*n_items]][["f_j"]]) <= 1e-8)
-      index4 <- ((mu_j * e_values[[j - 2*n_items]][["f_j"]]) == 0)
-      index5 <- ((mu_j * e_values[[j - 2*n_items]][["f_j"]]) > 1e-8)
-      frac_muf_W[index3] <- 1e-8
-      frac_muf_W[index4] <- 0
-      frac_muf_W[index5] <- (mu_j[index5] * e_values[[j - 2*n_items]][["f_j"]][index5]) / 
-        W_j[index5]
-      # frac_muf_W <- ifelse(
-      #   (mu_j * e_values[[j - 2*n_items]][["f_j"]]) <= 1e-30,
-      #   ifelse(
-      #     (mu_j * e_values[[j - 2*n_items]][["f_j"]]) == 0,
-      #     0, 
-      #     1e-30
-      #   ),
-      #   (mu_j * e_values[[j - 2*n_items]][["f_j"]]) / W_j
-      # )
-      
-      # same logic applies as for W's, just make sure we set cases to 0 where logfac function fails
-      # but posterior probabilities are as good as 0 anyways
-      e_logfac <- rep(NA, length(n_nodes))
-      index6 <- (e_values[[j - 2*n_items]][["f_j"]] <= 1e-8)
-      index7 <- (e_values[[j - 2*n_items]][["f_j"]] == 0)
-      index8 <- (e_values[[j - 2*n_items]][["f_j"]] > 1e-8)
-      e_logfac[index6] <- 1e-8
-      e_logfac[index7] <- 0
-      e_logfac[index8] <- tmbElogFactorial(lambda[index8], disps[j - 2*n_items])
-      # e_logfac <- ifelse(
-      #   e_values[[j - 2*n_items]][["f_j"]] <= 1e-30,
-      #   ifelse(
-      #     e_values[[j - 2*n_items]][["f_j"]] == 0,
-      #     0, 
-      #     1e-30
-      #   ),
-      #   tmbElogFactorial(lambda, disps[j - 2*n_items])
-      # )
-      
-      grads[j] <- sum(disps[j - 2*n_items] * 
-                        (frac_r_W - frac_muf_W - e_values[[j - 2*n_items]][["h_j"]] + 
-                           e_logfac * e_values[[j - 2*n_items]][["f_j"]]))
-    }
-  }
-  #  print(grads)
-  return(grads)
-}
-
 grad_cmp <- function(item_params, e_values, weights_and_nodes) {
   # print(item_params)
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -354,37 +186,6 @@ grad_cmp <- function(item_params, e_values, weights_and_nodes) {
     stop("Gradient contained NA", paste0(grads, collapse = ","),
          paste0(item_params, collapse = ","))
   } 
-  #print(grads)
-  return(grads)
-}
-
-grad_e_ll_cmp_fixdisps <- function(item_params, e_values, weights_and_nodes, fix_disps) {
-  #print("item params:")
-  #print(item_params)
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
-  disps <- fix_disps
-  n_items <- length(alphas)
-  
-  grads <- numeric(length(item_params))
-  for(j in 1:length(item_params)) {
-    # for all nodes compute cmp mean
-    if(grepl("alpha", names(item_params)[j])) {
-      mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-      V_j <- get_var_cmp(mu_j, disps[j])
-      # compute lambdas for current item parameter and all nodes
-      # we need the expected counts for the current item j at each of node k
-      # lambda_j is a vector with k elements here, as is r_j and f_j
-      grads[j] <- sum((weights_and_nodes$x * mu_j / V_j) * (e_values[[j]][["r_j"]] -
-                                                              mu_j * e_values[[j]][["f_j"]]))
-    } else if (grepl("delta", names(item_params)[j])){
-      mu_j <- exp(alphas[j - n_items] * weights_and_nodes$x + deltas[j - n_items])
-      V_j <- get_var_cmp(mu_j, disps[j - n_items])
-      # compute lambdas for current item parameter and all nodes
-      grads[j] <- sum((mu_j / V_j) * (e_values[[j - n_items]][["r_j"]] -
-                                        mu_j * e_values[[j - n_items]][["f_j"]]))
-    } 
-  }
   #print(grads)
   return(grads)
 }
@@ -588,32 +389,6 @@ expect_ll_pois <- function(item_params, e_values, weights_and_nodes) {
     out <- out + sum(
       e_values[[j]][["r_j"]] * log(mu_j) -
         e_values[[j]][["f_j"]] * mu_j
-    )
-  }
-  
-  return(out)
-}
-
-expect_ll_cmp <- function(item_params, e_values, weights_and_nodes) {
-  # print(item_params)
-  # s <<- s + 1
-  # print(s)
-  #e_values[[j - 2*n_items]][["h_j"]]
-  alphas <- item_params[grepl("alpha", names(item_params))]
-  deltas <- item_params[grepl("delta", names(item_params))]
-  log_disps <- item_params[grepl("log_disp", names(item_params))]
-  disps <- exp(log_disps)
-  n_items <- length(alphas)
-  out <- 0
-  
-  for (j in 1:n_items) {
-    mu_j <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-    log_lambda_j <- log(lambda_from_grid(mu_j, disps[j]))
-    log_Z <- logZ_from_grid(mu_j, disps[j])
-    out <- out + sum(
-      e_values[[j]][["r_j"]] * log_lambda_j -
-        disps[j] * e_values[[j]][["h_j"]] -
-        e_values[[j]][["f_j"]] * log_Z
     )
   }
   
@@ -909,24 +684,42 @@ em_cycle <- function(data, item_params, weights_and_nodes, family,
 
 # marginal likelihood ---------------------------------------------------------------------------------------
 
-# for convergence check evaluate observed likelihood instead of expected likelihood
-# because it is easier to evaluate (even though harder to maximize)
-# and it is optimized by the same parameters
-marg_ll <- function(data, item_params, weights_and_nodes, family, fix_disps = NULL) {
+marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = NULL,
+                     fix_alphas = NULL, interp_method = "bicubic",
+                     same_disps = FALSE, same_alphas = FALSE) {
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params))]
   if (family == "poisson") {
-    if (length(item_params) == 2*ncol(data)) {
-      alphas <- item_params[grepl("alpha", names(item_params))]
+    if (is.null(fix_alphas)) {
+      if (same_alphas) {
+        alpha <- item_params[grepl("alpha", names(item_params))]
+        alphas <- rep(alpha, n_items) 
+      } else {
+        alphas <- item_params[grepl("alpha", names(item_params))]
+      }
     } else {
-      alphas <- rep(1, ncol(data))
+      alphas <- fix_alphas
     }
   } else if (family == "cmp") {
-    alphas <- item_params[grepl("alpha", names(item_params))]
+    if (is.null(fix_alphas)) {
+      if (same_alphas) {
+        alpha <- item_params[grepl("alpha", names(item_params))]
+        alphas <- rep(alpha, n_items)
+      } else {
+        alphas <- item_params[grepl("alpha", names(item_params))]
+      }
+    } else {
+      alphas <- fix_alphas
+    }
     if (is.null(fix_disps)) {
-      log_disps <- item_params[grepl("log_disp", names(item_params))]
-      disps <- exp(log_disps)
+      if (same_disps) {
+        log_disp <- item_params[grepl("log_disp", names(item_params))]
+        disps <- rep(exp(log_disp), n_items)
+      } else {
+        log_disps <- item_params[grepl("log_disp", names(item_params))]
+        disps <- exp(log_disps)
+      }
     } else {
       disps <- fix_disps
     }
@@ -941,42 +734,48 @@ marg_ll <- function(data, item_params, weights_and_nodes, family, fix_disps = NU
         lambda <- exp(alphas[j] * z + deltas[j])
         out <- out + (dpois(data[,j], lambda, log = TRUE))
       }
-      return(out)
+      return(exp(out))
     }
     
-    log_marg_prob <- numeric(n_persons)
+    marg_prob <- numeric(n_persons)
     for (i in 1:n_persons) {
-      log_marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
-                                 data = data[i, , drop = FALSE], 
-                                 alphas = alphas, deltas = deltas)
+      marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
+                             data = data[i, , drop = FALSE], 
+                             alphas = alphas, deltas = deltas)
     }
+    ll <- sum(log(marg_prob))
   } else if (family == "cmp") {
-    # function to compute integral with quadrature over
-    f <- function(z, data, alphas, deltas, disps) {
-      out <- 0
-      for (j in 1:n_items) {
-        mu <- exp(alphas[j] * z + deltas[j])
-        out <- out + (dcmp(rep(as.numeric(data[,j]), length(mu)),
-                           mu, rep(disps[j], length(mu)), 
-                           logprob = TRUE))
-        #out <- out * (BayesComp_dcomp(data[,j], mu, disps[j]))
-      }
-      return(out)
+    if (interp_method == "bicubic") {
+      ll <- marg_ll_cpp(data = as.matrix(data),
+                        alphas = alphas,
+                        deltas = deltas, 
+                        disps = disps, 
+                        nodes = weights_and_nodes$x,
+                        weights = weights_and_nodes$w,
+                        grid_mus = grid_mus,  
+                        grid_nus = grid_nus, 
+                        grid_logZ_long = grid_logZ_long,
+                        grid_log_lambda_long = grid_log_lambda_long,
+                        max_mu = 150,
+                        min_mu = 0.001)
+    } else {
+      # then interpolation method is linear
+      # here we don't cap mu, so we extrapolate beyond grid values
+      ll <- marg_ll_cpp_lininterp(data = as.matrix(data),
+                                  alphas = alphas,
+                                  deltas = deltas, 
+                                  disps = disps,
+                                  nodes = weights_and_nodes$x,
+                                  weights = weights_and_nodes$w,
+                                  grid_mus = grid_mus,  
+                                  grid_nus = grid_nus, 
+                                  grid_logZ_long = grid_logZ_long,
+                                  grid_log_lambda_long = grid_log_lambda_long)
     }
     
-    log_marg_prob <- numeric(n_persons)
-    for (i in 1:n_persons) {
-      log_marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
-                                 data = data[i, , drop = FALSE], 
-                                 alphas = alphas, deltas = deltas, 
-                                 disps = disps)
-    }
   }
-  
-  ll <- sum(log_marg_prob)
   return(ll)
 }
-
 
 # EM algorithm --------------------------------------------------------------------------------------------
 

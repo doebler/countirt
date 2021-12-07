@@ -34,4 +34,3 @@ make_resp_patterns_mat <- function(resp_pattern_list, n_resp_patterns, num_level
 
 
 
-

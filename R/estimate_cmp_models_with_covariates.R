@@ -1559,6 +1559,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   return(new_item_params)
 }
 
+
 # marg_ll_cmp_with_cov --------------------------------------------------------------------------
 
 marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 

@@ -17,6 +17,7 @@
 ~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2FRcppExports.R="B5F9D0A6"
 ~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2Fabilities_cmp.R="8AEA5395"
 ~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2Fabilities_poisson.R="41B4782E"
+~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2Fabilities_poisson_with_covariates.R="48F052A3"
 ~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2Fdependencies.R="B2A01B85"
 ~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2Festimate_cmp_models.R="3F041824"
 ~%2FDocuments%2F14_countirt%2Fcountirt%2FR%2Festimate_cmp_models_with_covariates.R="9DB1E5AB"

@@ -1136,7 +1136,6 @@ NumericVector grad_cmp_samedisp_cpp(NumericVector alphas,
       //double term = (-1)*h(j,i);
       //if ((r(j,i) > 1e-8) | (f(j,i) > 1e-8) | (h(j,i) > 1e-8)) {
       //if (weights[j] > 1e-32) {
-        double lambda = exp(log_lambda(j,i));
         // NEW
         //double W = computeW(lambda, mu_interp(j,i), disp, 10);
         //double R = computeR(lambda, mu_interp(j,i), disp, log_Z(j,i), 10);

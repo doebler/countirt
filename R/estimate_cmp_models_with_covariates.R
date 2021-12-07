@@ -1979,16 +1979,12 @@ get_start_values_cmp_with_cov <- function(data,
     } else if (!is.null(p_covariates)) {
       init_values_pois <- get_start_values_pois(
         data = data,
-        p_covariates = p_covariates,
-        i_covariates = i_covariates,
         same_alpha = TRUE
       )
       fit_pois <- run_em_poisson(
         data = data,
         init_params = init_values_pois,
         n_nodes = nodes,
-        p_covariates = p_covariates,
-        i_covariates = i_covariates,
         same_alpha = TRUE
       )
     }

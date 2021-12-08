@@ -99,13 +99,40 @@ get_ability_params <- function(data, item_params, init_values = 0, ctol = 1e-8) 
 # get_ability_params_pp ------------------------------------------------------------
 
 get_ability_params_pp <- function(data, item_params, n_nodes,
+                                  fix_disps = NULL, fix_alphas = NULL,
+                                  same_disps = FALSE, same_alphas = FALSE,
                                   thres = Inf, prob = 0) {
   # get weights and nodes
   weights_and_nodes <- quad_rule(n_nodes, thres = thres,prob = prob)
+  
+  # prep the item parameters for e step
+  if (same_alphas) {
+    alpha <- item_params[grepl("alpha", names(item_params))]
+    item_params_estep <- c(rep(alpha, ncol(data)), item_params[-which(item_params == alpha)])
+    names(item_params_estep) <- c(paste0("alpha", 1:ncol(data)), 
+                                  names(item_params[-which(item_params == alpha)]))
+  } else if (!is.null(fix_alphas)) {
+    item_params_estep <- c(fix_alphas, item_params)
+    names(item_params_estep) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
+  } else if (same_disps) {
+    log_disp <- item_params[grepl("log_disp", names(item_params))]
+    item_params_estep <- c(item_params[-which(item_params == log_disp)], 
+                           rep(log_disp, ncol(data)))
+    names(item_params_estep) <- c(names(item_params[-which(item_params == log_disp)]),
+                                  paste0("log_disp", 1:ncol(data)))
+  } else if (!is.null(fix_disps)) {
+    item_params_estep <- c(item_params, log(fix_disps))
+    names(item_params_estep) <- c(names(item_params), 
+                                  paste0("log_disp", 1:ncol(data)))
+  } else {
+    item_params_estep <- item_params
+    names(item_params_estep) <- names(item_params)
+  }
+  
   # compute post probs of the thetas with the final version of the item parameters
   post_probs <- newem_estep2(
     data = data,
-    item_params = item_params,
+    item_params = item_params_estep,
     weights_and_nodes = weights_and_nodes
   )
   # output: a matrix with N rows (= no. of persons) and K columns (= no. of nodes)

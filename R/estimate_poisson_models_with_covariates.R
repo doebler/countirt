@@ -535,9 +535,9 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       # fit the model with estimating one same alpha for all item
       # e step
       alpha <- item_params[grepl("alpha", names(item_params))]
-      item_params_samea <- c(rep(alpha, ncol(data)), item_params[-alpha])
+      item_params_samea <- c(rep(alpha, ncol(data)), item_params[-which(item_params == alpha)])
       names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
-                                   names(item_params[-alpha]))
+                                   names(item_params[-which(item_params == alpha)]))
       PPs <- estep_poisson_with_cov(
         data = data,
         item_params = item_params_samea,

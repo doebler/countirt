@@ -12,6 +12,7 @@
 /Users/mariebeisemann/Documents/14_countirt/countirt/R/RcppExports.R="5DA87653"
 /Users/mariebeisemann/Documents/14_countirt/countirt/R/abilities_cmp.R="B17D6E66"
 /Users/mariebeisemann/Documents/14_countirt/countirt/R/abilities_poisson.R="BC8C79AE"
+/Users/mariebeisemann/Documents/14_countirt/countirt/R/abilities_poisson_with_covariates.R="A6896497"
 /Users/mariebeisemann/Documents/14_countirt/countirt/R/dependencies.R="401E049C"
 /Users/mariebeisemann/Documents/14_countirt/countirt/R/estimate_cmp_models.R="5DB01F3E"
 /Users/mariebeisemann/Documents/14_countirt/countirt/R/estimate_cmp_models_with_covariates.R="69A496F4"

@@ -5,31 +5,32 @@ get_ability_params_poisson_pp_with_cov <- function(data, item_params, n_nodes,
                                                    i_cov_on = c("alpha", "delta"),
                                                    same_alphas = FALSE, fix_alphas = NULL,
                                                    thres = Inf, prob = 0) {
-  # TODO hier weiter machen und in der Funktion i_cov und p_cov implementieren
   
   # get weights and nodes
   weights_and_nodes <- quad_rule(n_nodes, thres = thres,prob = prob)
   
   # if we have any constraints, adjust item parameters accordingly
   if (same_alphas) {
-    names_input_item_params <- names(item_params)
     alpha <- item_params[grepl("alpha", names(item_params))]
-    item_params <- c(rep(alpha, ncol(data)),
-                     item_params[!grepl("alpha", names_input_item_params)])
-    names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
-                                  names_input_item_params[!grepl("alpha", names_input_item_params)])
-  }
-  if (!is.null(fix_alphas)) {
-    names_input_item_params <- names(item_params)
-    item_params <- c(fix_alphas, item_params)
-    names(item_params) <- c(paste0("alpha", 1:ncol(data)), names_input_item_params)
+    item_params_estep <- c(rep(alpha, ncol(data)), item_params[-which(item_params == alpha)])
+    names(item_params_estep) <- c(paste0("alpha", 1:ncol(data)), 
+                                  names(item_params[-which(item_params == alpha)]))
+  } else if (!is.null(fix_alphas)) {
+    item_params_estep <- c(fix_alphas, item_params)
+    names(item_params_estep) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
+  } else {
+    item_params_estep <- item_params
+    names(item_params_estep) <- names(item_params)
   }
   
   # compute post probs of the thetas with the final version of the item parameters
-  post_probs <- e_step_poisson(
+  post_probs <- estep_poisson_with_cov(
     data = data,
-    item_params = item_params,
-    weights_and_nodes = weights_and_nodes
+    item_params = item_params_estep,
+    weights_and_nodes = weights_and_nodes,
+    p_covariates = p_covariates,
+    i_covariates = i_covariates,
+    i_cov_on = i_cov_on
   )
   # output: a matrix with N rows (= no. of persons) and K columns (= no. of nodes)
   theta_hat <- apply(post_probs, 1, function(y) {sum(y*weights_and_nodes$x)})

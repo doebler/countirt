@@ -1785,7 +1785,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
                                 p_covariates, i_covariates, 
                                 i_cov_on = c("alpha", "delta", "log_disp"),
                                 p_cov_cat = TRUE,
-                                num_levels_p_cov = NULL, # TODO einfuegen aus cirt, das muss dort berechnet werden
+                                num_levels_p_cov = NULL,
                                 thres = Inf, prob = 0,
                                 maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                 m_method = "nleqslv", convcrit = "marglik",

@@ -433,8 +433,8 @@ wrap_grad_cmp_fixalphas_with_cov <- function(y, PPs, weights_and_nodes,
   return(grad)
 }
 
-# compute_vcov -------------------------------------------------------------------
-compute_vcov <- function(item_params, weights_and_nodes, data,
+# compute_vcov_with_cov -------------------------------------------------------------------
+compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
                          p_covariates, i_covariates,
                          i_cov_on = c("alpha", "delta", "log_disp"),
                          p_cov_cat = TRUE,

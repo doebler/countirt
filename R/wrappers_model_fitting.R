@@ -1,11 +1,17 @@
-#' Model fitting function for count data IRT models
+#' Model fitting function for count data IRT models.
 #' 
-#' @param data a data matrix, each column must correspond to one item, each row to an observational unit (usually a person)
-#' @param family a string indicating the count data family, can be either "cmp" or "poisson"
-#' @param n_nodes an integer, number of quadrature nodes, defaults to 121, for the 2CMP model, no less than 100 quadrature nodes are recommended
-#' @param stand_errors a boolean, indicates whether standard errors for model parameters should be estimated, defaults to FALSE
-#' @param constraints a list, indicating the constraints for the model, note that at the current moment, the possible constraints are mutually exclusive (this functionality will be extended in the future). 
-#' @param control a list, providing control parameters for the estimation
+#' @param model A string specifying the model. 
+#' 
+#' - For a data frame in wide format (default; for the 2PCMP and the CLRM): You specify the items that belong to the factor by writing "theta =~ item1 + item2 ...;" where you replace "itemj" with correct name in your data frame in wide format (note that currently, only one-dimensional models are possible but in the future, I might also implement multi-dimensional models). You can specify constraints (as long as they are implemented, see below) on the item parameters. For constraints on the slope parameters, you can currently contrain them to be equal across item ("alphas ~ 1;") or fix them to specific values ("alpha1 =: 0.5 alpha2 =: 0.3 ...;" But please note that currently, either all slopes must be fixed to specific values or all are estimated. This will be extended in the future to allow for some items to have fixed slopes and others to have freely estimated slopes.). The same is possible for the intercepts delta (with "deltas ~ 1;"; but note that fixing intercepts to certain values has not yet been implemented) and the (log) dispersions log_nu (with "log_nus ~ 1;" and "log_nu1 =: 0.2 log_nu =: 1.1 ...;"). If you wish to specify a CLRM, you can additionally include covariates on the latent ability with "thetas ~ 1 + C1 + C2 + ...;". The covariates must be named as in the data frame. The intercept will be a random intercept (with latent variance fixed to 1 and a mean of 0). Please note that at the moment, I would only recommend  using categorical covariates as computation for continuous covariates is very slow (albeit implemented). You can specify the formula in the same way for categorical covariates, just make sure that all categorical covariates in your data frame are factors.
+#' 
+#' - For a data frame in long format (note that you must specify the argument `long_data = TRUE`; for the DRTM): Specify the factor formula as "theta =~ counts(itemid::item1) + counts(itemid::item2) ...;" where you replace "count" with the name of the column with responses in your data frame in long format and "itemj" with the correct item identifier as in your data frame in long format and "itemid" with the name of the column in your data frame in long format that contains the item identifier. You need to use the :: between identifier column and respective item identifier. You can specify item parameter constraints as described above. To include covariates on any of the three item parameters, specify "alphas ~ 1 + C1 + C2 ...;" (or "deltas ~ ...;" or "log_nus ~ ...;" respectively), where you replace Ci with the names of the covariates in your data frame in long format. You can include covariates on any subset of parameters and constraints (as described above) on the remaining item parameters. Note that it is not possible to include item parameters on constrained parameters though. At the moment, you can choose which item parameters you want to include the covariates on but if you want to include covariates on more than one item parameter, they have to be the same across parameters at the moment. In the future, I will probably allow more flexibility in this regard.
+#' 
+#' Please note that the model specification expects you to use the name for the parameters as explained here. Your items must have the same name as in the data frame. If you just specify the factor formula, the full 2PCMPM with no covariates will be estimated. Each line of specification must start with the correct parameter name as explained above and must end with ; . Note that for the model specification to be successfully passed, the variable names in your data frame must not contain any '(' nor any '::'.
+#' @param data A data frame either in long or in wide format. For the 2PCMP and the CLRM, wide format is required (which is the default expected format). For the DRTM, long format is required (for which you have to specify `long_format = TRUE`).
+#' @param family A string indicating the count data family, can be either "cmp" or "poisson".
+#' @param data_long. A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.
+#' @param stand_errors A boolean. Indicates whether standard errors for model parameters should be estimated. Defaults to FALSE.
+#' @param control A list providing control parameters for the estimation.
 #' 
 #' @import Rcpp
 #' @import RcppGSL
@@ -15,12 +21,11 @@
 #' @importFrom rootSolve gradient
 #' @useDynLib countirt, .registration=TRUE
 #' @export
-cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
-                 constraints = list(
-                   fix_disps = NULL, fix_alphas = NULL,
-                   same_disps = FALSE, same_alphas = FALSE
-                 ),
+cirt <- function(model, data, family,
+                 data_long = FALSE,
+                 stand_errors = FALSE,
                  control = list(
+                   n_nodes = 121,
                    thres = Inf, prob = 0, init_disp_one = TRUE,
                    maxiter = 1000, 
                    convtol = 1e-5, ctol_maxstep = 1e-8,
@@ -29,12 +34,18 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
   
-  # TODO add some formula syntax to cirt
-  # and think about what makes sense for being able to add item and person covariates
+  # extract model info from model specification -------------------------
+  model_list <- parse_model(model = model, data = data, data_long = data_long)
+
+  # TODO checks that we don't specify constraints on parameters with covariate
+  # und dass wir nicht gleichzeitig person und item covariates haben
+  # checks that if family is poisson log_nus don't appear in formula
   
-  if (any(is.na(data))) {
-    # TODO remove rows with NAs and print warning that they were removed
+  if (any(is.na(item_data))) {
+    item_data <- na.omit(item_data)
+    warning("Rows with missing values have been removed.")
   }
+  # TODO noch um missings auf covariates kuemmern
   
   # TODO wenn ich hier das i_cov_on argument einbaue, so dass ich item kovariaten mit
   # einbauen kann, dann sollte ich checken, dass wenn fix_alphas = TRUE, nur
@@ -58,76 +69,225 @@ cirt <- function(data, family, n_nodes = 121, stand_errors = FALSE,
   # argument num_levels_p_cov setzen und dafuer bestimmen wie viele levels ich 
   # pro faktor habe
   
-  # TODO die fallunterscheidung fuer run_em normal vs mit covaraites einbauchen
-  
-  if (family == "cmp") {
-    print("Start determining start values.")
-    start_values <- get_start_values(
-      data = data, init_disp_one = control$init_disp_one
-    )
-    
-    print("Start model fitting. This will take a little bit of time.")
-    fit <- run_newem(
-      data = data, 
-      init_params = start_values, 
-      n_nodes = n_nodes, 
-      fix_disps = constraints$fix_disps,
-      fix_alphas = constraints$fix_alphas,
-      same_disps = constraints$same_disps, 
-      same_alphas = constraints$same_alphas,
-      thres = control$thres,
-      prob = control$prob,
-      maxiter = control$maxiter, 
-      convtol = control$convtol, 
-      ctol_maxstep = control$ctol_maxstep,
-      m_method = control$m_method, 
-      convcrit = control$convcrit
-    )
-  
-    if (stand_errors) {
-      fit_vcov <- compute_vcov(fitparams, quad_rule(n_nodes), data)
-      fit_ses <- se_from_vcov(fit_vcov)
+  if (is.null(model_list$p_covariates) & is.null(model_list$i_covariates)) {
+    # 2pcmp model
+    if (family == "cmp") {
+      print("Start determining start values.")
+      
+      # TODO start values hier noch mal ueberarbeiten so dass ich die constraints
+      # mit beruecksichtige; das muss ich einmal durch alle funktionen durch hier anschauen
+      if (!is.null(model_list$fixed_log_disps)) {
+        fixed_disps <- exp(model_list$fixed_log_disps)
+      } else {
+        fixed_disps <- NULL
+      }
+      
+      # TODO init_disp_one argument entfernen; auch aus der get_start_value funktion
+      start_values <- get_start_values(
+        data = model_list$item_data,
+        init_disp_one = control$init_disp_one
+      )
+      
+      print("Start model fitting. This will take a little bit of time.")
+      fit <- run_newem(
+        data = model_list$item_data, 
+        init_params = start_values, 
+        n_nodes = control$n_nodes, 
+        fix_disps = fixed_disps,
+        fix_alphas = model_list$fixed_alphas,
+        same_disps = model_list$equal_log_disps, 
+        same_alphas = model_list$equal_alphas,
+        thres = control$thres,
+        prob = control$prob,
+        maxiter = control$maxiter, 
+        convtol = control$convtol, 
+        ctol_maxstep = control$ctol_maxstep,
+        m_method = control$m_method, 
+        convcrit = control$convcrit
+      )
+      
+      if (stand_errors) {
+        print("Start computation of standard errors.")
+        fit_vcov <- compute_vcov(fit$params, quad_rule(control$n_nodes), model_list$item_data)
+        fit_ses <- se_from_vcov(fit_vcov)
+      } else {
+        fit_vcov <- NA
+        fit_ses <- NA
+      }
+    } else if (family == "poisson") {
+      start_values <- get_start_values_pois(
+        data = model_list$item_data
+      )
+      
+      print("Start model fitting.")
+      fit <- run_em_poisson(
+        data = model_list$item_data, 
+        init_params = start_values, 
+        n_nodes = control$n_nodes, 
+        fix_alphas = model_list$fixed_alphas,
+        same_alpha = model_list$equal_alphas,
+        thres = control$thres,
+        prob = control$prob,
+        maxiter = control$maxiter, 
+        convtol = control$convtol, 
+        ctol_maxstep = control$ctol_maxstep,
+        convcrit = control$convcrit
+      )
+      
+      if (stand_errors) {
+        print("Start computation of standard errors.")
+        fit_vcov <- compute_vcov_poisson(fit$params, quad_rule(control$n_nodes), model_list$item_data)
+        fit_ses <- se_from_vcov(fit_vcov)
+      } else {
+        fit_vcov <- NA
+        fit_ses <- NA
+      }
     } else {
-      fit_vcov <- NA
-      fit_ses <- NA
-    }
-  } else if (family == "poisson") {
-    start_values <- get_start_values_pois(
-      data = data
-    )
-    
-    print("Start model fitting.")
-    fit <- run_em_poisson(
-      data = data, 
-      init_params = start_values, 
-      n_nodes = n_nodes, 
-      fix_alphas = constraints$fix_alphas,
-      same_alpha = constraints$same_alphas,
-      thres = control$thres,
-      prob = control$prob,
-      maxiter = control$maxiter, 
-      convtol = control$convtol, 
-      ctol_maxstep = control$ctol_maxstep,
-      convcrit = control$convcrit
-    )
-    
-    if (stand_errors) {
-      fit_vcov <- compute_vcov_poisson(fitparams, quad_rule(n_nodes), data)
-      fit_ses <- se_from_vcov(fit_vcov)
-    } else {
-      fit_vcov <- NA
-      fit_ses <- NA
+      stop("Invalid family specified. Please see documentations for available families.")
     }
   } else {
-    stop("Invalid family specified. Please see documentations for available families.")
+    # 2pcmp model with covariates
+    if (family == "cmp") {
+      print("Start determining start values.")
+      # TODO think about whether I am dealing correctly here with all possible constraints,
+      # what about fixed alphas and/or disps?
+      start_values <- get_start_values_cmp_with_cov(
+        data = model_list$item_data,
+        p_covariates = model_list$p_covariates,
+        i_covariates = model_list$i_covariates,
+        nodes = control$n_nodes,
+        same_alpha = model_list$equal_alphas,
+        i_cov_on = model_list$i_cov_on
+      )
+      
+      if (!is.null(model_list$fixed_log_disps)) {
+        fixed_disps <- exp(model_list$fixed_log_disps)
+      } else {
+        fixed_disps <- NULL
+      }
+      
+      print("Start model fitting. This will take a little bit of time.")
+      fit <- run_em_cmp_with_cov(
+        data = model_list$item_data, 
+        init_params = start_values, 
+        n_nodes = control$n_nodes, 
+        p_covariates = model_list$p_covariates,
+        i_covariates = model_list$i_covariates,
+        i_cov_on = model_list$i_cov_on,
+        p_cov_cat = model_list$p_cov_cat,
+        num_levels_p_cov = model_list$p_cov_levels,
+        fix_disps = fixed_disps,
+        fix_alphas = model_list$fixed_alphas,
+        same_disps = model_list$equal_log_disps, 
+        same_alphas = model_list$equal_alphas,
+        thres = control$thres,
+        prob = control$prob,
+        maxiter = control$maxiter, 
+        convtol = control$convtol, 
+        ctol_maxstep = control$ctol_maxstep,
+        m_method = control$m_method, 
+        convcrit = control$convcrit
+      )
+      
+      if (stand_errors) {
+        print("Start computation of standard errors.")
+        if (isTRUE(model_list$p_cov_cat)) {
+          resp_patterns_matrix <- make_resp_patterns_mat(
+            lapply(model_list$p_cov_levels, get_resp_patterns_pcov_cat), 
+            prod(model_list$p_cov_levels), 
+            model_list$p_cov_levels
+          )
+        } else {
+          resp_patterns_matrix <- NULL
+        }
+        
+        fit_vcov <- compute_vcov_with_cov(
+          item_params = fit$params,
+          weights_and_nodes = quad_rule(control$n_nodes), 
+          data = model_list$item_data,
+          p_covariates = model_list$p_covariates,
+          i_covariates = model_list$i_covariates,
+          i_cov_on = model_ist$i_cov_on,
+          p_cov_cat = model_list$p_cov_cat,
+          resp_patterns_matrix = resp_patterns_matrix,
+          same_alphas = model_list$equal_alphas,
+          same_disps = model_list$equal_log_disps,
+          fix_alphas = model_list$fixed_alphas,
+          fix_disps = fixed_disps
+        )
+        fit_ses <- se_from_vcov(fit_vcov)
+      } else {
+        fit_vcov <- NA
+        fit_ses <- NA
+      }
+    } else if (family == "poisson") {
+      
+      start_values <- get_start_values_poisson_with_cov(
+        data = model_list$item_data,
+        p_covariates = model_list$p_covariates,
+        i_covariates = model_list$i_covariates,
+        same_alpha = model_list$equal_alphas,
+        i_cov_on = model_list$i_cov_on
+      )
+      
+      print("Start model fitting.")
+      fit <- run_em_poisson_with_cov(
+        data = model_list$item_data, 
+        init_params = start_values, 
+        n_nodes = control$n_nodes, 
+        p_covariates = model_list$p_covariates,
+        i_covariates = model_list$i_covariates,
+        i_cov_on = model_list$i_cov_on,
+        fix_alphas = model_list$fixed_alphas,
+        same_alpha = model_list$equal_alphas,
+        thres = control$thres,
+        prob = control$prob,
+        maxiter = control$maxiter, 
+        convtol = control$convtol, 
+        ctol_maxstep = control$ctol_maxstep,
+        convcrit = control$convcrit
+      )
+      
+      if (stand_errors) {
+        print("Start computation of standard errors.")
+        fit_vcov <- compute_vcov_poisson_with_cov(
+          item_params = fit$params,
+          weights_and_nodes = quad_rule(control$n_nodes),
+          data = model_list$item_data,
+          p_covariates = model_list$p_covariates,
+          i_covariates = model_list$i_covariates,
+          i_cov_on = model_list$i_cov_on,
+          same_alphas = model_list$equal_alphas,
+          fix_alphas = model_list$fixed_alphas
+        )
+        fit_ses <- se_from_vcov(fit_vcov)
+      } else {
+        fit_vcov <- NA
+        fit_ses <- NA
+      }
+    } else {
+      stop("Invalid family specified. Please see documentations for available families.")
+    }
   }
+  
+  # TODO if stand_error also compute CIs and z values and p values for Wald test and add to
+  # output
   
   # prepare object for returning
   out <- list(
     family = family,
+    model = model_list,
     fit = fit,
     fit_ses = fit_ses
   )
   
   return(out)
 }
+
+
+# TODO wrapper for standard errors
+
+# TODO wrapper for ability estimation
+
+
+

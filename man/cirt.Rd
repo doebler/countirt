@@ -9,6 +9,7 @@ cirt(
   data,
   family,
   data_long = FALSE,
+  person_id = NULL,
   stand_errors = FALSE,
   control = list(n_nodes = 121, thres = Inf, prob = 0, init_disp_one = TRUE, maxiter =
     1000, convtol = 1e-05, ctol_maxstep = 1e-08, m_method = "nleqslv", convcrit =
@@ -28,11 +29,13 @@ Please note that the model specification expects you to use the name for the par
 
 \item{family}{A string indicating the count data family, can be either "cmp" or "poisson".}
 
+\item{data_long}{A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.}
+
+\item{person_id}{A character string. Name of the column with person id in long format data frame. Only necessary if data_long = TRUE.}
+
 \item{stand_errors}{A boolean. Indicates whether standard errors for model parameters should be estimated. Defaults to FALSE.}
 
 \item{control}{A list providing control parameters for the estimation.}
-
-\item{data_long.}{A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.}
 }
 \description{
 Model fitting function for count data IRT models.

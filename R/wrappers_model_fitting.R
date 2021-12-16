@@ -9,7 +9,8 @@
 #' Please note that the model specification expects you to use the name for the parameters as explained here. Your items must have the same name as in the data frame. If you just specify the factor formula, the full 2PCMPM with no covariates will be estimated. Each line of specification must start with the correct parameter name as explained above and must end with ; . Note that for the model specification to be successfully passed, the variable names in your data frame must not contain any '(' nor any '::'.
 #' @param data A data frame either in long or in wide format. For the 2PCMP and the CLRM, wide format is required (which is the default expected format). For the DRTM, long format is required (for which you have to specify `long_format = TRUE`).
 #' @param family A string indicating the count data family, can be either "cmp" or "poisson".
-#' @param data_long. A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.
+#' @param data_long A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.
+#' @param person_id A character string. Name of the column with person id in long format data frame. Only necessary if data_long = TRUE.
 #' @param stand_errors A boolean. Indicates whether standard errors for model parameters should be estimated. Defaults to FALSE.
 #' @param control A list providing control parameters for the estimation.
 #' 
@@ -19,10 +20,13 @@
 #' @importFrom fastGHQuad ghQuad
 #' @importFrom nleqslv nleqslv
 #' @importFrom rootSolve gradient
+#' @importFrom tidyr pivot_wider
+#' @importFrom dplyr enquo
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 cirt <- function(model, data, family,
                  data_long = FALSE,
+                 person_id = NULL,
                  stand_errors = FALSE,
                  control = list(
                    n_nodes = 121,
@@ -34,15 +38,17 @@ cirt <- function(model, data, family,
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
   
+  data <- as.data.frame(data)
+  
   # extract model info from model specification -------------------------
-  model_list <- parse_model(model = model, data = data, data_long = data_long)
+  model_list <- parse_model(model = model, data = data, data_long = data_long, person_id = person_id)
 
   # TODO checks that we don't specify constraints on parameters with covariate
   # und dass wir nicht gleichzeitig person und item covariates haben
   # checks that if family is poisson log_nus don't appear in formula
   
-  if (any(is.na(item_data))) {
-    item_data <- na.omit(item_data)
+  if (any(is.na(model_list$item_data))) {
+    model_list$item_data <- na.omit(model_list$item_data)
     warning("Rows with missing values have been removed.")
   }
   # TODO noch um missings auf covariates kuemmern

@@ -31,7 +31,7 @@ make_resp_patterns_mat <- function(resp_pattern_list, n_resp_patterns, num_level
 
 # parse_model ------------------------------------------------------------------------
 
-parse_model <- function(model, data, data_long) {
+parse_model <- function(model, data, data_long, person_id) {
   
   model_clean <- gsub("\n", "", model)
   model_parts <- unlist(strsplit(model_clean, "[;]"))
@@ -48,14 +48,13 @@ parse_model <- function(model, data, data_long) {
     item_names_long <- item_names_long[!("" == item_names_long)]
     item_id <- item_names_long[!grepl(")", item_names_long)]
     item_names <- gsub(")", "", item_names_long[grepl(")", item_names_long)])
-    person_id <- 1:length(data[[item_id]][data[[item_id]] == item_names[1]])
-    data_wide <- reshape(
-      cbind(data, person_id)[, c("person_id", responses, item_id)],
-      idvar = "person_id",
-      timevar = item_id,
-      direction = "wide"
+    data_wide <- pivot_wider(
+      data,
+      id_cols = !!enquo(person_id),
+      names_from = !!enquo(item_id),
+      values_from = !!enquo(responses)
     )
-    item_data <- data_wide[,-which(colnames(data_wide) == "person_id")]
+    item_data <- data_wide[,item_names]
   } else {
     item_data <- data[,item_names, drop = FALSE]
   }
@@ -172,6 +171,8 @@ parse_model <- function(model, data, data_long) {
         i_covariates <- unique(data[,c(i_cov, item_id), drop = FALSE])
         i_covariates <- i_covariates[,colnames(i_covariates) != item_id]
         rownames(i_covariates) <- 1:nrow(i_covariates)
+        # TODO handling einfuegen fuer kategoriale kovaraiten und wie ich dafuer dann
+        # hier dummy variablen erstelle
       } 
     } else {
       i_covariates <- NULL

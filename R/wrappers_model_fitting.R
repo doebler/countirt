@@ -284,14 +284,103 @@ cirt <- function(model, data, family,
     family = family,
     model = model_list,
     fit = fit,
-    fit_ses = fit_ses
+    fit_ses = fit_ses,
+    control = control
   )
   
   return(out)
 }
 
 
-# TODO wrapper for standard errors
+#' Function that computes standard errors, z- and p-values for Wald tests, and CI.
+#' 
+#' @param model A cirt model. As returned by the cirt function.
+#' @param prob Probability for the CI. Defaults to 0.95
+#' 
+#' @import Rcpp
+#' @import RcppGSL
+#' @importFrom fastGHQuad gaussHermiteData
+#' @importFrom fastGHQuad ghQuad
+#' @importFrom nleqslv nleqslv
+#' @importFrom rootSolve gradient
+#' @useDynLib countirt, .registration=TRUE
+#' @export
+add_inference <- function(model, prob = 0.95) {
+  
+  if (!is.null(model$model$fixed_log_disps)) {
+    fixed_disps <- exp(model$model$fixed_log_disps)
+  } else {
+    fixed_disps <- NULL
+  }
+  
+  if (is.null(model$model$p_covariates) & is.null(model$model$i_covariates)) {
+    # 2pcmpm without covariates
+    if (model$family == "cmp") {
+    
+      # TODO
+      
+    } else if (model$family == "poisson") {
+    
+      # TODO
+      
+    }
+  } else {
+    # with covariates, so drtm or clrm
+    if (model$family == "cmp") {
+      if (isTRUE(model$model$p_cov_cat)) {
+        resp_patterns_matrix <- make_resp_patterns_mat(
+          lapply(model$model$p_cov_levels, get_resp_patterns_pcov_cat), 
+          prod(model$model$p_cov_levels), 
+          model$model$p_cov_levels
+        )
+      } else {
+        resp_patterns_matrix <- NULL
+      }
+      
+      vcov <- compute_vcov_with_cov(
+        item_params = model$fit$params,
+        weights_and_nodes = quad_rule(model$control$n_nodes),
+        data = model$model$item_data,
+        p_covariates = model$model$p_covariates,
+        i_covariates = model$model$i_covariates,
+        i_cov_on = model$model$i_cov_on,
+        p_cov_cat = model$model$p_cov_cat,
+        resp_patterns_matrix = resp_patterns_matrix,
+        same_alphas = model$model$equal_alphas, 
+        same_disps = model$model$equal_log_disps,
+        fix_alphas = model$model$fixed_alphas, 
+        fix_disps = fixed_disps
+      )
+    } else if (model$family == "poisson") {
+      
+      # TODO
+      
+    }
+  }
+  
+  CI_quantile <- -qnorm((1-prob)/2)
+  se <- se_from_vcov(vcov)
+  CI_lower <- model$fit$params - CI_quantile*se
+  CI_upper <- model$fit$params + CI_quantile*se
+  z_value <- model$fit$params/se
+  p_value <- 2*(1-pnorm(abs(z_value)))
+  
+  inf_list <- list(
+    se = se,
+    CI_lower = CI_lower,
+    CI_upper = CI_upper,
+    z_value = z_value,
+    p_value = p_value
+  )
+  
+  out <- model
+  out$fit_ses <- inf_list
+  return(out)
+}
+# TODO den standard error teil aus cirt rausnehmen, genreic summary schreiben, wenn ich die auf
+# cirt objekt aufrufe ohne se teil (is.null), weil ich den in cirt immer auf null setzen,
+# warnung schreiben mit hinweis, dass ich das hinzufuegen kann mit add_inference()
+
 
 # TODO wrapper for ability estimation
 

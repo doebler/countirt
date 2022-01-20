@@ -676,7 +676,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         f <- function(z, data, i_cov_data, alphas, deltas, betas_i) {
           out <- 0
           for (j in 1:n_items) {
-            sum_i_cov <- sum(z * betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE])))
+            sum_i_cov <- z * sum(betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE])))
             lambda <- exp(deltas[j] + alphas * z + sum_i_cov)
             # note that alphas is just a scalar in the case of item covariates on alpha
             out <- out + (dpois(data[,j], lambda, log = TRUE))

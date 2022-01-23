@@ -149,7 +149,7 @@ parse_model <- function(model, data, data_long, person_id) {
       ((grepl("alphas ~", model_parts) | grepl("alphas~", model_parts)) |
         (grepl("deltas ~", model_parts) | grepl("deltas~", model_parts)) |
         grepl("log_nus ~", model_parts) | grepl("log_nus~", model_parts)) &
-        (grepl(".*[^1]$", model_parts) | grepl(".*[^1[:space:]]$", model_parts))
+        !(grepl(".*[^1]$", model_parts) | grepl(".*[^1[:space:]]$", model_parts))
     ]
     if (length(model_icov) > 0) {
       i_cov_on <- trimws(gsub("~.*", "", model_icov))

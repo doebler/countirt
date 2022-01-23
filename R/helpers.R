@@ -121,14 +121,14 @@ parse_model <- function(model, data, data_long, person_id) {
       if (all(sapply(p_covariates, function(x){is(x, "factor")}))) {
         # atm, we can only do p_cov_cat = TRUE when all p_covariates are factors
         p_cov_cat <- TRUE
-        p_covariates <- sapply(
+        p_covariates <- lapply(
           p_covariates, 
           function(x){model.matrix(~x)[,-1,drop=FALSE]}
         )
-        if (length(p_cov) == 1) {
-          p_covariates <- list(p_covariates)
-          names(p_covariates) <- p_cov
-        }
+        # if (length(p_cov) == 1) {
+        #   p_covariates <- list(p_covariates)
+        #   names(p_covariates) <- p_cov
+        # }
         p_cov_names <- names(p_covariates)
         p_cov_levels <- unlist(lapply(p_covariates, ncol))+1
         p_covariates <- do.call(cbind, p_covariates)

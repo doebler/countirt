@@ -169,7 +169,7 @@ parse_model <- function(model, data, data_long, person_id) {
       if (data_long) {
         # a column for each covariate with as many rows as we have items
         i_covariates <- unique(data[,c(i_cov, item_id), drop = FALSE])
-        i_covariates <- i_covariates[,colnames(i_covariates) != item_id]
+        i_covariates <- i_covariates[,colnames(i_covariates) != item_id, drop = FALSE]
         rownames(i_covariates) <- 1:nrow(i_covariates)
         # TODO handling einfuegen fuer kategoriale kovaraiten und wie ich dafuer dann
         # hier dummy variablen erstelle

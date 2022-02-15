@@ -2158,16 +2158,16 @@ get_start_values_cmp_with_cov <- function(data,
           paste0("beta_i", 1:length(init_betas_i))
         )
       } else if (i_cov_on == "log_disp") {
-        for (i in 1:ncol(data)) {
-          if (same_alpha) {
-            mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
-          } else {
-            mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
-          }
-          sim <- rpois(nsim, mu)
-          init_logdisps[i] <- log((var(sim) / var(data[,i])))
-        }
-        init_logdisps <- mean(init_logdisps)
+        # for (i in 1:ncol(data)) {
+        #   if (same_alpha) {
+        #     mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+        #   } else {
+        #     mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+        #   }
+        #   sim <- rpois(nsim, mu)
+        #   init_logdisps[i] <- log((var(sim) / var(data[,i])))
+        # }
+        # init_logdisps <- mean(init_logdisps)
         # we need one log nu and then the covariate weights on nu
         predict_log_disp_df <- data.frame(
           count_var = log(apply(data, 2, var))
@@ -2179,6 +2179,7 @@ get_start_values_cmp_with_cov <- function(data,
         fit_log_disp <- lm(paste0("count_var ~", 
                                     paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
                              data = predict_log_disp_df)
+        init_logdisps <- fit_log_disp$coefficients[1]
         init_betas_i <- fit_log_disp$coefficients[-1]
         start_values <- c(init_alphas, init_deltas, init_logdisps, init_betas_i)
         names(start_values) <- c(
@@ -2192,16 +2193,16 @@ get_start_values_cmp_with_cov <- function(data,
       init_betas_i_delta <- fit_pois$params[grepl("beta_i_delta", names(fit_pois$params))]
       init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
       
-      for (i in 1:ncol(data)) {
-        # if we have covariates on all three item parameters, then we can't have any 
-        # constraints but as a consequence of having covariates on all item parameters,
-        # we have only scalars for init_alphas, init_deltas, and init_logdisps
-        mu <- exp(init_deltas + init_alphas*sim_abilities)
-        sim <- rpois(nsim, mu)
-        init_logdisps[i] <- log((var(sim) / var(data[,i])))
-      }
-      
-      init_logdisps <- mean(init_logdisps)
+      # for (i in 1:ncol(data)) {
+      #   # if we have covariates on all three item parameters, then we can't have any 
+      #   # constraints but as a consequence of having covariates on all item parameters,
+      #   # we have only scalars for init_alphas, init_deltas, and init_logdisps
+      #   mu <- exp(init_deltas + init_alphas*sim_abilities)
+      #   sim <- rpois(nsim, mu)
+      #   init_logdisps[i] <- log((var(sim) / var(data[,i])))
+      # }
+      # 
+      # init_logdisps <- mean(init_logdisps)
       # we need one log nu and then the covariate weights on nu
       predict_log_disp_df <- data.frame(
         count_var = log(apply(data, 2, var))
@@ -2213,6 +2214,7 @@ get_start_values_cmp_with_cov <- function(data,
       fit_log_disp <- lm(paste0("count_var ~", 
                                 paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
                          data = predict_log_disp_df)
+      init_logdisps <- fit_log_disp$coefficients[1]
       init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
       
       start_values <- c(init_alphas, init_deltas, init_logdisps, 
@@ -2234,13 +2236,13 @@ get_start_values_cmp_with_cov <- function(data,
           # the b weight won't be named after alpha here because in this poisson model, we only
           # have covariates on alpha then here
           # initial values for intercept on log_disp
-          for (i in 1:ncol(data)) {
-            mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
-            # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
-            sim <- rpois(nsim, mu)
-            init_logdisps[i] <- log((var(sim) / var(data[,i])))
-          }
-          init_logdisps <- mean(init_logdisps)
+          # for (i in 1:ncol(data)) {
+          #   mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+          #   # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+          #   sim <- rpois(nsim, mu)
+          #   init_logdisps[i] <- log((var(sim) / var(data[,i])))
+          # }
+          # init_logdisps <- mean(init_logdisps)
           # initial values for beta on log_disp
           predict_log_disp_df <- data.frame(
             count_var = log(apply(data, 2, var))
@@ -2252,6 +2254,7 @@ get_start_values_cmp_with_cov <- function(data,
           fit_log_disp <- lm(paste0("count_var ~", 
                                     paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
                              data = predict_log_disp_df)
+          init_logdisps <- fit_log_disp$coefficients[1]
           init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
           # prepare start values for ouput
           start_values <- c(init_alphas, init_deltas, init_logdisps, 
@@ -2270,18 +2273,18 @@ get_start_values_cmp_with_cov <- function(data,
           # the b weight won't be named after delta here because in this poisson model, we only
           # have covariates on delta then here
           # initial values for intercept on log disp
-          for (i in 1:ncol(data)) {
-            if (same_alpha) {
-              mu <- exp(init_deltas + init_alphas*sim_abilities)
-              # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
-            } else {
-              mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
-              # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
-            }
-            sim <- rpois(nsim, mu)
-            init_logdisps[i] <- log((var(sim) / var(data[,i])))
-          }
-          init_logdisps <- mean(init_logdisps)
+          # for (i in 1:ncol(data)) {
+          #   if (same_alpha) {
+          #     mu <- exp(init_deltas + init_alphas*sim_abilities)
+          #     # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+          #   } else {
+          #     mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
+          #     # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
+          #   }
+          #   sim <- rpois(nsim, mu)
+          #   init_logdisps[i] <- log((var(sim) / var(data[,i])))
+          # }
+          # init_logdisps <- mean(init_logdisps)
           # initial values for beta on log_disp
           predict_log_disp_df <- data.frame(
             count_var = log(apply(data, 2, var))
@@ -2293,6 +2296,7 @@ get_start_values_cmp_with_cov <- function(data,
           fit_log_disp <- lm(paste0("count_var ~", 
                                     paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
                              data = predict_log_disp_df)
+          init_logdisps <- fit_log_disp$coefficients[1]
           init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
           # prepare start values for ouput
           start_values <- c(init_alphas, init_deltas, init_logdisps, 

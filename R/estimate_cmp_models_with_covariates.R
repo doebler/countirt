@@ -2194,8 +2194,10 @@ get_start_values_cmp_with_cov <- function(data,
       init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
       
       # TODO hier habe ich die startwerte fuer disp vorhersage angepasst
-      item_alphas <- init_alphas + apply(i_covariates, 1, function(x){sum(x*init_betas_i_alpha)})
-      item_deltas <- init_deltas + apply(i_covariates, 1, function(x){sum(x*init_betas_i_delta)})
+      item_alphas <- init_alphas + 
+        apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_alpha)})
+      item_deltas <- init_deltas + 
+        apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_delta)})
       for (i in 1:ncol(data)) {
         # if we have covariates on all three item parameters, then we can't have any
         # constraints but as a consequence of having covariates on all item parameters,

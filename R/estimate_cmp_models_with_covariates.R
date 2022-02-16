@@ -2193,8 +2193,33 @@ get_start_values_cmp_with_cov <- function(data,
       init_betas_i_delta <- fit_pois$params[grepl("beta_i_delta", names(fit_pois$params))]
       init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
       
+      # TODO hier habe ich die startwerte fuer disp vorhersage angepasst
+      item_alphas <- init_alphas + apply(i_covariates, 1, function(x){sum(x*init_betas_i_alpha)})
+      item_deltas <- init_deltas + apply(i_covariates, 1, function(x){sum(x*init_betas_i_delta)})
+      for (i in 1:ncol(data)) {
+        # if we have covariates on all three item parameters, then we can't have any
+        # constraints but as a consequence of having covariates on all item parameters,
+        # we have only scalars for init_alphas and init_deltas
+        # first compute item specific alphas and deltas
+        mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities)
+        sim <- rpois(nsim, mu)
+        init_logdisps[i] <- log((var(sim) / var(data[,i])))
+      }
+      predict_log_disp_df <- as.data.frame(
+        cbind(init_logdisps, i_covariates)
+        )
+      # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
+      # of the M items on those I covariates
+      colnames(predict_log_disp_df)[-1] <- paste0("covar_", colnames(predict_log_disp_df)[-1])
+      fit_log_disp <- lm(paste0("init_logdisps ~", 
+                                paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
+                         data = predict_log_disp_df)
+      init_logdisps <- fit_log_disp$coefficients[1]
+      init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
+      
+      # TODO hier ist auskommentiert die alte variante der startwerte
       # for (i in 1:ncol(data)) {
-      #   # if we have covariates on all three item parameters, then we can't have any 
+      #   # if we have covariates on all three item parameters, then we can't have any
       #   # constraints but as a consequence of having covariates on all item parameters,
       #   # we have only scalars for init_alphas, init_deltas, and init_logdisps
       #   mu <- exp(init_deltas + init_alphas*sim_abilities)
@@ -2203,19 +2228,19 @@ get_start_values_cmp_with_cov <- function(data,
       # }
       # 
       # init_logdisps <- mean(init_logdisps)
-      # we need one log nu and then the covariate weights on nu
-      predict_log_disp_df <- data.frame(
-        count_var = log(apply(data, 2, var))
-      )
-      predict_log_disp_df <- as.data.frame(cbind(predict_log_disp_df, i_covariates))
-      # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
-      # of the M items on those I covariates
-      colnames(predict_log_disp_df)[-1] <- paste0("covar_", colnames(predict_log_disp_df)[-1])
-      fit_log_disp <- lm(paste0("count_var ~", 
-                                paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
-                         data = predict_log_disp_df)
-      init_logdisps <- fit_log_disp$coefficients[1]
-      init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
+      # # we need one log nu and then the covariate weights on nu
+      # predict_log_disp_df <- data.frame(
+      #   count_var = log(apply(data, 2, var))
+      # )
+      # predict_log_disp_df <- as.data.frame(cbind(predict_log_disp_df, i_covariates))
+      # # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
+      # # of the M items on those I covariates
+      # colnames(predict_log_disp_df)[-1] <- paste0("covar_", colnames(predict_log_disp_df)[-1])
+      # fit_log_disp <- lm(paste0("count_var ~", 
+      #                           paste(colnames(predict_log_disp_df)[-1], collapse = "+" )),
+      #                    data = predict_log_disp_df)
+      # init_logdisps <- fit_log_disp$coefficients[1]
+      # init_betas_i_logdisp <- fit_log_disp$coefficients[-1]
       
       start_values <- c(init_alphas, init_deltas, init_logdisps, 
                         init_betas_i_alpha, init_betas_i_delta, init_betas_i_logdisp)

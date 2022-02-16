@@ -285,6 +285,7 @@ cirt <- function(model, data, family,
     model = model_list,
     fit = fit,
     fit_ses = fit_ses,
+    start_values = start_values,
     control = control
   )
   

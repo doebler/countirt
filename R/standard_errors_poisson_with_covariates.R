@@ -143,7 +143,8 @@ wrap_grad_poisson_fixalphas_with_cov <- function(y, PPs, weights_and_nodes, data
 
 # compute_vcov_poisson -------------------------------------------------------------------
 compute_vcov_poisson_with_cov <- function(item_params, weights_and_nodes, data,
-                                          p_covariates, i_covariates, i_cov_on = c("alpha", "delta"),
+                                          p_covariates, i_covariates, 
+                                          i_cov_on = c("alpha", "delta"),
                                           same_alphas = FALSE, fix_alphas = NULL) {
   
   # computes vcov matrix with Oake's identity approximation (Chalmers, 2012)#

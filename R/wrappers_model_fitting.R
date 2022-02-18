@@ -41,17 +41,16 @@ cirt <- function(model, data, family,
   data <- as.data.frame(data)
   
   # extract model info from model specification -------------------------
-  model_list <- parse_model(model = model, data = data, data_long = data_long, person_id = person_id)
+  model_list <- parse_model(
+    model = model, data = data, 
+    data_long = data_long, person_id = person_id
+    )
+  
+  # model list checks ---------------------------------------------------
 
   # TODO checks that we don't specify constraints on parameters with covariate
   # und dass wir nicht gleichzeitig person und item covariates haben
   # checks that if family is poisson log_nus don't appear in formula
-  
-  if (any(is.na(model_list$item_data))) {
-    model_list$item_data <- na.omit(model_list$item_data)
-    warning("Rows with missing values have been removed.")
-  }
-  # TODO noch um missings auf covariates kuemmern
   
   # TODO wenn ich hier das i_cov_on argument einbaue, so dass ich item kovariaten mit
   # einbauen kann, dann sollte ich checken, dass wenn fix_alphas = TRUE, nur
@@ -67,13 +66,55 @@ cirt <- function(model, data, family,
   # also dass wir keinen unsinn haben als angegebenes element
   # und auch entspr. fuer poisson
   
-  # TODO fuer personen kovariaten mit p_cov_cat = TRUE sicherstellen, dass die 
-  # faktoren in der kovariaten matrix dummy coded sind; und zwar so wie ich das
-  # erwarte also mit ohne die spalten der referenzkategorien
+  # handling missings ---------------------------------------------------
   
-  # TODO in dem fall von p_cov_cat = TRUE muss ich fuer die run_em funktion das
-  # argument num_levels_p_cov setzen und dafuer bestimmen wie viele levels ich 
-  # pro faktor habe
+  if (any(is.na(model_list$item_data))) {
+    if (!is.null(model_list$p_covariates)) {
+      if (any(is.na(model_list$p_covariates))) {
+        # exclude rows with missings on either items or on person covariates
+        # so that we have full obs for all persons included in a model
+        # with person covariates
+        missings_item_df <- which(is.na(model_list$item_data))
+        missings_pcov_df <- which(is.na(model_list$p_covariates))
+        missings <- unique(c(missings_item_df,missings_pcov_df))
+        model_list$item_data <- model_list$item_data[-missings,]
+        model_list$p_covariates <- model_list$p_covariates[-missings,]
+        warning("Rows with missing values on either items or person covariates or both have been removed.")
+      } else {
+        # no missings on person covariates, just on data
+        model_list$item_data <- na.omit(model_list$item_data)
+        warning("Rows with missing values on item data have been removed.")
+      }
+    } else { # we don't have person covariates
+      model_list$item_data <- na.omit(model_list$item_data)
+      warning("Rows with missing values have been removed.")
+    }
+  }
+  
+  # check if we have missings just on person covariates even if we have
+  # complete obs only on item data
+  if (!is.null(model_list$p_covariates)) {
+    if (any(is.na(model_list$p_covariates))) {
+      # exclude rows with missings on either items or on person covariates
+      # so that we have full obs for all persons included in a model
+      # with person covariates
+      missings <- which(is.na(model_list$p_covariates))
+      model_list$item_data <- model_list$item_data[-missings,]
+      model_list$p_covariates <- model_list$p_covariates[-missings,]
+      warning("Rows with missing values on person covariates been removed.")
+    }
+  }
+  
+  # check for missings on item covariates and break if we have those as we
+  # the drtm can't handle that, or otherwise we would have to remove the entire
+  # item and i wouldn't wanna make that choice for the user.
+  if (!is.null(model_list$i_covariates)) {
+    if (any(is.na(model_list$i_covariates))) {
+      stop("There are missing values on at least one of the item covariates. Each item covariate must have a value for each item. Otherwise please remove the item covariate(s) with the missings or remove the item for which covariates have missings.")
+    }
+  }
+  
+  # model fitting -----------------------------------------------------------------
   
   if (is.null(model_list$p_covariates) & is.null(model_list$i_covariates)) {
     # 2pcmp model
@@ -111,15 +152,7 @@ cirt <- function(model, data, family,
         m_method = control$m_method, 
         convcrit = control$convcrit
       )
-      
-      if (stand_errors) {
-        print("Start computation of standard errors.")
-        fit_vcov <- compute_vcov(fit$params, quad_rule(control$n_nodes), model_list$item_data)
-        fit_ses <- se_from_vcov(fit_vcov)
-      } else {
-        fit_vcov <- NA
-        fit_ses <- NA
-      }
+
     } else if (family == "poisson") {
       start_values <- get_start_values_pois(
         data = model_list$item_data
@@ -140,14 +173,6 @@ cirt <- function(model, data, family,
         convcrit = control$convcrit
       )
       
-      if (stand_errors) {
-        print("Start computation of standard errors.")
-        fit_vcov <- compute_vcov_poisson(fit$params, quad_rule(control$n_nodes), model_list$item_data)
-        fit_ses <- se_from_vcov(fit_vcov)
-      } else {
-        fit_vcov <- NA
-        fit_ses <- NA
-      }
     } else {
       stop("Invalid family specified. Please see documentations for available families.")
     }
@@ -195,37 +220,6 @@ cirt <- function(model, data, family,
         convcrit = control$convcrit
       )
       
-      if (stand_errors) {
-        print("Start computation of standard errors.")
-        if (isTRUE(model_list$p_cov_cat)) {
-          resp_patterns_matrix <- make_resp_patterns_mat(
-            lapply(model_list$p_cov_levels, get_resp_patterns_pcov_cat), 
-            prod(model_list$p_cov_levels), 
-            model_list$p_cov_levels
-          )
-        } else {
-          resp_patterns_matrix <- NULL
-        }
-        
-        fit_vcov <- compute_vcov_with_cov(
-          item_params = fit$params,
-          weights_and_nodes = quad_rule(control$n_nodes), 
-          data = model_list$item_data,
-          p_covariates = model_list$p_covariates,
-          i_covariates = model_list$i_covariates,
-          i_cov_on = model_ist$i_cov_on,
-          p_cov_cat = model_list$p_cov_cat,
-          resp_patterns_matrix = resp_patterns_matrix,
-          same_alphas = model_list$equal_alphas,
-          same_disps = model_list$equal_log_disps,
-          fix_alphas = model_list$fixed_alphas,
-          fix_disps = fixed_disps
-        )
-        fit_ses <- se_from_vcov(fit_vcov)
-      } else {
-        fit_vcov <- NA
-        fit_ses <- NA
-      }
     } else if (family == "poisson") {
       
       start_values <- get_start_values_poisson_with_cov(
@@ -254,37 +248,17 @@ cirt <- function(model, data, family,
         convcrit = control$convcrit
       )
       
-      if (stand_errors) {
-        print("Start computation of standard errors.")
-        fit_vcov <- compute_vcov_poisson_with_cov(
-          item_params = fit$params,
-          weights_and_nodes = quad_rule(control$n_nodes),
-          data = model_list$item_data,
-          p_covariates = model_list$p_covariates,
-          i_covariates = model_list$i_covariates,
-          i_cov_on = model_list$i_cov_on,
-          same_alphas = model_list$equal_alphas,
-          fix_alphas = model_list$fixed_alphas
-        )
-        fit_ses <- se_from_vcov(fit_vcov)
-      } else {
-        fit_vcov <- NA
-        fit_ses <- NA
-      }
     } else {
       stop("Invalid family specified. Please see documentations for available families.")
     }
   }
-  
-  # TODO if stand_error also compute CIs and z values and p values for Wald test and add to
-  # output
   
   # prepare object for returning
   out <- list(
     family = family,
     model = model_list,
     fit = fit,
-    fit_ses = fit_ses,
+    fit_ses = NULL, # we can add ses with add_inference
     start_values = start_values,
     control = control
   )
@@ -317,13 +291,17 @@ add_inference <- function(model, prob = 0.95) {
   if (is.null(model$model$p_covariates) & is.null(model$model$i_covariates)) {
     # 2pcmpm without covariates
     if (model$family == "cmp") {
-    
-      # TODO
-      
+      vcov <- compute_vcov(
+        item_params = model$fit$params,
+        weights_and_nodes = quad_rule(model$control$n_nodes),
+        data = model$model$item_data
+      )
     } else if (model$family == "poisson") {
-    
-      # TODO
-      
+      vcov <- compute_vcov_poisson(
+        item_params = model$fit$params,
+        weights_and_nodes = quad_rule(model$control$n_nodes),
+        data = model$model$item_data
+      )
     }
   } else {
     # with covariates, so drtm or clrm
@@ -353,9 +331,16 @@ add_inference <- function(model, prob = 0.95) {
         fix_disps = fixed_disps
       )
     } else if (model$family == "poisson") {
-      
-      # TODO
-      
+      vcov <- compute_vcov_poisson_with_cov(
+        item_params = model$fit$params,
+        weights_and_nodes = quad_rule(model$control$n_nodes),
+        data = model$model$item_data,
+        p_covariates = model$model$p_covariates,
+        i_covariates = model$model$i_covariates,
+        i_cov_on = model$model$i_cov_on,
+        same_alphas = model$model$equal_alphas, 
+        fix_alphas = model$model$fixed_alphas
+      )
     }
   }
   
@@ -378,7 +363,8 @@ add_inference <- function(model, prob = 0.95) {
   out$fit_ses <- inf_list
   return(out)
 }
-# TODO den standard error teil aus cirt rausnehmen, genreic summary schreiben, wenn ich die auf
+
+# TODO generic summary schreiben, wenn ich die auf
 # cirt objekt aufrufe ohne se teil (is.null), weil ich den in cirt immer auf null setzen,
 # warnung schreiben mit hinweis, dass ich das hinzufuegen kann mit add_inference()
 

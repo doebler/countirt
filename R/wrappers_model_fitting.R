@@ -262,7 +262,7 @@ cirt <- function(model, data, family,
     start_values = start_values,
     control = control
   )
-  
+  class(out) <- "cirtfit"
   return(out)
 }
 
@@ -361,6 +361,7 @@ add_inference <- function(model, prob = 0.95) {
   
   out <- model
   out$fit_ses <- inf_list
+  class(out) <- "cirtfit"
   return(out)
 }
 

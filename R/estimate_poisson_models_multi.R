@@ -258,7 +258,7 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
   f <- function(z, data, alphas_matrix, deltas) {
     out <- 0
     for (j in 1:n_items) {
-      lambdas <- as.numeric(exp(z * alphas_matrix[,j] + deltas[j]))
+      lambdas <- as.numeric(exp(sum(z * alphas_matrix[,j]) + deltas[j]))
       out <- out + (dpois(data[,j], lambdas, log = TRUE))
     }
     return(exp(out))

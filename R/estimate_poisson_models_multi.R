@@ -77,7 +77,8 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, data) {
     # for lambdas, we multiply each trait dimension with respective
     # alpha and sum across those, so that we have a vector of the length
     # of weights_and_nodes$W (number of quadrature points)
-    lambdas <- exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] + deltas[j])
+    lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+                                deltas[j]))
     # the output is a vector of length K (= no. of quadrature points)
     x_minus_lambda <- outer(data[,j], lambdas, "-")
     # matrix_nodes <- matrix(
@@ -213,7 +214,7 @@ em_cycle_poisson_multi <- function(
     PPs <- e_step_poisson_multi(data, item_params, weights_and_nodes)
     
     # m step
-    new_item_params_multi <- nleqslv(
+    new_item_params <- nleqslv(
       x = item_params,
       fn = grad_poisson_multi,
       PPs = PPs,

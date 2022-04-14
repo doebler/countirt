@@ -266,7 +266,7 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
     
   marg_prob <- numeric(n_persons)
   for (i in 1:n_persons) {
-    marg_prob[i] <- eval.grid(f, weights_and_nodes,
+    marg_prob[i] <- eval.quad(f, weights_and_nodes,
                              data = data[i, , drop = FALSE],
                              alphas_matrix = alphas_matrix, 
                              deltas = deltas)

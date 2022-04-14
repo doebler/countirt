@@ -29,7 +29,8 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
   )
   
   for (j in 1:ncol(data)) {
-    lambdas <- exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] + deltas[j])
+    lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+                                deltas[j]))
     PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
   }
   

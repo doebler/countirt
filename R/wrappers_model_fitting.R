@@ -16,6 +16,7 @@
 #' 
 #' @import Rcpp
 #' @import RcppGSL
+#' @import MultiGHQuad
 #' @importFrom fastGHQuad gaussHermiteData
 #' @importFrom fastGHQuad ghQuad
 #' @importFrom nleqslv nleqslv

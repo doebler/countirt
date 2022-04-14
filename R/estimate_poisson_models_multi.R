@@ -319,9 +319,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes,
     # TODO die marg_ll2 funktion anpassen fuer multi
     if (convcrit == "marglik") {
       old_ll <- new_ll
-      new_ll <- marg_ll2(
+      new_ll <- marg_ll_poisson_multi(
         as.matrix(data), new_params,
-        weights_and_nodes, family = "poisson",
+        weights_and_nodes,
         fix_alphas = fix_alphas, same_alphas = same_alpha)
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
@@ -330,9 +330,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes,
     } else {
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
-      marg_ll <- marg_ll2(
+      marg_ll <- marg_ll_poisson_multi(
         as.matrix(data), new_params,
-        weights_and_nodes, family = "poisson",
+        weights_and_nodes,
         fix_alphas = fix_alphas, same_alphas = same_alpha)
       marg_lls[iter] <- marg_ll
       #plot(marg_lls)

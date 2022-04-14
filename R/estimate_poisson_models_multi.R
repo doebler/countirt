@@ -22,11 +22,13 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
   # K = length(weights_and_nodes$W), so the no. of quadrature points depending
   # on number of trait dimensions and number of nodes per dimension
   PPs <- matrix(
-    log(weights_and_nodes$W),
+    weights_and_nodes$W,
     nrow = nrow(data),
     ncol = length(weights_and_nodes$W),
     byrow = TRUE
   )
+  # NOTE in uni-dimensional case, we take the log of the prior weights here
+  # but in the multidimensional GH function, we already ge the log weights in W
   
   for (j in 1:ncol(data)) {
     lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
@@ -236,6 +238,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes,
   
   # get nodes and weights for multivariate GH quadrature
   weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes)
+  # NOTE the weights W are on log scale
   # default prior works for the m2ppcm
   # for output we have a list with X which is a matrix with nodes for
   # each trait (quadrature in rows with, traits in cols),

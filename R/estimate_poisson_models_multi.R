@@ -255,22 +255,35 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
   )
   
   # function to compute integral with quadrature over
-  f <- function(z, data, alphas_matrix, deltas) {
-    out <- 0
-    for (j in 1:n_items) {
-      lambdas <- as.numeric(exp(sum(z * alphas_matrix[,j]) + deltas[j]))
-      out <- out + (dpois(data[,j], lambdas, log = TRUE))
-    }
-    return(exp(out))
-  }
-    
+  # f <- function(z, data, alphas_matrix, deltas) {
+  #   out <- 0
+  #   for (j in 1:n_items) {
+  #     lambdas <- as.numeric(exp(sum(z * alphas_matrix[,j]) + deltas[j]))
+  #     out <- out + (dpois(data[,j], lambdas, log = TRUE))
+  #   }
+  #   return(exp(out))
+  # }
+  #   
+  # marg_prob <- numeric(n_persons)
+  # for (i in 1:n_persons) {
+  #   marg_prob[i] <- eval.quad(f, weights_and_nodes,
+  #                            data = data[i, , drop = FALSE],
+  #                            alphas_matrix = alphas_matrix, 
+  #                            deltas = deltas)
+  # }
+  
   marg_prob <- numeric(n_persons)
   for (i in 1:n_persons) {
-    marg_prob[i] <- eval.quad(f, weights_and_nodes,
-                             data = data[i, , drop = FALSE],
-                             alphas_matrix = alphas_matrix, 
-                             deltas = deltas)
+    out <- 0
+    for (j in 1:n_items) {
+      lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+                                   deltas[j]))
+      out <- dpois(data[,j], lambdas, log = TRUE)
+    }
+    out <- sum(exp(out + weights_and_nodes$W))
+    marg_prob[i] <- out
   }
+  
   ll <- sum(log(marg_prob))
   
   return(ll)

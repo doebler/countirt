@@ -227,6 +227,55 @@ em_cycle_poisson_multi <- function(
   return(new_item_params)
 }
 
+# marg_ll_poisson_multi -------------------------------------------------------------
+
+marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes, 
+                                  fix_alphas = NULL, same_alphas = FALSE) {
+  # TODO allow for constraints on alpha, think about that a little bit
+  # as we have to have slightly more flexibility with this than in uni-dim
+  # case so that we can do confirmatory models
+  
+  n_items <- ncol(data)
+  n_persons <- nrow(data)
+  
+  data <- as.matrix(data)
+  deltas <- item_params[grepl("delta", names(item_params))]
+  
+  # TODO implement if-else cases for constraints on alpha
+  alphas <- item_params[grepl("alpha", names(item_params))]
+  # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
+  # expect first all alphas (across all thetas) for item 1, and then all for item 2, etc.
+  # restructure alphas into a matrix for easier combinatio with the
+  # quadrature nodes, we have a column for each item and a row for each theta
+  alphas_matrix <- matrix(
+    alphas,
+    ncol = ncol(data),
+    nrow = ncol(weights_and_nodes$X),
+    byrow = FALSE
+  )
+  
+  # function to compute integral with quadrature over
+  f <- function(z, data, alphas_matrix, deltas) {
+    out <- 0
+    for (j in 1:n_items) {
+      lambdas <- as.numeric(exp(z * alphas_matrix[,j] + deltas[j]))
+      out <- out + (dpois(data[,j], lambdas, log = TRUE))
+    }
+    return(exp(out))
+  }
+    
+  marg_prob <- numeric(n_persons)
+  for (i in 1:n_persons) {
+    marg_prob[i] <- eval.grid(f, weights_and_nodes,
+                             data = data[i, , drop = FALSE],
+                             alphas_matrix = alphas_matrix, 
+                             deltas = deltas)
+  }
+  ll <- sum(log(marg_prob))
+  
+  return(ll)
+}
+
 # run_em_poisson_multi ---------------------------------------------------------------
 run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes, 
                                  thres = Inf, prob = 0,

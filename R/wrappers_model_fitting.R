@@ -375,4 +375,5 @@ add_inference <- function(model, prob = 0.95) {
 # TODO multi dimenisonal function
 # dafuer brauche ich die funktion: init.quad aus MultiGHQuad
 # und das muss ich dann noch zu den paket dependencies hinzufuegen
+# und fuer die multi marg ll brauche ich auch eval.quad aus dem paket
 

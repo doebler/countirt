@@ -229,6 +229,7 @@ estep_cmp_with_cov <- function(data, item_params,
 grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data, 
                               p_covariates, i_covariates,
                               i_cov_on = c("alpha", "delta", "log_disp"),
+                              which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                               p_cov_cat = TRUE,
                               resp_patterns_matrix = NULL) {
   # prep item parameters
@@ -285,6 +286,8 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
   } else if (!is.null(i_covariates)) { 
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
+      # if we have item covariates only on one parameter, we don't need information
+      # from which_i_cov argument as they are just on one parameter
       if (i_cov_on == "delta") {
         grads <- grad_cmp_with_icov_delta_cpp(
           alphas = alphas,
@@ -340,6 +343,14 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           min_nu = 0.001)
       }
     } else if (length(i_cov_on) == 3) {
+      # TODO hier weiter machen und ueberlegen wie ich das
+      # which_i_cov = list(alpha="all", delta="all", log_disp="all")
+      # argument hier nutzen muss damit ich verschiedene kovariaten auf den 
+      # parametern erlauben kann
+      # als idee: ich glaube ich fuege drei argumente zu der funktion unten
+      # hinzu in c++ naemlich: betas_alpha_which_cov etc und das sind dann
+      # vektoren mit den spaltennummern von den kovariaten die ich benutzen will
+      
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
@@ -450,6 +461,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
 }
 
 # grad_cmp_with_cov_fixdisps----------------------------------------------------------
+# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes, 
                                        data, fix_disps,
                                        p_covariates, i_covariates,
@@ -586,6 +598,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
 }
 
 # grad_cmp_with_cov_fixalphas-------------------------------------------------------
+# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
                                         data, fix_alphas,
                                         p_covariates, i_covariates,
@@ -729,6 +742,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
 }
 
 # grad_cmp_with_cov_samedisps ---------------------------------------------------------
+# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_samedisps <- function(item_params, PPs, 
                                         weights_and_nodes, data,
                                         p_covariates, i_covariates,
@@ -870,6 +884,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
 }
 
 # grad_cmp_with_cov_samealphas -----------------------------------------------------
+# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
                                          weights_and_nodes, data,
                                          p_covariates, i_covariates,
@@ -1018,6 +1033,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
 }
 
 # ell_cmp_with_cov -------------------------------------------------------------------
+# FIXME hier habe ich jetzt kein which_i_cov argument aber eigentlich brauche fuer countirt auch die ganze funktion nicht
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates,
                              i_cov_on = c("alpha", "delta", "log_disp"),
@@ -1251,6 +1267,7 @@ ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes,
 em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   p_covariates, i_covariates,
                                   i_cov_on = c("alpha", "delta", "log_disp"),
+                                  which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                   p_cov_cat = TRUE,
                                   resp_patterns_matrix = NULL,
                                   ctol_maxstep = 1e-8, m_method = "nleqslv",
@@ -1267,6 +1284,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -1280,6 +1298,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
@@ -1336,6 +1355,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -1349,6 +1369,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
@@ -1402,6 +1423,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -1415,6 +1437,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         control = list(xtol = ctol_maxstep)
@@ -1468,6 +1491,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -1481,6 +1505,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps,
@@ -1535,6 +1560,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -1548,6 +1574,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas,
@@ -1562,6 +1589,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 
 # marg_ll_cmp_with_cov --------------------------------------------------------------------------
 
+# TODO anpassen auf unterschiedlich viele kovariaten
+# dazu das which_i_cov = list(alpha="all", delta="all", log_disp="all") argument einfuegen
 marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 
                                  p_covariates, i_covariates, 
                                  i_cov_on = c("alpha", "delta", "log_disp"),
@@ -1781,9 +1810,11 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 }
 
 # run_em_cmp_with_cov ----------------------------------------------------------------------
+# TODO cirt anpassen dass ich hier das which_i_cov argument uebergebe
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
                                 p_covariates, i_covariates, 
                                 i_cov_on = c("alpha", "delta", "log_disp"),
+                                which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                 p_cov_cat = TRUE,
                                 num_levels_p_cov = NULL,
                                 thres = Inf, prob = 0,
@@ -1830,6 +1861,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
       p_covariates = p_covariates, 
       i_covariates = i_covariates,
       i_cov_on = i_cov_on,
+      which_i_cov = which_i_cov,
       p_cov_cat = p_cov_cat,
       resp_patterns_matrix = resp_patterns_matrix,
       ctol_maxstep = ctol_maxstep,
@@ -1851,6 +1883,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         p_covariates = p_covariates, 
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps, 
@@ -1871,6 +1904,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         p_covariates = p_covariates, 
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps, 
@@ -1909,6 +1943,7 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 
 # get_start_values_cmp_with_cov ---------------------------------------------------------------------
 
+# TODO anpassen auf unterschiedlich viele kovariaten
 get_start_values_cmp_with_cov <- function(data, 
                                           p_covariates,
                                           i_covariates,

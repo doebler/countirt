@@ -2281,10 +2281,18 @@ get_start_values_cmp_with_cov <- function(data,
           # initial values for log disps
           # we don't have item covariates on alpha here, so the init_alphas
           # are already item-specific
+          # except for when we have the constraint of same alphas, so for that
+          # possibility, we need a case distinction
           item_deltas <- init_deltas + 
             apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_delta)})
           for (i in 1:ncol(data)) {
-            mu <- exp(item_deltas[i] + init_alphas[i]*sim_abilities)
+            if (same_alpha) {
+              # if we have same alphas, than init_alphas is just one value
+              mu <- exp(item_deltas[i] + init_alphas*sim_abilities)
+            } else {
+              # if we don't have same alpha constraint, then we have item-specific init_alphas
+              mu <- exp(item_deltas[i] + init_alphas[i]*sim_abilities)
+            }
             sim <- rpois(nsim, mu)
             init_logdisps[i] <- log((var(sim) / var(data[,i])))
           }

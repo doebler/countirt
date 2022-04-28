@@ -278,10 +278,9 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
     for (j in 1:n_items) {
       lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
                                    deltas[j]))
-      out <- dpois(data[,j], lambdas, log = TRUE)
+      out <- out + dpois(data[,j], lambdas, log = TRUE)
     }
-    out <- sum(exp(out + weights_and_nodes$W))
-    marg_prob[i] <- out
+    marg_prob[i] <- sum(exp(out + weights_and_nodes$W))
   }
   
   ll <- sum(log(marg_prob))
@@ -290,25 +289,39 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
 }
 
 # run_em_poisson_multi ---------------------------------------------------------------
-run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes, 
-                                 thres = Inf, prob = 0,
+run_em_poisson_multi <- function(data, init_params, n_traits, 
+                                 n_nodes = NULL, n_samples = NULL, 
+                                 em_type = c("gh", "mc"), fcov_prior = NULL,
+                                 truncate_grid = TRUE,
                                  maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                  convcrit = "marglik",
                                  fix_alphas = NULL, same_alpha = FALSE) {
   # note that we now have n_nodes with nodes per dimension, so that total
   # number of quadrature points n_nodes^n_traits
   # we need to go down with n_nodes as we go up with n_traits
-  
-  # get nodes and weights for multivariate GH quadrature
-  weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes)
-  # NOTE the weights W are on log scale
-  # default prior works for the m2ppcm
-  # for output we have a list with X which is a matrix with nodes for
-  # each trait (quadrature in rows with, traits in cols),
-  # with n_nodes^n_traits quadrature points (so all combinations
-  # across the nodes of the traits)
-  # and quadrature weights W as a vector with n_nodes^n_traits entries
-  # the weights are for the combination of traits (so joint)
+  # n_nodes is for gh em, n_samples is for mc em
+  # truncate_grid is just meaningful for GH EM, it will truncate quadrature
+  # grid to remove quadrature points with very low prior probability
+  # fcov_prior is the prior for either type of em for latent trait cov matrix
+  # you can modify expected trait correlation with that, we should just have
+  # unit variance for latent traits
+  # TODO when doing start values see if maybe i can get an estimate for
+  # trait correlation to use for the prior here as it will help both
+  # efficiency and accuracy if i do this right
+   
+  if (em_type == "gh") {
+    # TODO actually use fcov_prior argument here
+    # get nodes and weights for multivariate GH quadrature
+    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+    # NOTE the weights W are on log scale
+    # default prior works for the m2ppcm
+    # for output we have a list with X which is a matrix with nodes for
+    # each trait (quadrature in rows with, traits in cols),
+    # with n_nodes^n_traits quadrature points (so all combinations
+    # across the nodes of the traits)
+    # and quadrature weights W as a vector with n_nodes^n_traits entries
+    # the weights are for the combination of traits (so joint)
+  }
   
   new_params <- init_params
   conv <- FALSE
@@ -322,14 +335,15 @@ run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes,
   while (!isTRUE(conv) && (iter <= maxiter)) {
     print(paste0("Iteration: ", iter))
     old_params <- new_params
+    # TODO em_type argument weiter durchreichen durch funktionen
     new_params <- em_cycle_poisson_multi(
       data, old_params, weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
       fix_alphas = fix_alphas, same_alpha = same_alpha
     )
+    print(new_params)
     
     # check for convergence
-    # TODO die marg_ll2 funktion anpassen fuer multi
     if (convcrit == "marglik") {
       old_ll <- new_ll
       new_ll <- marg_ll_poisson_multi(
@@ -337,8 +351,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits, n_nodes,
         weights_and_nodes,
         fix_alphas = fix_alphas, same_alphas = same_alpha)
       marg_lls[iter] <- new_ll
-      #plot(marg_lls)
-      #print(marg_lls)
+      plot(marg_lls)
+      print(marg_lls)
       conv <- (abs(old_ll - new_ll) < convtol)
     } else {
       # convergence is to be assessed on parameter values, argument convcrit = "params"

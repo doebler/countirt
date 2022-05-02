@@ -310,7 +310,6 @@ add_inference <- function(model, prob = 0.95) {
     }
   } else {
     # with covariates, so drtm or clrm
-    # TODO add option with different numbers of item covariates per parameter
     if (model$family == "cmp") {
       if (isTRUE(model$model$p_cov_cat)) {
         resp_patterns_matrix <- make_resp_patterns_mat(
@@ -329,6 +328,7 @@ add_inference <- function(model, prob = 0.95) {
         p_covariates = model$model$p_covariates,
         i_covariates = model$model$i_covariates,
         i_cov_on = model$model$i_cov_on,
+        which_i_cov = model$model$which_i_cov,
         p_cov_cat = model$model$p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         same_alphas = model$model$equal_alphas, 
@@ -337,6 +337,7 @@ add_inference <- function(model, prob = 0.95) {
         fix_disps = fixed_disps
       )
     } else if (model$family == "poisson") {
+      # TODO noch implementieren
       vcov <- compute_vcov_poisson_with_cov(
         item_params = model$fit$params,
         weights_and_nodes = quad_rule(model$control$n_nodes),

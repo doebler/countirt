@@ -43,12 +43,9 @@ cirt <- function(model, data, family,
   # extract model info from model specification -------------------------
   model_list <- parse_model(
     model = model, data = data, 
-    data_long = data_long, person_id = person_id
+    data_long = data_long, person_id = person_id,
+    family = family
     )
-  # TODO hier einbauen which_i_cov; wenn ich keine kovariaten habe auf einem parameter
-  # einfach = NULL setzen
-  # wir muessen which_i_cov liste mit ausgeben wo wir pro item covariate einfach
-  # die colnames haben von den spalten der item kovariaten die wir fuer den parameter wollen
   
   # model list checks ---------------------------------------------------
 
@@ -192,7 +189,8 @@ cirt <- function(model, data, family,
         i_covariates = model_list$i_covariates,
         nodes = control$n_nodes,
         same_alpha = model_list$equal_alphas,
-        i_cov_on = model_list$i_cov_on
+        i_cov_on = model_list$i_cov_on,
+        which_i_cov = model_list$which_i_cov
       )
       
       if (!is.null(model_list$fixed_log_disps)) {
@@ -209,6 +207,7 @@ cirt <- function(model, data, family,
         p_covariates = model_list$p_covariates,
         i_covariates = model_list$i_covariates,
         i_cov_on = model_list$i_cov_on,
+        which_i_cov = model_list$which_i_cov, 
         p_cov_cat = model_list$p_cov_cat,
         num_levels_p_cov = model_list$p_cov_levels,
         fix_disps = fixed_disps,
@@ -231,7 +230,8 @@ cirt <- function(model, data, family,
         p_covariates = model_list$p_covariates,
         i_covariates = model_list$i_covariates,
         same_alpha = model_list$equal_alphas,
-        i_cov_on = model_list$i_cov_on
+        i_cov_on = model_list$i_cov_on,
+        which_i_cov = model_list$which_i_cov
       )
       
       print("Start model fitting.")
@@ -242,6 +242,7 @@ cirt <- function(model, data, family,
         p_covariates = model_list$p_covariates,
         i_covariates = model_list$i_covariates,
         i_cov_on = model_list$i_cov_on,
+        which_i_cov = model_list$which_i_cov, 
         fix_alphas = model_list$fixed_alphas,
         same_alpha = model_list$equal_alphas,
         thres = control$thres,
@@ -309,6 +310,7 @@ add_inference <- function(model, prob = 0.95) {
     }
   } else {
     # with covariates, so drtm or clrm
+    # TODO add option with different numbers of item covariates per parameter
     if (model$family == "cmp") {
       if (isTRUE(model$model$p_cov_cat)) {
         resp_patterns_matrix <- make_resp_patterns_mat(

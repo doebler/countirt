@@ -31,7 +31,7 @@ make_resp_patterns_mat <- function(resp_pattern_list, n_resp_patterns, num_level
 
 # parse_model ------------------------------------------------------------------------
 
-parse_model <- function(model, data, data_long, person_id) {
+parse_model <- function(model, data, data_long, person_id, family) {
   
   model_clean <- gsub("\n", "", model)
   model_parts <- unlist(strsplit(model_clean, "[;]"))
@@ -156,14 +156,58 @@ parse_model <- function(model, data, data_long, person_id) {
       i_cov_on <- gsub("alphas", "alpha", i_cov_on)
       i_cov_on <- gsub("deltas", "delta", i_cov_on)
       i_cov_on <- gsub("log_nus", "log_disp", i_cov_on)
-      # atm we can only have the same covariates on all item parameters
-      i_cov <- model_icov[1]
-      i_cov <- gsub("alphas", "", i_cov)
-      i_cov <- gsub("deltas", "", i_cov)
-      i_cov <- gsub("log_nus", "", i_cov)
-      i_cov <- gsub("~", "", i_cov)
-      i_cov <- trimws(unlist(strsplit(i_cov, "[+]")))
-      i_cov <- i_cov[!i_cov == "1"]
+      # check which item covariates we have on which item parameters
+      which_i_cov_alpha <- model_icov[grepl("alpha", trimws(gsub("~.*", "", model_icov)))]
+      if (length(which_i_cov_alpha) == 0) {
+        which_i_cov_alpha <- NULL
+      } else {
+        which_i_cov_alpha <- gsub("alphas", "", which_i_cov_alpha)
+        which_i_cov_alpha <- gsub("~", "", which_i_cov_alpha)
+        which_i_cov_alpha <- gsub("1", "", which_i_cov_alpha)
+        which_i_cov_alpha <- trimws(unlist(strsplit(which_i_cov_alpha, "[+]")))
+        which_i_cov_alpha <- which_i_cov_alpha[which_i_cov_alpha != ""]
+      }
+      which_i_cov_delta <- model_icov[grepl("delta", trimws(gsub("~.*", "", model_icov)))]
+      if (length(which_i_cov_delta) == 0) {
+        which_i_cov_delta <- NULL
+      } else {
+        which_i_cov_delta <- gsub("deltas", "", which_i_cov_delta)
+        which_i_cov_delta <- gsub("~", "", which_i_cov_delta)
+        which_i_cov_delta <- gsub("1", "", which_i_cov_delta)
+        which_i_cov_delta <- trimws(unlist(strsplit(which_i_cov_delta, "[+]")))
+        which_i_cov_delta <- which_i_cov_delta[which_i_cov_delta != ""]
+      }
+      which_i_cov_logdisp <- model_icov[grepl("log_nu", trimws(gsub("~.*", "", model_icov)))]
+      if (length(which_i_cov_logdisp) == 0) {
+        which_i_cov_logdisp <- NULL
+      } else {
+        which_i_cov_logdisp <- gsub("log_nus", "", which_i_cov_logdisp)
+        which_i_cov_logdisp <- gsub("~", "", which_i_cov_logdisp)
+        which_i_cov_logdisp <- gsub("1", "", which_i_cov_logdisp)
+        which_i_cov_logdisp <- trimws(unlist(strsplit(which_i_cov_logdisp, "[+]")))
+        which_i_cov_logdisp <- which_i_cov_logdisp[which_i_cov_logdisp != ""]
+      }
+      if (family == "poisson") {
+        which_i_cov <- list(
+          alpha = which_i_cov_alpha,
+          delta = which_i_cov_delta
+        )
+      } else (family == "cmp") {
+        which_i_cov <- list(
+          alpha = which_i_cov_alpha,
+          delta = which_i_cov_delta,
+          log_disp = which_i_cov_logdisp
+        )
+      }
+      # extract item covariate data (for all possible item covariates, across all item params)
+      i_cov <- unique(c(which_i_cov_alpha, which_i_cov_delta, which_i_cov_logdisp))
+      # i_cov <- model_icov[1]
+      # i_cov <- gsub("alphas", "", i_cov)
+      # i_cov <- gsub("deltas", "", i_cov)
+      # i_cov <- gsub("log_nus", "", i_cov)
+      # i_cov <- gsub("~", "", i_cov)
+      # i_cov <- trimws(unlist(strsplit(i_cov, "[+]")))
+      # i_cov <- i_cov[!i_cov == "1"]
       # for item covariates I am currently expecting long format
       # TODO implement a way for wide format here as well
       if (data_long) {
@@ -177,6 +221,11 @@ parse_model <- function(model, data, data_long, person_id) {
     } else {
       i_covariates <- NULL
       i_cov_on <- NULL
+      if (family == "poisson") {
+        which_i_cov <- list(alpha = NULL, delta = NULL)
+      } else if (family == "cmp") {
+        which_i_cov <- list(alpha = NULL, delta = NULL, log_disp = NULL)
+      }
     }
   } else { # just a 2pcmpm with no constraints and no covariates
     fixed_alphas <- NULL
@@ -186,6 +235,11 @@ parse_model <- function(model, data, data_long, person_id) {
     p_covariates <- NULL
     i_covariates <- NULL
     i_cov_on <- NULL
+    if (family == "poisson") {
+      which_i_cov <- list(alpha = NULL, delta = NULL)
+    } else if (family == "cmp") {
+      which_i_cov <- list(alpha = NULL, delta = NULL, log_disp = NULL)
+    }
     p_cov_cat <- FALSE
     p_cov_levels <- NULL
   }
@@ -201,6 +255,7 @@ parse_model <- function(model, data, data_long, person_id) {
     p_covariates = p_covariates,
     i_covariates = i_covariates,
     i_cov_on = i_cov_on,
+    which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     p_cov_levels = p_cov_levels
   )

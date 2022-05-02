@@ -141,10 +141,10 @@ estep_cmp_with_cov <- function(data, item_params,
       } else {
         which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
       }
-      if (which_i_cov$logdisp == "all") {
+      if (which_i_cov$log_disp == "all") {
         which_i_cov_logdisp = 1:ncol(i_covariates)
       } else {
-        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
       }
       
       PPs <- estep_cmp_with_icov_all_cpp(
@@ -183,10 +183,10 @@ estep_cmp_with_cov <- function(data, item_params,
           } else {
             which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
           }
-          if (which_i_cov$logdisp == "all") {
+          if (which_i_cov$log_disp == "all") {
             which_i_cov_logdisp = 1:ncol(i_covariates)
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
           }
           
           PPs <- estep_cmp_with_icov_alpha_nu_cpp(
@@ -221,10 +221,10 @@ estep_cmp_with_cov <- function(data, item_params,
           } else {
             which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
           }
-          if (which_i_cov$logdisp == "all") {
+          if (which_i_cov$log_disp == "all") {
             which_i_cov_logdisp = 1:ncol(i_covariates)
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
           }
           
           PPs <- estep_cmp_with_icov_delta_nu_cpp(
@@ -425,10 +425,10 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       } else {
         which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
       }
-      if (which_i_cov$logdisp == "all") {
+      if (which_i_cov$log_disp == "all") {
         which_i_cov_logdisp = 1:ncol(i_covariates)
       } else {
-        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
       }
       
       grads <- grad_cmp_with_icov_all_cpp(
@@ -1813,10 +1813,10 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       } else {
         which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
       }
-      if (which_i_cov$logdisp == "all") {
+      if (which_i_cov$log_disp == "all") {
         which_i_cov_logdisp = 1:ncol(i_covariates)
       } else {
-        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
       }
       
       ll <- marg_ll_cmp_with_icov_all_cpp(data = as.matrix(data),
@@ -1852,10 +1852,10 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
           } else {
             which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
           }
-          if (which_i_cov$logdisp == "all") {
+          if (which_i_cov$log_disp == "all") {
             which_i_cov_logdisp = 1:ncol(i_covariates)
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
           }
           
           ll <- marg_ll_cmp_with_icov_alpha_nu_cpp(data = as.matrix(data),
@@ -1887,10 +1887,10 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
           } else {
             which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
           }
-          if (which_i_cov$logdisp == "all") {
+          if (which_i_cov$log_disp == "all") {
             which_i_cov_logdisp = 1:ncol(i_covariates)
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
           }
           
           ll <- marg_ll_cmp_with_icov_delta_nu_cpp(data = as.matrix(data),
@@ -2428,7 +2428,7 @@ get_start_values_cmp_with_cov <- function(data,
       } else {
         i_covariates_delta <- i_covariates
       }
-      if (which_i_cov$logdisp == "all") {
+      if (which_i_cov$log_disp == "all") {
         i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
       } else {
         i_covariates_logdisp <- i_covariates
@@ -2479,7 +2479,7 @@ get_start_values_cmp_with_cov <- function(data,
           } else {
             i_covariates_alpha <- i_covariates
           }
-          if (which_i_cov$logdisp == "all") {
+          if (which_i_cov$log_disp == "all") {
             i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
           } else {
             i_covariates_logdisp <- i_covariates
@@ -2529,7 +2529,7 @@ get_start_values_cmp_with_cov <- function(data,
           } else {
             i_covariates_delta <- i_covariates
           }
-          if (which_i_cov$logdisp == "all") {
+          if (which_i_cov$log_disp == "all") {
             i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
           } else {
             i_covariates_logdisp <- i_covariates

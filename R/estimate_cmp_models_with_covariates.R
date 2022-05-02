@@ -4,6 +4,7 @@ estep_cmp_with_cov <- function(data, item_params,
                                p_covariates, i_covariates,
                                weights_and_nodes,
                                i_cov_on = c("alpha", "delta", "log_disp"),
+                               which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                p_cov_cat = TRUE,
                                resp_patterns_matrix = NULL) {
   # p_covariates is a matrix with the person covariates (MxP)
@@ -66,6 +67,8 @@ estep_cmp_with_cov <- function(data, item_params,
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have the covaraites
     if (length(i_cov_on) == 1) {
+      # if we have only covariates on one parameter, we don't need the
+      # which_i_cov argument because then it's just clear
       if (i_cov_on == "delta") {
         PPs <- estep_cmp_with_icov_delta_cpp(
           data = as.matrix(data),
@@ -121,9 +124,28 @@ estep_cmp_with_cov <- function(data, item_params,
         )
       }
     } else if (length(i_cov_on) == 3) {
+      # if we have covariates on all three item parameters, we need to differentiate
+      # between on which item parameter we have which covariates
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      # define which covariates we are using per parameter
+      if (which_i_cov$alpha == "all") {
+        which_i_cov_alpha = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+      }
+      if (which_i_cov$delta == "all") {
+        which_i_cov_delta = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+      }
+      if (which_i_cov$logdisp == "all") {
+        which_i_cov_logdisp = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+      }
       
       PPs <- estep_cmp_with_icov_all_cpp(
         data = as.matrix(data),
@@ -133,6 +155,9 @@ estep_cmp_with_cov <- function(data, item_params,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
+        which_i_cov_alpha = which_i_cov_alpha,
+        which_i_cov_delta = which_i_cov_delta,
+        which_i_cov_logdisp = which_i_cov_logdisp,
         i_cov_data = as.matrix(i_covariates),
         nodes = weights_and_nodes$x,
         weights = weights_and_nodes$w,
@@ -152,6 +177,18 @@ estep_cmp_with_cov <- function(data, item_params,
           betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
           betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
           
+          # define which covariates we are using per parameter
+          if (which_i_cov$alpha == "all") {
+            which_i_cov_alpha = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+          }
+          if (which_i_cov$logdisp == "all") {
+            which_i_cov_logdisp = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+          }
+          
           PPs <- estep_cmp_with_icov_alpha_nu_cpp(
             data = as.matrix(data),
             alpha = alphas,
@@ -159,6 +196,8 @@ estep_cmp_with_cov <- function(data, item_params,
             disp = disps,
             betas_alpha = betas_i_alpha,
             betas_logdisp = betas_i_logdisp,
+            which_i_cov_alpha = which_i_cov_alpha,
+            which_i_cov_logdisp = which_i_cov_logdisp,
             i_cov_data = as.matrix(i_covariates),
             nodes = weights_and_nodes$x,
             weights = weights_and_nodes$w,
@@ -176,6 +215,18 @@ estep_cmp_with_cov <- function(data, item_params,
           betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
           betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
           
+          # define which covariates we are using per parameter
+          if (which_i_cov$delta == "all") {
+            which_i_cov_delta = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+          }
+          if (which_i_cov$logdisp == "all") {
+            which_i_cov_logdisp = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+          }
+          
           PPs <- estep_cmp_with_icov_delta_nu_cpp(
             data = as.matrix(data),
             alphas = alphas,
@@ -183,6 +234,8 @@ estep_cmp_with_cov <- function(data, item_params,
             disp = disps,
             betas_delta = betas_i_delta,
             betas_logdisp = betas_i_logdisp,
+            which_i_cov_delta = which_i_cov_delta,
+            which_i_cov_logdisp = which_i_cov_logdisp,
             i_cov_data = as.matrix(i_covariates),
             nodes = weights_and_nodes$x,
             weights = weights_and_nodes$w,
@@ -201,6 +254,18 @@ estep_cmp_with_cov <- function(data, item_params,
         betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
         
+        # define which covariates we are using per parameter
+        if (which_i_cov$alpha == "all") {
+          which_i_cov_alpha = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        }
+        if (which_i_cov$delta == "all") {
+          which_i_cov_delta = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        }
+
         PPs <- estep_cmp_with_icov_alpha_delta_cpp(
           data = as.matrix(data),
           alpha = alphas,
@@ -208,6 +273,8 @@ estep_cmp_with_cov <- function(data, item_params,
           disps = disps,
           betas_alpha = betas_i_alpha,
           betas_delta = betas_i_delta,
+          which_i_cov_alpha = which_i_cov_alpha,
+          which_i_cov_delta = which_i_cov_delta,
           i_cov_data = as.matrix(i_covariates),
           nodes = weights_and_nodes$x,
           weights = weights_and_nodes$w,
@@ -343,17 +410,26 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           min_nu = 0.001)
       }
     } else if (length(i_cov_on) == 3) {
-      # TODO hier weiter machen und ueberlegen wie ich das
-      # which_i_cov = list(alpha="all", delta="all", log_disp="all")
-      # argument hier nutzen muss damit ich verschiedene kovariaten auf den 
-      # parametern erlauben kann
-      # als idee: ich glaube ich fuege drei argumente zu der funktion unten
-      # hinzu in c++ naemlich: betas_alpha_which_cov etc und das sind dann
-      # vektoren mit den spaltennummern von den kovariaten die ich benutzen will
-      
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+      
+      # define which covariates we are using per parameter
+      if (which_i_cov$alpha == "all") {
+        which_i_cov_alpha = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+      }
+      if (which_i_cov$delta == "all") {
+        which_i_cov_delta = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+      }
+      if (which_i_cov$logdisp == "all") {
+        which_i_cov_logdisp = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+      }
       
       grads <- grad_cmp_with_icov_all_cpp(
         alpha = alphas,
@@ -362,6 +438,9 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
+        which_i_cov_alpha = which_i_cov_alpha,
+        which_i_cov_delta = which_i_cov_delta,
+        which_i_cov_logdisp = which_i_cov_logdisp,
         data = as.matrix(data),
         i_cov_data = as.matrix(i_covariates),
         PPs = PPs,
@@ -376,6 +455,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         max_nu = 50,
         min_nu = 0.001)
     } else if (length(i_cov_on) == 2) {
+      # TODO hier noch weiter machen die which_i_cov argumente einzubauen
       if ("log_disp" %in% i_cov_on) {
         if ("alpha" %in% i_cov_on) {
           # we have covariates on log_disp and alpha together
@@ -1588,12 +1668,10 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 
 
 # marg_ll_cmp_with_cov --------------------------------------------------------------------------
-
-# TODO anpassen auf unterschiedlich viele kovariaten
-# dazu das which_i_cov = list(alpha="all", delta="all", log_disp="all") argument einfuegen
 marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 
                                  p_covariates, i_covariates, 
                                  i_cov_on = c("alpha", "delta", "log_disp"),
+                                 which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                  p_cov_cat = TRUE,
                                  resp_patterns_matrix = NULL,
                                  fix_disps = NULL, fix_alphas = NULL, 
@@ -1669,6 +1747,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   } else if (!is.null(i_covariates)) {
     # distinguish between on which parameters we have item covariates
     if (length(i_cov_on) == 1) {
+      # if we have item covariates on only one item parameter, then we don't need
+      # to distinguish between which covariates we have on which param because it's clear
       if (i_cov_on == "delta") {
         ll <- marg_ll_cmp_with_icov_delta_cpp(data = as.matrix(data),
                                         alphas = alphas,
@@ -1722,6 +1802,23 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       betas_i_log_disp <- betas_i[grepl("log_disp", names(betas_i))]
       
+      # define which covariates we are using per parameter
+      if (which_i_cov$alpha == "all") {
+        which_i_cov_alpha = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+      }
+      if (which_i_cov$delta == "all") {
+        which_i_cov_delta = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+      }
+      if (which_i_cov$logdisp == "all") {
+        which_i_cov_logdisp = 1:ncol(i_covariates)
+      } else {
+        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+      }
+      
       ll <- marg_ll_cmp_with_icov_all_cpp(data = as.matrix(data),
                                          alpha = alphas,
                                          delta = deltas, 
@@ -1729,6 +1826,9 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                          betas_alpha = betas_i_alpha,
                                          betas_delta = betas_i_delta,
                                          betas_logdisp = betas_i_log_disp,
+                                         which_i_cov_alpha = which_i_cov_alpha,
+                                         which_i_cov_delta = which_i_cov_delta,
+                                         which_i_cov_logdisp = which_i_cov_logdisp,
                                          i_cov_data = as.matrix(i_covariates),
                                          nodes = weights_and_nodes$x,
                                          weights = weights_and_nodes$w,
@@ -1745,12 +1845,27 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         betas_i_log_disp <- betas_i[grepl("log_disp", names(betas_i))]
         if ("alpha" %in% i_cov_on) {
           betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
+          
+          # define which covariates we are using per parameter
+          if (which_i_cov$alpha == "all") {
+            which_i_cov_alpha = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+          }
+          if (which_i_cov$logdisp == "all") {
+            which_i_cov_logdisp = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+          }
+          
           ll <- marg_ll_cmp_with_icov_alpha_nu_cpp(data = as.matrix(data),
                                                    alpha = alphas,
                                                    deltas = deltas, 
                                                    disp = disps, 
                                                    betas_alpha = betas_i_alpha,
                                                    betas_logdisp = betas_i_log_disp,
+                                                   which_i_cov_alpha = which_i_cov_alpha,
+                                                   which_i_cov_logdisp = which_i_cov_logdisp,
                                                    i_cov_data = as.matrix(i_covariates),
                                                    nodes = weights_and_nodes$x,
                                                    weights = weights_and_nodes$w,
@@ -1765,12 +1880,27 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         } else {
           # then we have covraitaes on delta and log_disp
           betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+          
+          # define which covariates we are using per parameter
+          if (which_i_cov$delta == "all") {
+            which_i_cov_delta = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+          }
+          if (which_i_cov$logdisp == "all") {
+            which_i_cov_logdisp = 1:ncol(i_covariates)
+          } else {
+            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$logdisp)
+          }
+          
           ll <- marg_ll_cmp_with_icov_delta_nu_cpp(data = as.matrix(data),
                                                    alphas = alphas,
                                                    delta = deltas, 
                                                    disp = disps, 
                                                    betas_delta = betas_i_delta,
                                                    betas_logdisp = betas_i_log_disp,
+                                                   which_i_cov_delta =  which_i_cov_delta,
+                                                   which_i_cov_logdisp = which_i_cov_logdisp,
                                                    i_cov_data = as.matrix(i_covariates),
                                                    nodes = weights_and_nodes$x,
                                                    weights = weights_and_nodes$w,
@@ -1787,12 +1917,27 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         # then we have covariates on alpha and delta
         betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+        
+        # define which covariates we are using per parameter
+        if (which_i_cov$alpha == "all") {
+          which_i_cov_alpha = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        }
+        if (which_i_cov$delta == "all") {
+          which_i_cov_delta = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        }
+        
         ll <- marg_ll_cmp_with_icov_alpha_delta_cpp(data = as.matrix(data),
                                                     alpha = alphas,
                                                     delta = deltas, 
                                                     disps = disps, 
                                                     betas_alpha = betas_i_alpha,
                                                     betas_delta = betas_i_delta,
+                                                    which_i_cov_alpha = which_i_cov_alpha,
+                                                    which_i_cov_delta = which_i_cov_delta,
                                                     i_cov_data = as.matrix(i_covariates),
                                                     nodes = weights_and_nodes$x,
                                                     weights = weights_and_nodes$w,
@@ -1943,24 +2088,29 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 
 # get_start_values_cmp_with_cov ---------------------------------------------------------------------
 
-# TODO anpassen auf unterschiedlich viele kovariaten
 get_start_values_cmp_with_cov <- function(data, 
                                           p_covariates,
                                           i_covariates,
                                           nodes = 121, nsim = 1000,
                                           same_alpha = FALSE,
-                                          i_cov_on = c("alpha", "delta", "log_disp")) {
+                                          i_cov_on = c("alpha", "delta", "log_disp"),
+                                          which_i_cov = list(alpha="all", delta="all", log_disp="all")
+                                          ) {
+  # TODO constraints einbauen, dass alpha und log_disp ja ggf. auch noch gefixt sein
+  # koennten auf einen spezifischen wert
+  
   # p_covariates will work just like this, because poisson takes continuous or
   # categorical with dummy coding as it is and over than that we're not using it
   # here 
   
   # for CMP start values, we fit a Poisson model and get deltas and alphas 
   # and betas from there
-  if (same_alpha) {
+  if (same_alpha) { # constraints on alpha
     if (!is.null(i_covariates)) {
       # just one alpha for all items
       # note that we can't have same alpha together with item covariates on alpha
       if (length(i_cov_on) == 1) {
+        # if we have item covariates on just one parameter, which_i_cov is irrelevant
         if (i_cov_on == "log_disp") {
           init_values_pois <- get_start_values_pois(
             data = data,
@@ -1994,12 +2144,22 @@ get_start_values_cmp_with_cov <- function(data,
         # if I have the constrained of same alpha, i can't have covariates on all three
         # item parameters but only on two: log_disp and delta (also not on alpha and delta
         # or alpha and log_disp pairing)
+        
+        # we fit the poisson model to get starting values for the constant alpha and the 
+        # covariate betas on delta (start values for log disp will be chosen below)
+        # now we have to consider when we have two sets of possible item covariates,
+        # which_i_cov = list(alpha="all", delta="all", log_disp="all"), so which_i_cov_delta
+        # and which_i_cov_nu, which to use here
+        
+        which_i_cov_poisson <- list(alpha = NULL, delta = which_i_cov$delta)
+        
         init_values_pois <- get_start_values_poisson_with_cov(
           data = data,
           p_covariates = p_covariates,
           i_covariates = i_covariates,
           same_alpha = TRUE,
-          i_cov_on = "delta"
+          i_cov_on = "delta",
+          which_i_cov = which_i_cov_poisson
         )
         fit_pois <- run_em_poisson_with_cov(
           data = data,
@@ -2008,10 +2168,12 @@ get_start_values_cmp_with_cov <- function(data,
           init_params = init_values_pois, 
           n_nodes = nodes,
           same_alpha = TRUE,
-          i_cov_on = "delta"
+          i_cov_on = "delta", 
+          which_i_cov = which_i_cov_poisson
         )
       } 
-    } else if (!is.null(p_covariates)) {
+    } else if (!is.null(p_covariates)) { # with constrained alpha
+      # FIXME das muss noch auf kovariaten angepasst werden
       init_values_pois <- get_start_values_pois(
         data = data,
         same_alpha = TRUE
@@ -2023,10 +2185,11 @@ get_start_values_cmp_with_cov <- function(data,
         same_alpha = TRUE
       )
     }
-  } else {
+  } else { # no constraint on alpha
     if (!is.null(i_covariates)) {
-      # no constraint on alpha
       if (length(i_cov_on) == 1) {
+        # if we have just one paramater on which we have covariates, we don't need
+        # to worry about on which item parameter we have them
         if (i_cov_on == "log_disp") {
           init_values_pois <- get_start_values_pois(
             data = data
@@ -2053,11 +2216,15 @@ get_start_values_cmp_with_cov <- function(data,
           )
         }
       } else if (length(i_cov_on) == 3) {
+        # make distinction between which covariates we have on which item parameter
+        which_i_cov_poisson <- list(alpha = which_i_cov$delta, delta = which_i_cov$delta)
+        
         init_values_pois <- get_start_values_poisson_with_cov(
           data = data,
           p_covariates = p_covariates,
           i_covariates = i_covariates,
-          i_cov_on = c("alpha", "delta")
+          i_cov_on = c("alpha", "delta"),
+          which_i_cov = which_i_cov_poisson
         )
         fit_pois <- run_em_poisson_with_cov(
           data = data,
@@ -2065,15 +2232,22 @@ get_start_values_cmp_with_cov <- function(data,
           i_covariates = i_covariates,
           init_params = init_values_pois, 
           n_nodes = nodes,
-          i_cov_on =  c("alpha", "delta")
+          i_cov_on =  c("alpha", "delta"),
+          which_i_cov = which_i_cov_poisson
         )
       } else if (length(i_cov_on) == 2) {
+        # if we have covariates on two parameters, we also need to distinguish between
+        # which covariates we have on which item parameter
+        
+        which_i_cov_poisson <- list(alpha = which_i_cov$alpha, delta = which_i_cov$delta)
+        
         if ("log_disp" %in% i_cov_on) {
           init_values_pois <- get_start_values_poisson_with_cov(
             data = data,
             p_covariates = p_covariates,
             i_covariates = i_covariates,
-            i_cov_on = i_cov_on[-which(i_cov_on == "log_disp")]
+            i_cov_on = i_cov_on[-which(i_cov_on == "log_disp")],
+            which_i_cov = which_i_cov_poisson
           )
           fit_pois <- run_em_poisson_with_cov(
             data = data,
@@ -2081,14 +2255,16 @@ get_start_values_cmp_with_cov <- function(data,
             i_covariates = i_covariates,
             init_params = init_values_pois, 
             n_nodes = nodes,
-            i_cov_on =  i_cov_on[-which(i_cov_on == "log_disp")]
+            i_cov_on =  i_cov_on[-which(i_cov_on == "log_disp")],
+            which_i_cov = which_i_cov_poisson
           )
         } else {
           init_values_pois <- get_start_values_poisson_with_cov(
             data = data,
             p_covariates = p_covariates,
             i_covariates = i_covariates,
-            i_cov_on = i_cov_on
+            i_cov_on = i_cov_on,
+            which_i_cov = which_i_cov_poisson
           )
           fit_pois <- run_em_poisson_with_cov(
             data = data,
@@ -2096,7 +2272,8 @@ get_start_values_cmp_with_cov <- function(data,
             i_covariates = i_covariates,
             init_params = init_values_pois, 
             n_nodes = nodes,
-            i_cov_on =  i_cov_on
+            i_cov_on =  i_cov_on,
+            which_i_cov = which_i_cov_poisson
           )
         }
     }
@@ -2154,6 +2331,8 @@ get_start_values_cmp_with_cov <- function(data,
     sim_abilities=rnorm(nsim)
     # distinguish between on which parameters we have item covariates
     if (length(i_cov_on) == 1) {
+      # if we have covariates on just one item parameter, then we don't have to worry
+      # about which_i_cov
       if (i_cov_on == "delta") {
         init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
         for (i in 1:ncol(data)) {
@@ -2226,6 +2405,11 @@ get_start_values_cmp_with_cov <- function(data,
         )
       } 
     } else if (length(i_cov_on) == 3) {
+      # distinguish between which covariates are on which item parameter
+      # now, for alpha and beta we already made that distinction above with
+      # which_i_cov_poisson, so now here just make sure we use the correct
+      # item parameter for log_disp
+      
       init_betas_i_delta <- fit_pois$params[grepl("beta_i_delta", names(fit_pois$params))]
       init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
       
@@ -2234,17 +2418,33 @@ get_start_values_cmp_with_cov <- function(data,
       # constraints but as a consequence of having covariates on all item parameters,
       # we have only scalars for init_alphas and init_deltas
       # first compute item specific alphas and deltas
+      if (which_i_cov$alpha == "all") {
+        i_covariates_alpha <- i_covariates[,which_i_cov$alpha,drop=FALSE]
+      } else {
+        i_covariates_alpha <- i_covariates
+      }
+      if (which_i_cov$delta == "all") {
+        i_covariates_delta <- i_covariates[,which_i_cov$delta,drop=FALSE]
+      } else {
+        i_covariates_delta <- i_covariates
+      }
+      if (which_i_cov$logdisp == "all") {
+        i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
+      } else {
+        i_covariates_logdisp <- i_covariates
+      }
+      
       item_alphas <- init_alphas + 
-        apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_alpha)})
+        apply(as.matrix(i_covariates_alpha), 1, function(x){sum(x*init_betas_i_alpha)})
       item_deltas <- init_deltas + 
-        apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_delta)})
+        apply(as.matrix(i_covariates_delta), 1, function(x){sum(x*init_betas_i_delta)})
       for (i in 1:ncol(data)) {
         mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities)
         sim <- rpois(nsim, mu)
         init_logdisps[i] <- log((var(sim) / var(data[,i])))
       }
       predict_log_disp_df <- as.data.frame(
-        cbind(init_logdisps, i_covariates)
+        cbind(init_logdisps, i_covariates_logdisp)
         )
       # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
       # of the M items on those I covariates
@@ -2274,18 +2474,29 @@ get_start_values_cmp_with_cov <- function(data,
           # the b weight won't be named after alpha here because in this poisson model, we only
           # have covariates on alpha then here
           
+          if (which_i_cov$alpha == "all") {
+            i_covariates_alpha <- i_covariates[,which_i_cov$alpha,drop=FALSE]
+          } else {
+            i_covariates_alpha <- i_covariates
+          }
+          if (which_i_cov$logdisp == "all") {
+            i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
+          } else {
+            i_covariates_logdisp <- i_covariates
+          }
+          
           # initial values for log_disp
           # we don't need to compute item specific deltas here as we don't have
           # item covariates on them, so init_deltas are already item-specific
           item_alphas <- init_alphas + 
-            apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_alpha)})
+            apply(as.matrix(i_covariates_alpha), 1, function(x){sum(x*init_betas_i_alpha)})
           for (i in 1:ncol(data)) {
             mu <- exp(init_deltas[i] + item_alphas[i]*sim_abilities)
             sim <- rpois(nsim, mu)
             init_logdisps[i] <- log((var(sim) / var(data[,i])))
           }
           predict_log_disp_df <- as.data.frame(
-            cbind(init_logdisps, i_covariates)
+            cbind(init_logdisps, i_covariates_logdisp)
           )
           # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
           # of the M items on those I covariates
@@ -2313,18 +2524,36 @@ get_start_values_cmp_with_cov <- function(data,
           # the b weight won't be named after delta here because in this poisson model, we only
           # have covariates on delta then here
           
+          if (which_i_cov$delta == "all") {
+            i_covariates_delta <- i_covariates[,which_i_cov$delta,drop=FALSE]
+          } else {
+            i_covariates_delta <- i_covariates
+          }
+          if (which_i_cov$logdisp == "all") {
+            i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
+          } else {
+            i_covariates_logdisp <- i_covariates
+          }
+          
           # initial values for log disps
           # we don't have item covariates on alpha here, so the init_alphas
-          # are already item-specific
+          # are already item-specific (unless we have a same alpha constraint,
+          # use case distinction for this)
           item_deltas <- init_deltas + 
-            apply(as.matrix(i_covariates), 1, function(x){sum(x*init_betas_i_delta)})
+            apply(as.matrix(i_covariates_delta), 1, function(x){sum(x*init_betas_i_delta)})
           for (i in 1:ncol(data)) {
-            mu <- exp(item_deltas[i] + init_alphas[i]*sim_abilities)
+            if (same_alpha) {
+              # only one alpha for all items
+              mu <- exp(item_deltas[i] + init_alphas*sim_abilities)
+            } else {
+              # item-specific alphas
+              mu <- exp(item_deltas[i] + init_alphas[i]*sim_abilities)
+            }
             sim <- rpois(nsim, mu)
             init_logdisps[i] <- log((var(sim) / var(data[,i])))
           }
           predict_log_disp_df <- as.data.frame(
-            cbind(init_logdisps, i_covariates)
+            cbind(init_logdisps, i_covariates_logdisp)
           )
           # i_covariates is a matrix with I columnds for I covaraites and M rows for the values
           # of the M items on those I covariates
@@ -2350,14 +2579,32 @@ get_start_values_cmp_with_cov <- function(data,
         # item covariates on alpha and delta
         init_betas_i_delta <- fit_pois$params[grepl("beta_i_delta", names(fit_pois$params))]
         init_betas_i_alpha <- fit_pois$params[grepl("beta_i_alpha", names(fit_pois$params))]
+        
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- i_covariates[,which_i_cov$alpha,drop=FALSE]
+        } else {
+          i_covariates_alpha <- i_covariates
+        }
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- i_covariates[,which_i_cov$delta,drop=FALSE]
+        } else {
+          i_covariates_delta <- i_covariates
+        }
+        
+        item_alphas <- init_alphas + 
+          apply(as.matrix(i_covariates_alpha), 1, function(x){sum(x*init_betas_i_alpha)})
+        item_deltas <- init_deltas + 
+          apply(as.matrix(i_covariates_delta), 1, function(x){sum(x*init_betas_i_delta)})
         # start values for the log_disps
         for (i in 1:ncol(data)) {
-          mu <- exp(init_deltas + init_alphas*sim_abilities)
+          mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities)
           # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
           sim <- rpois(nsim, mu)
           init_logdisps[i] <- log((var(sim) / var(data[,i])))
         }
-        # prepare start values for ouput
+        # TODO here beruecksichtigen, dass wir ja noch constraint on log_disp haben
+        # koennten dass alle disps gleich sind
+        # prepare start values for output
         start_values <- c(init_alphas, init_deltas, init_logdisps, 
                           init_betas_i_alpha, init_betas_i_delta)
         names(start_values) <- c(

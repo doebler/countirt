@@ -45,6 +45,10 @@ cirt <- function(model, data, family,
     model = model, data = data, 
     data_long = data_long, person_id = person_id
     )
+  # TODO hier einbauen which_i_cov; wenn ich keine kovariaten habe auf einem parameter
+  # einfach = NULL setzen
+  # wir muessen which_i_cov liste mit ausgeben wo wir pro item covariate einfach
+  # die colnames haben von den spalten der item kovariaten die wir fuer den parameter wollen
   
   # model list checks ---------------------------------------------------
 

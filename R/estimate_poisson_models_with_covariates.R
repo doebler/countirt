@@ -4,7 +4,8 @@
 estep_poisson_with_cov <- function(data, item_params, 
                                    p_covariates, i_covariates, 
                                    weights_and_nodes,
-                                   i_cov_on = c("alpha", "delta")) {
+                                   i_cov_on = c("alpha", "delta"),
+                                   which_i_cov = list(alpha = "all", delta = "all")) {
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params)) & 
@@ -38,6 +39,8 @@ estep_poisson_with_cov <- function(data, item_params,
     
     # distinguish between on which parameters we have the item covariates
     if (length(i_cov_on) == 1) {
+      # we don't need to distinguish between on which item parameter we have which
+      # item covariate if we only have covariates on one parameter
       if (i_cov_on == "delta") { # case with item covariates on delta
         i_covariates <- as.matrix(i_covariates)
         
@@ -73,9 +76,18 @@ estep_poisson_with_cov <- function(data, item_params,
       }
     } else {
       # the alternative is here only that we have covariates on both item parameters
-      i_covariates <- as.matrix(i_covariates)
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      if (which_i_cov$alpha == "all") {
+        i_covariates_alpha <- as.matrix(i_covariates)
+      } else {
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+      }
+      if (which_i_cov$delta == "all") {
+        i_covariates_delta <- as.matrix(i_covariates)
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
       
       PPs <- matrix(
         log(weights_and_nodes$w),
@@ -84,8 +96,8 @@ estep_poisson_with_cov <- function(data, item_params,
         byrow = TRUE
       )
       
-      sum_icov_alpha <- as.numeric(i_covariates %*% betas_i_alpha)
-      sum_icov_delta <- as.numeric(i_covariates %*% betas_i_delta)
+      sum_icov_alpha <- as.numeric(i_covariates_alpha %*% betas_i_alpha)
+      sum_icov_delta <- as.numeric(i_covariates_delta %*% betas_i_delta)
       for (j in 1:ncol(data)) {
         lambdas <- exp(deltas + alphas * weights_and_nodes$x +
                          weights_and_nodes$x * sum_icov_alpha[j] + 
@@ -108,7 +120,8 @@ estep_poisson_with_cov <- function(data, item_params,
 
 grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
                                   p_covariates, i_covariates,
-                                  i_cov_on = c("alpha", "delta")) {
+                                  i_cov_on = c("alpha", "delta"),
+                                  which_i_cov = list(alpha = "all", delta = "all")) {
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params)) & 
                           !grepl("beta", names(item_params))]
@@ -161,6 +174,8 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
     
     # distinguish between on which parameters we have the item covariates
     if (length(i_cov_on) == 1) {
+      # if we only have item covariates on one item parameter, then it's clear and we don't
+      # need to distinguish which covariates go on which item parameter
       if (i_cov_on == "delta") {
         grad_alphas <- numeric(length(alphas))
         grad_delta <- 0
@@ -210,35 +225,75 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       }
     } else {
       # the alternative is just that we have item parameters on all parameters
-      I <- length(betas_i)/2
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
+      I <- ncol(i_covariates)
+      I_alpha <- length(betas_i_alpha)
+      I_delta <- length(betas_i_delta)
+      if (which_i_cov$alpha == "all") {
+        i_covariates_alpha <- as.matrix(i_covariates)
+      } else {
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+      }
+      if (which_i_cov$delta == "all") {
+        i_covariates_delta <- as.matrix(i_covariates)
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
       grad_alpha <- 0
       grad_delta <- 0
-      grad_betas_i_alpha <- numeric(length(betas_i)/2)
-      grad_betas_i_delta <- numeric(length(betas_i)/2)
-      i_covariates <- as.matrix(i_covariates)
+      grad_betas_i_alpha <- numeric(I_alpha)
+      grad_betas_i_delta <- numeric(I_delta)
       for (j in 1:M) {
         for (k in 1:K) {
           lambda <- exp(deltas + alphas * nodes[k] + 
-                          nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates[j,])) +
-                          sum(as.numeric(betas_i_delta*i_covariates[j,])))
+                          nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates_alpha[j,])) +
+                          sum(as.numeric(betas_i_delta*i_covariates_delta[j,])))
           # alphas and deltas are covariates when we have covariates on both covariates
           grad_alpha <- grad_alpha + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
           grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
         }
       }
-      for (c in 1:I) {
-        for (k in 1:K) {
-          for (j in 1:M) {
-            lambda <- exp(deltas + alphas * nodes[k] + 
-                            nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates[j,])) +
-                            sum(as.numeric(betas_i_delta*i_covariates[j,])))
-            # alphas and deltas are covariates when we have covariates on both covariates
-            grad_betas_i_alpha[c] <- grad_betas_i_alpha[c] + 
-              sum(i_covariates[j,c]*nodes[k]*(data[,j] - lambda)*PPs[,k])
-            grad_betas_i_delta[c] <- grad_betas_i_delta[c] +
-              sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
+      if (I_alpha == I & I_delta == I) {
+        # if we have the same covariates on both parameters, just do the one loop
+        # for efficiency
+        for (c in 1:I) {
+          for (k in 1:K) {
+            for (j in 1:M) {
+              lambda <- exp(deltas + alphas * nodes[k] + 
+                              nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates_alpha[j,])) +
+                              sum(as.numeric(betas_i_delta*i_covariates_delta[j,])))
+              # alphas and deltas are covariates when we have covariates on both covariates
+              grad_betas_i_alpha[c] <- grad_betas_i_alpha[c] + 
+                sum(i_covariates_alpha[j,c]*nodes[k]*(data[,j] - lambda)*PPs[,k])
+              grad_betas_i_delta[c] <- grad_betas_i_delta[c] +
+                sum(i_covariates_delta[j,c]*(data[,j] - lambda)*PPs[,k])
+            }
+          }
+        }
+      } else {
+        # we have different item covariates on alpha and delta and so we need to make 
+        # a distinction
+        counter_alpha <- 1
+        counter_delta <- 1
+        for (c in 1:I) {
+          for (k in 1:K) {
+            for (j in 1:M) {
+              lambda <- exp(deltas + alphas * nodes[k] + 
+                              nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates_alpha[j,])) +
+                              sum(as.numeric(betas_i_delta*i_covariates_delta[j,])))
+              # alphas and deltas are covariates when we have covariates on both covariates
+              if (colnames(i_covariates)[c] %in% which_i_cov$alpha) {
+                grad_betas_i_alpha[counter_alpha] <- grad_betas_i_alpha[counter_alpha] + 
+                  sum(i_covariates_alpha[j,counter_alpha]*nodes[k]*(data[,j] - lambda)*PPs[,k])
+                counter_alpha <- counter_alpha + 1
+              }
+              if (colnames(i_covariates)[c] %in% which_i_cov$delta) {
+                grad_betas_i_delta[counter_delta] <- grad_betas_i_delta[counter_delta] +
+                  sum(i_covariates_delta[j,counter_delta]*(data[,j] - lambda)*PPs[,k])
+                counter_delta <- counter_delta + 1
+              }
+            }
           }
         }
       }
@@ -255,6 +310,9 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
 grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
                                    data, p_covariates, i_covariates,
                                    fix_alphas, i_cov_on = "delta") {
+  # we don't need which_i_cov argument here as we only have i covs on delta and thus
+  # it's clear which covariates go on which item parameter
+  
   # note: if we fix alphas, then we can only implement item covariates on delta,
   # because we are not estimating alpha at all
   # so we also can't have covariates on both parameters at once
@@ -327,6 +385,9 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
 grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes, 
                                             data, p_covariates, i_covariates,
                                             i_cov_on = "delta") {
+  # we don't need which_i_cov argument here as we only have i covs on delta and thus
+  # it's clear which covariates go on which item parameter
+  
   # note: same as with fix_alphas, if we want the same alpha across items, it doesn't
   # make sense to include item covariates because they have different values for different
   # items and would necessarily then lead to different alphas
@@ -404,7 +465,9 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
 }
 
 # ell_poisson_with_cov ----------------------------------------------------------------------------
-
+# TODO rausnehmen weil ich das eigentlich ja gar nicht brauche fuer EM,
+# ist ja nur zum check der gradienten; deswegen hier jetzt auch nicht unetrschiedlich
+# viele kovariaten pro item parameter implementiert
 ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, 
                                  data, p_covariates, i_covariates,
                                  i_cov_on = c("alpha", "delta")) {
@@ -502,6 +565,7 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
 em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
                              p_covariates, i_covariates,
                              i_cov_on = c("alpha", "delta"),
+                             which_i_cov = list(alpha = "all", delta = "all"),
                              fix_alphas = NULL, same_alpha = FALSE,
                              ctol_maxstep = 1e-8) {
     if (!is.null(fix_alphas)) {
@@ -515,7 +579,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov
       )
       
       # m step
@@ -531,6 +596,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         control = list(xtol = ctol_maxstep)
       )$x
+      # we don't need which_i_cov argument here because we only have item covariates
+      # on delta here and so it's clear
     } else if (same_alpha) {
       # fit the model with estimating one same alpha for all item
       # e step
@@ -544,7 +611,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov
       )
       
       # m step
@@ -559,6 +627,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         control = list(xtol = ctol_maxstep)
       )$x
+      # we don't need which_i_cov argument here because we only have item covariates
+      # on delta and so it's clear
     } else {
       # fit a full two parameter model
       # e step
@@ -568,7 +638,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = i_cov_on
+        i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov
       )
       
       # m step
@@ -581,6 +652,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -593,6 +665,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
 marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes, 
                                      p_covariates, i_covariates, 
                                      i_cov_on = c("alpha", "delta"),
+                                     which_i_cov = list(alpha = "all", delta = "all"),
                                      fix_alphas = NULL, same_alphas = FALSE) {
   n_items <- ncol(data)
   n_persons <- nrow(data)
@@ -647,6 +720,9 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
   } else if (!is.null(i_covariates)) { # case of item covariates
     
     if (length(i_cov_on) == 1) {
+      # if we have only covariates on one item parameter, we don't need to distinguish
+      # between which covariates we have on which item parameters
+      
       # distinguish between the cases of where we could have the item covariates
       if (i_cov_on == "delta") { # case of covariates on delta
         # function to compute integral with quadrature over
@@ -701,13 +777,17 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       
+      i_covariates_alpha <- i_covariates[, which_i_cov$alpha, drop = FALSE]
+      i_covariates_delta <- i_covariates[, which_i_cov$delta, drop = FALSE]
+      
       # function to compute integral with quadrature over
-      f <- function(z, data, i_cov_data, alphas, deltas, betas_i_alpha, betas_i_delta) {
+      f <- function(z, data, i_cov_data_alpha, i_cov_data_delta,
+                    alphas, deltas, betas_i_alpha, betas_i_delta) {
         out <- 0
         for (j in 1:n_items) {
           lambda <- exp(deltas + alphas * z + 
-                          z * sum(as.numeric(betas_i_alpha*i_cov_data[j,,drop=FALSE])) +
-                          sum(as.numeric(betas_i_delta*i_cov_data[j,,drop=FALSE])))
+                          z * sum(as.numeric(betas_i_alpha*i_cov_data_alpha[j,,drop=FALSE])) +
+                          sum(as.numeric(betas_i_delta*i_cov_data_delta[j,,drop=FALSE])))
           # both deltas and alphas is a scalar if we have covariates here on alpha and delta
           out <- out + (dpois(data[,j], lambda, log = TRUE))
         }
@@ -718,7 +798,8 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       for (i in 1:n_persons) {
         marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
                                data = data[i, , drop = FALSE], 
-                               i_cov_data = i_covariates,
+                               i_cov_data_alpha = i_covariates_alpha, 
+                               i_cov_data_delta = i_covariates_delta,
                                alphas = alphas, deltas = deltas,
                                betas_i_alpha = betas_i_alpha,
                                betas_i_delta = betas_i_delta)
@@ -731,11 +812,10 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
 }
 
 # run_em_poisson_with_cov ------------------------------------------------------------------------------
-
-
 run_em_poisson_with_cov <- function(data, init_params, n_nodes, 
                            p_covariates, i_covariates,
                            i_cov_on = c("alpha", "delta"),
+                           which_i_cov = list(alpha = "all", delta = "all"),
                            thres = Inf, prob = 0,
                            maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                            convcrit = "marglik",
@@ -768,6 +848,7 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
       p_covariates = p_covariates,
       i_covariates = i_covariates,
       i_cov_on = i_cov_on,
+      which_i_cov = which_i_cov,
       fix_alphas = fix_alphas, 
       same_alpha = same_alpha,
       ctol_maxstep = ctol_maxstep
@@ -783,6 +864,7 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on, 
+        which_i_cov = which_i_cov,
         fix_alphas = fix_alphas, 
         same_alphas = same_alpha)
       marg_lls[iter] <- new_ll
@@ -799,6 +881,7 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         fix_alphas = fix_alphas, 
         same_alphas = same_alpha)
       marg_lls[iter] <- marg_ll
@@ -832,9 +915,9 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
 }
 
 # get_start_values_poisson_with_cov -------------------------------------------------------------------
-
 get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, 
-                                              same_alpha = FALSE, i_cov_on = c("alpha", "delta")) {
+                                              same_alpha = FALSE, i_cov_on = c("alpha", "delta"),
+                                              which_i_cov = list(alpha = "all", delta = "all")) { 
   
   # we just start with covariate weights set at 0
   if(!is.null(p_covariates)) { # for person covariates
@@ -865,6 +948,8 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
   } else if (!is.null(i_covariates)) { # for item covariates
     # distinguish between on which item parameter we have item covariates
     if (length(i_cov_on) == 1) {
+      # if we have item covariates just on one parameter, then we don't need 
+      # to distinguish which item covariates go on which parameter
       init_betas_i <- rep(0, ncol(i_covariates))
       if (i_cov_on == "delta") {
         init_deltas <- log(mean(apply(data, 2, mean)))
@@ -907,7 +992,16 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
       )
     } else {
       # for poisson case, the alternative is just having covaraites on both
-      init_betas_i <- rep(0, 2*ncol(i_covariates))
+      if (which_i_cov$alpha == "all") {
+        init_betas_alpha <- rep(0, ncol(i_covariates))
+      } else {
+        init_betas_alpha <- rep(0, length(which_i_cov$alpha))
+      }
+      if (which_i_cov$delta == "all") {
+        init_betas_delta <- rep(0, ncol(i_covariates))
+      } else {
+        init_betas_delta <- rep(0, length(which_i_cov$delta))
+      }
       
       # if we have item covaraites on alpha and delta, we can't have the constraint
       # on alpha that all alphas should be the same (because predicting them through
@@ -923,12 +1017,12 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
       }
       init_alphas <- mean(init_alphas)
       
-      start_values <- c(init_alphas, init_deltas, init_betas_i)
+      start_values <- c(init_alphas, init_deltas, init_betas_alpha, init_betas_delta)
       names(start_values) <- c(
         paste0("alpha", 1:length(init_alphas)),
         paste0("delta", 1:length(init_deltas)),
-        paste0("beta_i_alpha", 1:(length(init_betas_i)/2)),
-        paste0("beta_i_delta", 1:(length(init_betas_i)/2))
+        paste0("beta_i_alpha", 1:length(init_betas_alpha)),
+        paste0("beta_i_delta", 1:length(init_betas_delta))
       )
     }
   }

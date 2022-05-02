@@ -131,20 +131,32 @@ estep_cmp_with_cov <- function(data, item_params,
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
       
       # define which covariates we are using per parameter
-      if (which_i_cov$alpha == "all") {
-        which_i_cov_alpha = 1:ncol(i_covariates)
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          which_i_cov_alpha <- 1:ncol(i_covariates)
+        } else {
+          which_i_cov_alpha <- which(colnames(i_covariates) %in% which_i_cov$alpha)
+        }
       } else {
-        which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        which_i_cov_alpha <- which(colnames(i_covariates) %in% which_i_cov$alpha)
       }
-      if (which_i_cov$delta == "all") {
-        which_i_cov_delta = 1:ncol(i_covariates)
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          which_i_cov_delta <- 1:ncol(i_covariates)
+        } else {
+          which_i_cov_delta <- which(colnames(i_covariates) %in% which_i_cov$delta)
+        }
       } else {
-        which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        which_i_cov_delta <- which(colnames(i_covariates) %in% which_i_cov$delta)
       }
-      if (which_i_cov$log_disp == "all") {
-        which_i_cov_logdisp = 1:ncol(i_covariates)
+      if (length(which_i_cov$log_disp) == 1) {
+        if (which_i_cov$log_disp == "all") {
+          which_i_cov_logdisp <- 1:ncol(i_covariates)
+        } else {
+          which_i_cov_logdisp <- which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        }
       } else {
-        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        which_i_cov_logdisp <- which(colnames(i_covariates) %in% which_i_cov$log_disp)
       }
       
       PPs <- estep_cmp_with_icov_all_cpp(
@@ -415,18 +427,30 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
       
       # define which covariates we are using per parameter
-      if (which_i_cov$alpha == "all") {
-        which_i_cov_alpha = 1:ncol(i_covariates)
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          which_i_cov_alpha = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        }
       } else {
         which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
       }
-      if (which_i_cov$delta == "all") {
-        which_i_cov_delta = 1:ncol(i_covariates)
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          which_i_cov_delta = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        }
       } else {
         which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
       }
-      if (which_i_cov$log_disp == "all") {
-        which_i_cov_logdisp = 1:ncol(i_covariates)
+      if (length(which_i_cov$log_disp) == 1) {
+        if (which_i_cov$log_disp == "all") {
+          which_i_cov_logdisp = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        }
       } else {
         which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
       }
@@ -1803,18 +1827,30 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       betas_i_log_disp <- betas_i[grepl("log_disp", names(betas_i))]
       
       # define which covariates we are using per parameter
-      if (which_i_cov$alpha == "all") {
-        which_i_cov_alpha = 1:ncol(i_covariates)
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          which_i_cov_alpha = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        }
       } else {
         which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
       }
-      if (which_i_cov$delta == "all") {
-        which_i_cov_delta = 1:ncol(i_covariates)
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          which_i_cov_delta = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        }
       } else {
         which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
       }
-      if (which_i_cov$log_disp == "all") {
-        which_i_cov_logdisp = 1:ncol(i_covariates)
+      if (length(which_i_cov$log_disp) == 1) {
+        if (which_i_cov$log_disp == "all") {
+          which_i_cov_logdisp = 1:ncol(i_covariates)
+        } else {
+          which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        }
       } else {
         which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
       }
@@ -1955,7 +1991,6 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
 }
 
 # run_em_cmp_with_cov ----------------------------------------------------------------------
-# TODO cirt anpassen dass ich hier das which_i_cov argument uebergebe
 run_em_cmp_with_cov <- function(data, init_params, n_nodes, 
                                 p_covariates, i_covariates, 
                                 i_cov_on = c("alpha", "delta", "log_disp"),
@@ -2217,7 +2252,7 @@ get_start_values_cmp_with_cov <- function(data,
         }
       } else if (length(i_cov_on) == 3) {
         # make distinction between which covariates we have on which item parameter
-        which_i_cov_poisson <- list(alpha = which_i_cov$delta, delta = which_i_cov$delta)
+        which_i_cov_poisson <- list(alpha = which_i_cov$alpha, delta = which_i_cov$delta)
         
         init_values_pois <- get_start_values_poisson_with_cov(
           data = data,
@@ -2418,20 +2453,32 @@ get_start_values_cmp_with_cov <- function(data,
       # constraints but as a consequence of having covariates on all item parameters,
       # we have only scalars for init_alphas and init_deltas
       # first compute item specific alphas and deltas
-      if (which_i_cov$alpha == "all") {
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- i_covariates
+        } else {
+          i_covariates_alpha <- i_covariates[,which_i_cov$alpha,drop=FALSE]
+        }
+      } else {
         i_covariates_alpha <- i_covariates[,which_i_cov$alpha,drop=FALSE]
-      } else {
-        i_covariates_alpha <- i_covariates
       }
-      if (which_i_cov$delta == "all") {
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- i_covariates
+        } else {
+          i_covariates_delta <- i_covariates[,which_i_cov$delta,drop=FALSE]
+        }
+      } else {
         i_covariates_delta <- i_covariates[,which_i_cov$delta,drop=FALSE]
-      } else {
-        i_covariates_delta <- i_covariates
       }
-      if (which_i_cov$log_disp == "all") {
-        i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
+      if (length(which_i_cov$log_disp) == 1) {
+        if (which_i_cov$log_disp == "all") {
+          i_covariates_logdisp <- i_covariates
+        } else {
+          i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
+        }
       } else {
-        i_covariates_logdisp <- i_covariates
+        i_covariates_logdisp <- i_covariates[,which_i_cov$log_disp,drop=FALSE]
       }
       
       item_alphas <- init_alphas + 

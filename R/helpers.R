@@ -192,7 +192,7 @@ parse_model <- function(model, data, data_long, person_id, family) {
           alpha = which_i_cov_alpha,
           delta = which_i_cov_delta
         )
-      } else (family == "cmp") {
+      } else if (family == "cmp") {
         which_i_cov <- list(
           alpha = which_i_cov_alpha,
           delta = which_i_cov_delta,

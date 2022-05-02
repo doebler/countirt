@@ -78,13 +78,21 @@ estep_poisson_with_cov <- function(data, item_params,
       # the alternative is here only that we have covariates on both item parameters
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
-      if (which_i_cov$alpha == "all") {
-        i_covariates_alpha <- as.matrix(i_covariates)
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- as.matrix(i_covariates)
+        } else {
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+        }
       } else {
         i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
       }
-      if (which_i_cov$delta == "all") {
-        i_covariates_delta <- as.matrix(i_covariates)
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
       } else {
         i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
       }
@@ -230,13 +238,21 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       I <- ncol(i_covariates)
       I_alpha <- length(betas_i_alpha)
       I_delta <- length(betas_i_delta)
-      if (which_i_cov$alpha == "all") {
-        i_covariates_alpha <- as.matrix(i_covariates)
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- as.matrix(i_covariates)
+        } else {
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+        }
       } else {
         i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
       }
-      if (which_i_cov$delta == "all") {
-        i_covariates_delta <- as.matrix(i_covariates)
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
       } else {
         i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
       }
@@ -286,15 +302,15 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
               if (colnames(i_covariates)[c] %in% which_i_cov$alpha) {
                 grad_betas_i_alpha[counter_alpha] <- grad_betas_i_alpha[counter_alpha] + 
                   sum(i_covariates_alpha[j,counter_alpha]*nodes[k]*(data[,j] - lambda)*PPs[,k])
-                counter_alpha <- counter_alpha + 1
               }
               if (colnames(i_covariates)[c] %in% which_i_cov$delta) {
                 grad_betas_i_delta[counter_delta] <- grad_betas_i_delta[counter_delta] +
                   sum(i_covariates_delta[j,counter_delta]*(data[,j] - lambda)*PPs[,k])
-                counter_delta <- counter_delta + 1
               }
             }
           }
+          if (colnames(i_covariates)[c] %in% which_i_cov$alpha) {counter_alpha <- counter_alpha + 1}
+          if (colnames(i_covariates)[c] %in% which_i_cov$delta) {counter_delta <- counter_delta + 1}
         }
       }
       out <- c(grad_alpha, grad_delta, grad_betas_i_alpha, grad_betas_i_delta)
@@ -992,13 +1008,21 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
       )
     } else {
       # for poisson case, the alternative is just having covaraites on both
-      if (which_i_cov$alpha == "all") {
-        init_betas_alpha <- rep(0, ncol(i_covariates))
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          init_betas_alpha <- rep(0, ncol(i_covariates))
+        } else {
+          init_betas_alpha <- 0
+        }
       } else {
         init_betas_alpha <- rep(0, length(which_i_cov$alpha))
       }
-      if (which_i_cov$delta == "all") {
-        init_betas_delta <- rep(0, ncol(i_covariates))
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          init_betas_delta <- rep(0, ncol(i_covariates))
+        } else {
+          init_betas_delta <- 0
+        }
       } else {
         init_betas_delta <- rep(0, length(which_i_cov$delta))
       }

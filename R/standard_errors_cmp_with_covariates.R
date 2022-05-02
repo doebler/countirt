@@ -2,6 +2,7 @@
 grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
                                      p_covariates, i_covariates,
                                      i_cov_on = c("alpha", "delta", "log_disp"),
+                                     which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                      p_cov_cat = TRUE,
                                      resp_patterns_matrix = NULL) {
   post_probs <- estep_cmp_with_cov(
@@ -11,6 +12,7 @@ grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
     p_covariates = p_covariates,
     i_covariates = i_covariates,
     i_cov_on = i_cov_on,
+    which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix
     )
@@ -22,6 +24,7 @@ grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
     p_covariates = p_covariates,
     i_covariates = i_covariates,
     i_cov_on = i_cov_on,
+    which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix
   )
@@ -31,6 +34,7 @@ grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
 wrap_grad_cmp_with_cov <- function(y, PPs, weights_and_nodes, data,
                                    p_covariates, i_covariates,
                                    i_cov_on = c("alpha", "delta", "log_disp"),
+                                   which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                    p_cov_cat = TRUE,
                                    resp_patterns_matrix = NULL) {
   grad <- grad_cmp_with_cov(
@@ -41,12 +45,15 @@ wrap_grad_cmp_with_cov <- function(y, PPs, weights_and_nodes, data,
     p_covariates = p_covariates,
     i_covariates = i_covariates,
     i_cov_on = i_cov_on,
+    which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix
   )
   return(grad)
 }
 
+# TODO when i've implemented which_i_cov for the constrained gradients
+# also add that argument here
 # gradients for 2pcmp with constant alphas ----------------------------------------
 grad_for_se_cmp_samealpha_with_cov <- function(y, item_params, weights_and_nodes, data,
                                                p_covariates, i_covariates,
@@ -437,6 +444,7 @@ wrap_grad_cmp_fixalphas_with_cov <- function(y, PPs, weights_and_nodes,
 compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
                          p_covariates, i_covariates,
                          i_cov_on = c("alpha", "delta", "log_disp"),
+                         which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                          p_cov_cat = TRUE,
                          resp_patterns_matrix = NULL,
                          same_alphas = FALSE, same_disps = FALSE,
@@ -456,6 +464,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -469,6 +478,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
@@ -482,11 +492,15 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix
       )
     } else if (same_alphas & !same_disps) {
       # standard errors for constant alphas across items
+      
+      # TODO add which_i_cov argument once i've implemented that above and
+      # in the gradients for the constrained versions
       
       # compute derivative of gradient with respect to new item params
       

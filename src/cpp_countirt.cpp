@@ -2122,10 +2122,9 @@ double marg_ll_cmp_with_icov_all_cpp (NumericMatrix data,
                                      NumericVector betas_alpha,
                                      NumericVector betas_delta,
                                      NumericVector betas_logdisp,
-                                     NumericVector which_i_cov_alpha,
-                                     NumericVector which_i_cov_delta,
-                                     NumericVector which_i_cov_logdisp,
-                                     NumericMatrix i_cov_data,
+                                     NumericMatrix i_cov_data_alpha,
+                                     NumericMatrix i_cov_data_delta,
+                                     NumericMatrix i_cov_data_log_disp,
                                      NumericVector nodes,
                                      NumericVector weights,
                                      NumericVector grid_mus,
@@ -2141,9 +2140,9 @@ double marg_ll_cmp_with_icov_all_cpp (NumericMatrix data,
   int M = data.ncol();
   int K = nodes.size();
   // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_alpha = which_i_cov_alpha.size();
-  int I_delta = which_i_cov_delta.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   
   // for item covariates, we need mus (and lambdas and Zs) which are node and item specific
   // contrary to the case of person covariates, we don't have to make them person specific
@@ -2160,13 +2159,11 @@ double marg_ll_cmp_with_icov_all_cpp (NumericMatrix data,
       // so we first add all the alpha covariates and then all the delta covariates
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
         // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       for(int c=0; c<I_delta; c++) { // add delta covariates
         // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -2178,8 +2175,7 @@ double marg_ll_cmp_with_icov_all_cpp (NumericMatrix data,
       // and then add the covariates for log disp
       for(int c=0; c<I_logdisp; c++) {
         // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -2224,9 +2220,8 @@ double marg_ll_cmp_with_icov_alpha_nu_cpp (NumericMatrix data,
                                       double disp,
                                       NumericVector betas_alpha,
                                       NumericVector betas_logdisp,
-                                      NumericVector which_i_cov_alpha,
-                                      NumericVector which_i_cov_logdisp,
-                                      NumericMatrix i_cov_data,
+                                      NumericMatrix i_cov_data_alpha,
+                                      NumericMatrix i_cov_data_log_disp,
                                       NumericVector nodes,
                                       NumericVector weights,
                                       NumericVector grid_mus,
@@ -2241,9 +2236,8 @@ double marg_ll_cmp_with_icov_alpha_nu_cpp (NumericMatrix data,
   int N = data.nrow();
   int M = data.ncol();
   int K = nodes.size();
-  // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_alpha = which_i_cov_alpha.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   
   // for item covariates, we need mus (and lambdas and Zs) which are node and item specific
   // contrary to the case of person covariates, we don't have to make them person specific
@@ -2256,9 +2250,7 @@ double marg_ll_cmp_with_icov_alpha_nu_cpp (NumericMatrix data,
       // loop over nodes (rows)
       double log_mu = alpha * nodes[k] + deltas[j];
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
-        // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -2268,9 +2260,7 @@ double marg_ll_cmp_with_icov_alpha_nu_cpp (NumericMatrix data,
       // work, max_mu is the maximum mu value in our grid for interpolation
       double log_disp = log(disp);
       for(int c=0; c<I_logdisp; c++) {
-        // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -2314,9 +2304,8 @@ double marg_ll_cmp_with_icov_delta_nu_cpp (NumericMatrix data,
                                       double disp,
                                       NumericVector betas_delta,
                                       NumericVector betas_logdisp,
-                                      NumericVector which_i_cov_delta,
-                                      NumericVector which_i_cov_logdisp,
-                                      NumericMatrix i_cov_data,
+                                      NumericMatrix i_cov_data_delta,
+                                      NumericMatrix i_cov_data_log_disp,
                                       NumericVector nodes,
                                       NumericVector weights,
                                       NumericVector grid_mus,
@@ -2331,9 +2320,8 @@ double marg_ll_cmp_with_icov_delta_nu_cpp (NumericMatrix data,
   int N = data.nrow();
   int M = data.ncol();
   int K = nodes.size();
-  // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_delta = which_i_cov_delta.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   
   // for item covariates, we need mus (and lambdas and Zs) which are node and item specific
   // contrary to the case of person covariates, we don't have to make them person specific
@@ -2346,9 +2334,7 @@ double marg_ll_cmp_with_icov_delta_nu_cpp (NumericMatrix data,
       // loop over nodes (rows)
       double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I_delta; c++) { // add delta covariates
-        // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -2359,9 +2345,7 @@ double marg_ll_cmp_with_icov_delta_nu_cpp (NumericMatrix data,
       double log_disp = log(disp);
       // and then add the covariates for log disp
       for(int c=0; c<I_logdisp; c++) {
-        // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -2405,9 +2389,8 @@ double marg_ll_cmp_with_icov_alpha_delta_cpp (NumericMatrix data,
                                       NumericVector disps,
                                       NumericVector betas_alpha,
                                       NumericVector betas_delta,
-                                      NumericVector which_i_cov_alpha,
-                                      NumericVector which_i_cov_delta,
-                                      NumericMatrix i_cov_data,
+                                      NumericMatrix i_cov_data_alpha,
+                                      NumericMatrix i_cov_data_delta,
                                       NumericVector nodes,
                                       NumericVector weights,
                                       NumericVector grid_mus,
@@ -2421,8 +2404,8 @@ double marg_ll_cmp_with_icov_alpha_delta_cpp (NumericMatrix data,
   int M = data.ncol();
   int K = nodes.size();
   // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_alpha = which_i_cov_alpha.size();
-  int I_delta = which_i_cov_delta.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
   
   // for item covariates, we need mus (and lambdas and Zs) which are node and item specific
   // contrary to the case of person covariates, we don't have to make them person specific
@@ -2438,14 +2421,10 @@ double marg_ll_cmp_with_icov_alpha_delta_cpp (NumericMatrix data,
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
-        // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       for(int c=0; c<I_delta; c++) { // add delta covariates
-        // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -3479,11 +3458,10 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
                                         NumericVector betas_alpha,
                                         NumericVector betas_delta,
                                         NumericVector betas_logdisp,
-                                        NumericVector which_i_cov_alpha,
-                                        NumericVector which_i_cov_delta,
-                                        NumericVector which_i_cov_logdisp,
                                         NumericMatrix data,
-                                        NumericMatrix i_cov_data,
+                                        NumericMatrix i_cov_data_alpha,
+                                        NumericMatrix i_cov_data_delta,
+                                        NumericMatrix i_cov_data_log_disp,
                                         NumericMatrix PPs,
                                         NumericVector nodes, 
                                         NumericVector grid_mus,
@@ -3503,13 +3481,12 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = i_cov_data.ncol(); // get the total number of covariates we have
   double grad_alpha;
   double grad_delta;
   double grad_disp;
-  int I_alpha = which_i_cov_alpha.size();
-  int I_delta = which_i_cov_delta.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   NumericVector grad_betas_alpha(I_alpha);
   NumericVector grad_betas_delta(I_delta);
   NumericVector grad_betas_logdisp(I_logdisp);
@@ -3532,13 +3509,11 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
       // so we first add all the alpha covariates and then all the delta covariates
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
         // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       for(int c=0; c<I_delta; c++) { // add delta covariates
         // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -3550,8 +3525,7 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
       // and then add the covariates for log disp
       for(int c=0; c<I_logdisp; c++) {
         // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -3606,42 +3580,40 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
   
   // gradients for item covariate weights
   // check if we can do this all in one as we have all covariates on all item params
-  if ((I == I_alpha) & (I_alpha == I_delta) & (I_delta == I_logdisp)) {
-    for (int c=0; c<I; c++) {
+    //for (int c=0; c<I; c++) {
       // for each gamma of which we have one for each covariate-item combination
-      grad_betas_alpha[c] = 0;
-      grad_betas_delta[c] = 0;
-      grad_betas_logdisp[c] = 0;
-      for (int k=0;k<n_nodes;k++) {
+      //grad_betas_alpha[c] = 0;
+      //grad_betas_delta[c] = 0;
+      //grad_betas_logdisp[c] = 0;
+      //for (int k=0;k<n_nodes;k++) {
         // over nodes (rows in my matrices)
-        for (int i=0; i<n; i++) {
+        //for (int i=0; i<n; i++) {
           // over persons
-          for (int j=0; j<m; j++) {
+          //for (int j=0; j<m; j++) {
             // over items (as the betas are only specific to item covariates, not items)
-            grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-              (data(i,j) - mu_interp(k,j));
-            grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-              (data(i,j) - mu_interp(k,j));
-            grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
-              (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
-          } // end loop over m (items)
-        } // end loop of n_nodes
-      } // end loop over P (person covariates)
-    } // end loop over items
-  } else {
+            //grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            //  (data(i,j) - mu_interp(k,j));
+            //grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+            //  (data(i,j) - mu_interp(k,j));
+            //grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+            //  (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
+         // } // end loop over m (items)
+       // } // end loop of n_nodes
+    //  } // end loop over P (person covariates)
+    //} // end loop over items
+
     // we need to loop through item covariates per item parameter as we have 
     // differently many per item
     for (int c=0; c<I_alpha; c++) {
       // for each gamma of which we have one for each covariate-item combination
       grad_betas_alpha[c] = 0;
-      int cov_index = which_i_cov_alpha[c];
       for (int k=0;k<n_nodes;k++) {
         // over nodes (rows in my matrices)
         for (int i=0; i<n; i++) {
           // over persons
           for (int j=0; j<m; j++) {
             // over items (as the betas are only specific to item covariates, not items)
-            grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,cov_index) / V(k,j)) *
+            grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data_alpha(j,c) / V(k,j)) *
               (data(i,j) - mu_interp(k,j));
           } // end loop over m (items)
         } // end loop of n_nodes
@@ -3650,14 +3622,13 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
     for (int c=0; c<I_delta; c++) {
       // for each gamma of which we have one for each covariate-item combination
       grad_betas_delta[c] = 0;
-      int cov_index = which_i_cov_delta[c];
       for (int k=0;k<n_nodes;k++) {
         // over nodes (rows in my matrices)
         for (int i=0; i<n; i++) {
           // over persons
           for (int j=0; j<m; j++) {
             // over items (as the betas are only specific to item covariates, not items)
-            grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,cov_index) / V(k,j)) *
+            grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
               (data(i,j) - mu_interp(k,j));
           } // end loop over m (items)
         } // end loop of n_nodes
@@ -3666,20 +3637,18 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
     for (int c=0; c<I_logdisp; c++) {
       // for each gamma of which we have one for each covariate-item combination
       grad_betas_logdisp[c] = 0;
-      int cov_index = which_i_cov_logdisp[c];
       for (int k=0;k<n_nodes;k++) {
         // over nodes (rows in my matrices)
         for (int i=0; i<n; i++) {
           // over persons
           for (int j=0; j<m; j++) {
             // over items (as the betas are only specific to item covariates, not items)
-            grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,cov_index) * disp_interp(k,j)*
+            grad_betas_logdisp[c] += PPs(i,k) * i_cov_data_log_disp(j,c) * disp_interp(k,j)*
               (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
           } // end loop over m (items)
         } // end loop of n_nodes
       } // end loop over P (person covariates)
     } // end loop over items
-  }
   
   
   // fill up output vector
@@ -3706,7 +3675,8 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
                                          NumericVector betas_alpha,
                                          NumericVector betas_logdisp,
                                          NumericMatrix data,
-                                         NumericMatrix i_cov_data,
+                                         NumericMatrix i_cov_data_alpha,
+                                         NumericMatrix i_cov_data_log_disp,
                                          NumericMatrix PPs,
                                          NumericVector nodes, 
                                          NumericVector grid_mus,
@@ -3726,13 +3696,14 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_alpha.size();
   double grad_alpha;
   NumericVector grad_deltas(m);
   double grad_disp;
-  NumericVector grad_betas_alpha(I);
-  NumericVector grad_betas_logdisp(I);
-  NumericVector out(2 + m + 2*I);
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
+  NumericVector grad_betas_alpha(I_alpha);
+  NumericVector grad_betas_logdisp(I_logdisp);
+  NumericVector out(2 + m + I_alpha + I_logdisp);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3746,9 +3717,9 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alpha * nodes[k] + deltas[j];
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,c);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -3757,9 +3728,9 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
       // we need to set maximum for mu to max_mu so that the interpolation will
       // work, max_mu is the maximum mu value in our grid for interpolation
       double log_disp = log(disp);
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_logdisp; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_disp += betas_logdisp[c] * i_cov_data(j,c); // for item j
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); // for item j
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -3812,10 +3783,25 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_alpha; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_alpha[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data_alpha(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_logdisp; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_logdisp[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -3823,9 +3809,7 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data_log_disp(j,c) * disp_interp(k,j)*
             (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -3838,9 +3822,11 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
     out[i + 1] = grad_deltas[i];
   }
   out[m + 1] = grad_disp;
-  for(int c=0; c<I; c++) {
-    out[2 + m + c] = grad_betas_alpha[c];
-    out[2 + m + c + I] = grad_betas_logdisp[c];
+  for(int c=0; c<I_alpha; c++) {
+    out[m + 2 + c] = grad_betas_alpha[c];
+  }
+  for(int c=0; c<I_logdisp; c++) {
+    out[m + 2 + c + I_alpha] = grad_betas_logdisp[c];
   }
   
   return(out);
@@ -3853,7 +3839,8 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
                                          NumericVector betas_delta,
                                          NumericVector betas_logdisp,
                                          NumericMatrix data,
-                                         NumericMatrix i_cov_data,
+                                         NumericMatrix i_cov_data_delta,
+                                         NumericMatrix i_cov_data_log_disp,
                                          NumericMatrix PPs,
                                          NumericVector nodes, 
                                          NumericVector grid_mus,
@@ -3873,13 +3860,14 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_delta.size();
   NumericVector grad_alphas(m);
   double grad_delta;
   double grad_disp;
-  NumericVector grad_betas_delta(I);
-  NumericVector grad_betas_logdisp(I);
-  NumericVector out(m + 2 + 2*I);
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
+  NumericVector grad_betas_delta(I_delta);
+  NumericVector grad_betas_logdisp(I_logdisp);
+  NumericVector out(m + 2 + I_delta + I_logdisp);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3893,9 +3881,9 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alphas[j] * nodes[k] + delta;
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_delta; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += betas_delta[c] * i_cov_data(j,c);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -3904,9 +3892,9 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
       // we need to set maximum for mu to max_mu so that the interpolation will
       // work, max_mu is the maximum mu value in our grid for interpolation
       double log_disp = log(disp);
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_logdisp; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_disp += betas_logdisp[c] * i_cov_data(j,c); // for item j
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); // for item j
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -3959,10 +3947,25 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_delta; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_delta[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_logdisp; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_logdisp[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -3970,9 +3973,7 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data_log_disp(j,c) * disp_interp(k,j)*
             (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -3985,9 +3986,11 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
   }
   out[m] = grad_delta;
   out[m + 1] = grad_disp;
-  for(int c=0; c<I; c++) {
+  for(int c=0; c<I_delta; c++) {
     out[m + 2 + c] = grad_betas_delta[c];
-    out[m + 2 + c + I] = grad_betas_logdisp[c];
+  }
+  for(int c=0; c<I_logdisp; c++) {
+    out[m + 2 + c + I_delta] = grad_betas_logdisp[c];
   }
   
   return(out);
@@ -4000,7 +4003,8 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
                                          NumericVector betas_alpha,
                                          NumericVector betas_delta,
                                          NumericMatrix data,
-                                         NumericMatrix i_cov_data,
+                                         NumericMatrix i_cov_data_alpha,
+                                         NumericMatrix i_cov_data_delta,
                                          NumericMatrix PPs,
                                          NumericVector nodes, 
                                          NumericVector grid_mus,
@@ -4018,13 +4022,14 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_alpha.size();
   double grad_alpha;
   double grad_delta;
   NumericVector grad_disps(m);
-  NumericVector grad_betas_alpha(I);
-  NumericVector grad_betas_delta(I);
-  NumericVector out(2 + m + 2*I);
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
+  NumericVector grad_betas_alpha(I_alpha);
+  NumericVector grad_betas_delta(I_delta);
+  NumericVector out(2 + m + I_alpha + I_delta);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -4038,10 +4043,13 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alpha * nodes[k] + delta;
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,c) + 
-          betas_delta[c] * i_cov_data(j,c);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
+      }
+      for(int c=0; c<I_delta; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -4098,10 +4106,25 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_alpha; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_alpha[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data_alpha(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_delta; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_delta[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -4109,9 +4132,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
             (data(i,j) - mu_interp(k,j));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -4124,9 +4145,11 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
   for (int i=0; i<m; i++) {
     out[i + 2] = grad_disps[i];
   }
-  for(int c=0; c<I; c++) {
+  for(int c=0; c<I_alpha; c++) {
     out[2 + m + c] = grad_betas_alpha[c];
-    out[2 + m + I] = grad_betas_delta[c];
+  }
+  for(int c=0; c<I_delta; c++) {
+    out[2 + m + c + I_alpha] = grad_betas_delta[c];
   }
   
   return(out);
@@ -4763,7 +4786,8 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
                                                            NumericVector betas_alpha,
                                                            NumericVector betas_delta,
                                                            NumericMatrix data,
-                                                           NumericMatrix i_cov_data,
+                                                           NumericMatrix i_cov_data_alpha,
+                                                           NumericMatrix i_cov_data_delta,
                                                            NumericMatrix PPs,
                                                            NumericVector nodes, 
                                                            NumericVector grid_mus,
@@ -4781,12 +4805,13 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_alpha.size();
   double grad_alpha;
   double grad_delta;
-  NumericVector grad_betas_alpha(I);
-  NumericVector grad_betas_delta(I);
-  NumericVector out(2 + 2*I);
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
+  NumericVector grad_betas_alpha(I_alpha);
+  NumericVector grad_betas_delta(I_delta);
+  NumericVector out(2 + I_alpha + I_delta);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -4800,10 +4825,13 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alpha * nodes[k] + delta;
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,c) + 
-          betas_delta[c] * i_cov_data(j,c);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
+      }
+      for(int c=0; c<I_delta; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -4846,10 +4874,25 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_alpha; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_alpha[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data_alpha(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_delta; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_delta[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -4857,9 +4900,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
             (data(i,j) - mu_interp(k,j));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -4869,9 +4910,11 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
   // fill up output vector
   out[0] = grad_alpha;
   out[1] = grad_delta;
-  for(int c=0; c<I; c++) {
+  for(int c=0; c<I_alpha; c++) {
     out[2 + c] = grad_betas_alpha[c];
-    out[2 + c + I] = grad_betas_delta[c];
+  }
+  for(int c=0; c<I_delta; c++) {
+    out[2 + c + I_alpha] = grad_betas_delta[c];
   }
   
   return(out);
@@ -5566,7 +5609,8 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
                                                          NumericVector betas_delta,
                                                          NumericVector betas_logdisp,
                                                          NumericMatrix data,
-                                                         NumericMatrix i_cov_data,
+                                                         NumericMatrix i_cov_data_delta,
+                                                         NumericMatrix i_cov_data_log_disp,
                                                          NumericMatrix PPs,
                                                          NumericVector nodes, 
                                                          NumericVector grid_mus,
@@ -5586,12 +5630,13 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_delta.size();
   double grad_delta;
   double grad_disp;
-  NumericVector grad_betas_delta(I);
-  NumericVector grad_betas_logdisp(I);
-  NumericVector out(2 + 2*I);
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
+  NumericVector grad_betas_delta(I_delta);
+  NumericVector grad_betas_logdisp(I_logdisp);
+  NumericVector out(2 + I_delta + I_logdisp);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -5605,9 +5650,9 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alphas[j] * nodes[k] + delta;
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_delta; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += betas_delta[c] * i_cov_data(j,c);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -5616,9 +5661,9 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
       // we need to set maximum for mu to max_mu so that the interpolation will
       // work, max_mu is the maximum mu value in our grid for interpolation
       double log_disp = log(disp);
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_logdisp; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_disp += betas_logdisp[c] * i_cov_data(j,c); // for item j
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); // for item j
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -5669,10 +5714,25 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_delta; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_delta[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_logdisp; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_logdisp[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -5680,9 +5740,7 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data_log_disp(j,c) * disp_interp(k,j)*
             (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -5692,9 +5750,11 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
   // fill up output vector
   out[0] = grad_delta;
   out[1] = grad_disp;
-  for(int c=0; c<I; c++) {
+  for(int c=0; c<I_delta; c++) {
     out[2 + c] = grad_betas_delta[c];
-    out[2 + c + I] = grad_betas_logdisp[c];
+  }
+  for(int c=0; c<I_logdisp; c++) {
+    out[2 + c + I_delta] = grad_betas_logdisp[c];
   }
   
   return(out);
@@ -6396,7 +6456,8 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
                                          NumericVector betas_alpha,
                                          NumericVector betas_delta,
                                          NumericMatrix data,
-                                         NumericMatrix i_cov_data,
+                                         NumericMatrix i_cov_data_alpha,
+                                         NumericMatrix i_cov_data_delta,
                                          NumericMatrix PPs,
                                          NumericVector nodes, 
                                          NumericVector grid_mus,
@@ -6414,13 +6475,14 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_alpha.size();
   double grad_alpha;
   double grad_delta;
   double grad_disp;
-  NumericVector grad_betas_alpha(I);
-  NumericVector grad_betas_delta(I);
-  NumericVector out(3 + 2*I);
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
+  NumericVector grad_betas_alpha(I_alpha);
+  NumericVector grad_betas_delta(I_delta);
+  NumericVector out(3 + I_alpha + I_delta);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -6434,10 +6496,13 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alpha * nodes[k] + delta;
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,c) + 
-          betas_delta[c] * i_cov_data(j,c);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
+      }
+      for(int c=0; c<I_delta; c++) {
+        // add all the (weighted) covariate values for all covariates
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -6494,10 +6559,25 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_alpha; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_alpha[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data_alpha(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_delta; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_delta[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -6505,9 +6585,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_alpha[c] += PPs(i,k) * (nodes[k]*mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
+          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
             (data(i,j) - mu_interp(k,j));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -6518,9 +6596,11 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
   out[0] = grad_alpha;
   out[1] = grad_delta;
   out[2] = grad_disp;
-  for(int c=0; c<I; c++) {
+  for(int c=0; c<I_alpha; c++) {
     out[3 + c] = grad_betas_alpha[c];
-    out[3 + c + I] = grad_betas_delta[c];
+  }
+  for(int c=0; c<I_delta; c++) {
+    out[3 + c + I_alpha] = grad_betas_delta[c];
   }
   
   return(out);
@@ -7233,7 +7313,8 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
                                                          NumericVector betas_delta,
                                                          NumericVector betas_logdisp,
                                                          NumericMatrix data,
-                                                         NumericMatrix i_cov_data,
+                                                         NumericMatrix i_cov_data_delta,
+                                                         NumericMatrix i_cov_data_log_disp,
                                                          NumericMatrix PPs,
                                                          NumericVector nodes, 
                                                          NumericVector grid_mus,
@@ -7253,13 +7334,14 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
   int m = data.ncol();
   int n = PPs.nrow();
   int n_nodes = nodes.size();
-  int I = betas_delta.size();
   double grad_alpha;
   double grad_delta;
   double grad_disp;
-  NumericVector grad_betas_delta(I);
-  NumericVector grad_betas_logdisp(I);
-  NumericVector out(3 + 2*I);
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
+  NumericVector grad_betas_delta(I_delta);
+  NumericVector grad_betas_logdisp(I_logdisp);
+  NumericVector out(3 + I_delta + I_logdisp);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -7273,9 +7355,9 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
       double log_mu = alphas[j] * nodes[k] + delta;
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_delta; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_mu += betas_delta[c] * i_cov_data(j,c);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -7284,9 +7366,9 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
       // we need to set maximum for mu to max_mu so that the interpolation will
       // work, max_mu is the maximum mu value in our grid for interpolation
       double log_disp = log(disp);
-      for(int c=0; c<I; c++) {
+      for(int c=0; c<I_logdisp; c++) {
         // add all the (weighted) covariate values for all covariates
-        log_disp += betas_logdisp[c] * i_cov_data(j,c); // for item j
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); // for item j
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -7339,10 +7421,25 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
     }
   }
   
-  // gradients for item covariate weights
-  for (int c=0; c<I; c++) {
+  // we need to loop through item covariates per item parameter as we have 
+  // differently many per item
+  for (int c=0; c<I_delta; c++) {
     // for each gamma of which we have one for each covariate-item combination
     grad_betas_delta[c] = 0;
+    for (int k=0;k<n_nodes;k++) {
+      // over nodes (rows in my matrices)
+      for (int i=0; i<n; i++) {
+        // over persons
+        for (int j=0; j<m; j++) {
+          // over items (as the betas are only specific to item covariates, not items)
+          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data_delta(j,c) / V(k,j)) *
+            (data(i,j) - mu_interp(k,j));
+        } // end loop over m (items)
+      } // end loop of n_nodes
+    } // end loop over P (person covariates)
+  } // end loop over items
+  for (int c=0; c<I_logdisp; c++) {
+    // for each gamma of which we have one for each covariate-item combination
     grad_betas_logdisp[c] = 0;
     for (int k=0;k<n_nodes;k++) {
       // over nodes (rows in my matrices)
@@ -7350,9 +7447,7 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
         // over persons
         for (int j=0; j<m; j++) {
           // over items (as the betas are only specific to item covariates, not items)
-          grad_betas_delta[c] += PPs(i,k) * (mu_interp(k,j)*i_cov_data(j,c) / V(k,j)) *
-            (data(i,j) - mu_interp(k,j));
-          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data(j,c) * disp_interp(k,j)*
+          grad_betas_logdisp[c] += PPs(i,k) * i_cov_data_log_disp(j,c) * disp_interp(k,j)*
             (A(k,j)*(data(i,j) - mu_interp(k,j))/V(k,j) - (logFactorial(data(i,j))-B(k,j)));
         } // end loop over m (items)
       } // end loop of n_nodes
@@ -7363,9 +7458,11 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
   out[0] = grad_alpha;
   out[1] = grad_delta;
   out[2] = grad_disp;
-  for(int c=0; c<I; c++) {
+  for(int c=0; c<I_delta; c++) {
     out[3 + c] = grad_betas_delta[c];
-    out[3 + c + I] = grad_betas_logdisp[c];
+  }
+  for(int c=0; c<I_logdisp; c++) {
+    out[3 + c + I_delta] = grad_betas_logdisp[c];
   }
   
   return(out);
@@ -8726,10 +8823,9 @@ NumericMatrix estep_cmp_with_icov_all_cpp(NumericMatrix data,
                                          NumericVector betas_alpha,
                                          NumericVector betas_delta,
                                          NumericVector betas_logdisp,
-                                         NumericVector which_i_cov_alpha,
-                                         NumericVector which_i_cov_delta,
-                                         NumericVector which_i_cov_logdisp,
-                                         NumericMatrix i_cov_data,
+                                         NumericMatrix i_cov_data_alpha,
+                                         NumericMatrix i_cov_data_delta,
+                                         NumericMatrix i_cov_data_log_disp,
                                          NumericVector nodes,
                                          NumericVector weights,
                                          NumericVector grid_mus,
@@ -8745,9 +8841,9 @@ NumericMatrix estep_cmp_with_icov_all_cpp(NumericMatrix data,
   int n_nodes = nodes.size();
   int N = data.nrow();
   // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_alpha = which_i_cov_alpha.size();
-  int I_delta = which_i_cov_delta.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   
   // for item covariates we don't need person specificness (as we do for the person covariates)
   // so our mu_interp and disp_interp can just be of the dimension KxM
@@ -8764,13 +8860,11 @@ NumericMatrix estep_cmp_with_icov_all_cpp(NumericMatrix data,
       // so we first add all the alpha covariates and then all the delta covariates
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
         // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       for(int c=0; c<I_delta; c++) { // add delta covariates
         // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -8782,8 +8876,7 @@ NumericMatrix estep_cmp_with_icov_all_cpp(NumericMatrix data,
       // and then add the covariates for log disp
       for(int c=0; c<I_logdisp; c++) {
         // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -8838,9 +8931,8 @@ NumericMatrix estep_cmp_with_icov_alpha_nu_cpp(NumericMatrix data,
                                           double disp,
                                           NumericVector betas_alpha,
                                           NumericVector betas_logdisp,
-                                          NumericVector which_i_cov_alpha,
-                                          NumericVector which_i_cov_logdisp,
-                                          NumericMatrix i_cov_data,
+                                          NumericMatrix i_cov_data_alpha,
+                                          NumericMatrix i_cov_data_log_disp,
                                           NumericVector nodes,
                                           NumericVector weights,
                                           NumericVector grid_mus,
@@ -8856,8 +8948,8 @@ NumericMatrix estep_cmp_with_icov_alpha_nu_cpp(NumericMatrix data,
   int n_nodes = nodes.size();
   int N = data.nrow();
   // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_alpha = which_i_cov_alpha.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   
   // for item covariates we don't need person specificness (as we do for the person covariates)
   // so our mu_interp and disp_interp can just be of the dimension KxM
@@ -8870,9 +8962,7 @@ NumericMatrix estep_cmp_with_icov_alpha_nu_cpp(NumericMatrix data,
       // loop over nodes (rows)
       double log_mu = alpha * nodes[k] + deltas[j];
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
-        // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -8883,9 +8973,7 @@ NumericMatrix estep_cmp_with_icov_alpha_nu_cpp(NumericMatrix data,
       double log_disp = log(disp);
       // and then add the covariates for log disp
       for(int c=0; c<I_logdisp; c++) {
-        // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -8940,9 +9028,8 @@ NumericMatrix estep_cmp_with_icov_delta_nu_cpp(NumericMatrix data,
                                           double disp,
                                           NumericVector betas_delta,
                                           NumericVector betas_logdisp,
-                                          NumericVector which_i_cov_delta,
-                                          NumericVector which_i_cov_logdisp,
-                                          NumericMatrix i_cov_data,
+                                          NumericMatrix i_cov_data_delta,
+                                          NumericMatrix i_cov_data_log_disp,
                                           NumericVector nodes,
                                           NumericVector weights,
                                           NumericVector grid_mus,
@@ -8958,8 +9045,8 @@ NumericMatrix estep_cmp_with_icov_delta_nu_cpp(NumericMatrix data,
   int n_nodes = nodes.size();
   int N = data.nrow();
   // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_delta = which_i_cov_delta.size();
-  int I_logdisp = which_i_cov_logdisp.size();
+  int I_delta = i_cov_data_delta.ncol();
+  int I_logdisp = i_cov_data_log_disp.ncol();
   
   // for item covariates we don't need person specificness (as we do for the person covariates)
   // so our mu_interp and disp_interp can just be of the dimension KxM
@@ -8972,9 +9059,7 @@ NumericMatrix estep_cmp_with_icov_delta_nu_cpp(NumericMatrix data,
       // loop over nodes (rows)
       double log_mu = alphas[j] * nodes[k] + delta;
       for(int c=0; c<I_delta; c++) { // add delta covariates
-        // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
@@ -8984,9 +9069,7 @@ NumericMatrix estep_cmp_with_icov_delta_nu_cpp(NumericMatrix data,
       // work, max_mu is the maximum mu value in our grid for interpolation
       double log_disp = log(disp);
       for(int c=0; c<I_logdisp; c++) {
-        // find correct index
-        int cov_index = which_i_cov_logdisp[c];
-        log_disp += betas_logdisp[c] * i_cov_data(j,cov_index); 
+        log_disp += betas_logdisp[c] * i_cov_data_log_disp(j,c); 
       }
       disp_interp(k,j) = exp(log_disp);
       if (disp_interp(k,j) > max_nu) { disp_interp(k,j) = max_nu; }
@@ -9041,9 +9124,8 @@ NumericMatrix estep_cmp_with_icov_alpha_delta_cpp(NumericMatrix data,
                                           NumericVector disps,
                                           NumericVector betas_alpha,
                                           NumericVector betas_delta,
-                                          NumericVector which_i_cov_alpha,
-                                          NumericVector which_i_cov_delta,
-                                          NumericMatrix i_cov_data,
+                                          NumericMatrix i_cov_data_alpha,
+                                          NumericMatrix i_cov_data_delta,
                                           NumericVector nodes,
                                           NumericVector weights,
                                           NumericVector grid_mus,
@@ -9057,8 +9139,8 @@ NumericMatrix estep_cmp_with_icov_alpha_delta_cpp(NumericMatrix data,
   int n_nodes = nodes.size();
   int N = data.nrow();
   // int I = i_cov_data.ncol; // get the total number of covariates we have
-  int I_alpha = which_i_cov_alpha.size();
-  int I_delta = which_i_cov_delta.size();
+  int I_alpha = i_cov_data_alpha.ncol();
+  int I_delta = i_cov_data_delta.ncol();
   
   // for item covariates we don't need person specificness (as we do for the person covariates)
   // so our mu_interp and disp_interp can just be of the dimension KxM
@@ -9074,14 +9156,10 @@ NumericMatrix estep_cmp_with_icov_alpha_delta_cpp(NumericMatrix data,
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
-        // find correct index
-        int cov_index = which_i_cov_alpha[c];
-        log_mu += nodes[k] * betas_alpha[c] * i_cov_data(j,cov_index);
+        log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
       for(int c=0; c<I_delta; c++) { // add delta covariates
-        // find correct index
-        int cov_index = which_i_cov_delta[c];
-        log_mu += betas_delta[c] * i_cov_data(j,cov_index);
+        log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);

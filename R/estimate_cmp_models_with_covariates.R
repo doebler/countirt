@@ -133,30 +133,30 @@ estep_cmp_with_cov <- function(data, item_params,
       # define which covariates we are using per parameter
       if (length(which_i_cov$alpha) == 1) {
         if (which_i_cov$alpha == "all") {
-          which_i_cov_alpha <- 1:ncol(i_covariates)
+          i_covariates_alpha <- as.matrix(i_covariates)
         } else {
-          which_i_cov_alpha <- which(colnames(i_covariates) %in% which_i_cov$alpha)
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
         }
       } else {
-        which_i_cov_alpha <- which(colnames(i_covariates) %in% which_i_cov$alpha)
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
       }
       if (length(which_i_cov$delta) == 1) {
         if (which_i_cov$delta == "all") {
-          which_i_cov_delta <- 1:ncol(i_covariates)
+          i_covariates_delta <- as.matrix(i_covariates)
         } else {
-          which_i_cov_delta <- which(colnames(i_covariates) %in% which_i_cov$delta)
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
         }
       } else {
-        which_i_cov_delta <- which(colnames(i_covariates) %in% which_i_cov$delta)
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
       }
       if (length(which_i_cov$log_disp) == 1) {
         if (which_i_cov$log_disp == "all") {
-          which_i_cov_logdisp <- 1:ncol(i_covariates)
+          i_covariates_log_disp <- as.matrix(i_covariates)
         } else {
-          which_i_cov_logdisp <- which(colnames(i_covariates) %in% which_i_cov$log_disp)
+          i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
         }
       } else {
-        which_i_cov_logdisp <- which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
       }
       
       PPs <- estep_cmp_with_icov_all_cpp(
@@ -167,10 +167,9 @@ estep_cmp_with_cov <- function(data, item_params,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
-        which_i_cov_alpha = which_i_cov_alpha,
-        which_i_cov_delta = which_i_cov_delta,
-        which_i_cov_logdisp = which_i_cov_logdisp,
-        i_cov_data = as.matrix(i_covariates),
+        i_cov_data_alpha = i_covariates_alpha,
+        i_cov_data_delta = i_covariates_delta,
+        i_cov_data_log_disp = i_covariates_log_disp,
         nodes = weights_and_nodes$x,
         weights = weights_and_nodes$w,
         grid_mus = grid_mus,
@@ -190,15 +189,24 @@ estep_cmp_with_cov <- function(data, item_params,
           betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
           
           # define which covariates we are using per parameter
-          if (which_i_cov$alpha == "all") {
-            which_i_cov_alpha = 1:ncol(i_covariates)
+          # define which covariates we are using per parameter
+          if (length(which_i_cov$alpha) == 1) {
+            if (which_i_cov$alpha == "all") {
+              i_covariates_alpha <- as.matrix(i_covariates)
+            } else {
+              i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+            }
           } else {
-            which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+            i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
           }
-          if (which_i_cov$log_disp == "all") {
-            which_i_cov_logdisp = 1:ncol(i_covariates)
+          if (length(which_i_cov$log_disp) == 1) {
+            if (which_i_cov$log_disp == "all") {
+              i_covariates_log_disp <- as.matrix(i_covariates)
+            } else {
+              i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+            }
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+            i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
           }
           
           PPs <- estep_cmp_with_icov_alpha_nu_cpp(
@@ -208,9 +216,8 @@ estep_cmp_with_cov <- function(data, item_params,
             disp = disps,
             betas_alpha = betas_i_alpha,
             betas_logdisp = betas_i_logdisp,
-            which_i_cov_alpha = which_i_cov_alpha,
-            which_i_cov_logdisp = which_i_cov_logdisp,
-            i_cov_data = as.matrix(i_covariates),
+            i_cov_data_alpha = i_covariates_alpha,
+            i_cov_data_log_disp = i_covariates_log_disp,
             nodes = weights_and_nodes$x,
             weights = weights_and_nodes$w,
             grid_mus = grid_mus,
@@ -228,15 +235,23 @@ estep_cmp_with_cov <- function(data, item_params,
           betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
           
           # define which covariates we are using per parameter
-          if (which_i_cov$delta == "all") {
-            which_i_cov_delta = 1:ncol(i_covariates)
+          if (length(which_i_cov$delta) == 1) {
+            if (which_i_cov$delta == "all") {
+              i_covariates_delta <- as.matrix(i_covariates)
+            } else {
+              i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+            }
           } else {
-            which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+            i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
           }
-          if (which_i_cov$log_disp == "all") {
-            which_i_cov_logdisp = 1:ncol(i_covariates)
+          if (length(which_i_cov$log_disp) == 1) {
+            if (which_i_cov$log_disp == "all") {
+              i_covariates_log_disp <- as.matrix(i_covariates)
+            } else {
+              i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+            }
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+            i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
           }
           
           PPs <- estep_cmp_with_icov_delta_nu_cpp(
@@ -246,9 +261,8 @@ estep_cmp_with_cov <- function(data, item_params,
             disp = disps,
             betas_delta = betas_i_delta,
             betas_logdisp = betas_i_logdisp,
-            which_i_cov_delta = which_i_cov_delta,
-            which_i_cov_logdisp = which_i_cov_logdisp,
-            i_cov_data = as.matrix(i_covariates),
+            i_cov_data_delta = i_covariates_delta,
+            i_cov_data_log_disp = i_covariates_log_disp,
             nodes = weights_and_nodes$x,
             weights = weights_and_nodes$w,
             grid_mus = grid_mus,
@@ -267,15 +281,23 @@ estep_cmp_with_cov <- function(data, item_params,
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
         
         # define which covariates we are using per parameter
-        if (which_i_cov$alpha == "all") {
-          which_i_cov_alpha = 1:ncol(i_covariates)
+        if (length(which_i_cov$alpha) == 1) {
+          if (which_i_cov$alpha == "all") {
+            i_covariates_alpha <- as.matrix(i_covariates)
+          } else {
+            i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+          }
         } else {
-          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
         }
-        if (which_i_cov$delta == "all") {
-          which_i_cov_delta = 1:ncol(i_covariates)
+        if (length(which_i_cov$delta) == 1) {
+          if (which_i_cov$delta == "all") {
+            i_covariates_delta <- as.matrix(i_covariates)
+          } else {
+            i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+          }
         } else {
-          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
         }
 
         PPs <- estep_cmp_with_icov_alpha_delta_cpp(
@@ -285,9 +307,8 @@ estep_cmp_with_cov <- function(data, item_params,
           disps = disps,
           betas_alpha = betas_i_alpha,
           betas_delta = betas_i_delta,
-          which_i_cov_alpha = which_i_cov_alpha,
-          which_i_cov_delta = which_i_cov_delta,
-          i_cov_data = as.matrix(i_covariates),
+          i_cov_data_alpha = i_covariates_alpha,
+          i_cov_data_delta = i_covariates_delta,
           nodes = weights_and_nodes$x,
           weights = weights_and_nodes$w,
           grid_mus = grid_mus,
@@ -429,30 +450,30 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       # define which covariates we are using per parameter
       if (length(which_i_cov$alpha) == 1) {
         if (which_i_cov$alpha == "all") {
-          which_i_cov_alpha = 1:ncol(i_covariates)
+          i_covariates_alpha <- as.matrix(i_covariates)
         } else {
-          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
         }
       } else {
-        which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
       }
       if (length(which_i_cov$delta) == 1) {
         if (which_i_cov$delta == "all") {
-          which_i_cov_delta = 1:ncol(i_covariates)
+          i_covariates_delta <- as.matrix(i_covariates)
         } else {
-          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
         }
       } else {
-        which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
       }
       if (length(which_i_cov$log_disp) == 1) {
         if (which_i_cov$log_disp == "all") {
-          which_i_cov_logdisp = 1:ncol(i_covariates)
+          i_covariates_log_disp <- as.matrix(i_covariates)
         } else {
-          which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+          i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
         }
       } else {
-        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
       }
       
       grads <- grad_cmp_with_icov_all_cpp(
@@ -462,11 +483,10 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
-        which_i_cov_alpha = which_i_cov_alpha,
-        which_i_cov_delta = which_i_cov_delta,
-        which_i_cov_logdisp = which_i_cov_logdisp,
         data = as.matrix(data),
-        i_cov_data = as.matrix(i_covariates),
+        i_cov_data_alpha = i_covariates_alpha,
+        i_cov_data_delta = i_covariates_delta,
+        i_cov_data_log_disp = i_covariates_log_disp,
         PPs = PPs,
         nodes = weights_and_nodes$x,
         grid_mus = grid_mus,
@@ -479,12 +499,31 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         max_nu = 50,
         min_nu = 0.001)
     } else if (length(i_cov_on) == 2) {
-      # TODO hier noch weiter machen die which_i_cov argumente einzubauen
       if ("log_disp" %in% i_cov_on) {
         if ("alpha" %in% i_cov_on) {
           # we have covariates on log_disp and alpha together
           betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
           betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
+          
+          # define which covariates we are using per parameter
+          if (length(which_i_cov$alpha) == 1) {
+            if (which_i_cov$alpha == "all") {
+              i_covariates_alpha <- as.matrix(i_covariates)
+            } else {
+              i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+            }
+          } else {
+            i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+          }
+          if (length(which_i_cov$log_disp) == 1) {
+            if (which_i_cov$log_disp == "all") {
+              i_covariates_log_disp <- as.matrix(i_covariates)
+            } else {
+              i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+            }
+          } else {
+            i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+          }
           
           grads <- grad_cmp_with_icov_alpha_nu_cpp(
             alpha = alphas,
@@ -493,7 +532,8 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
             betas_alpha = betas_i_alpha,
             betas_logdisp = betas_i_logdisp,
             data = as.matrix(data),
-            i_cov_data = as.matrix(i_covariates),
+            i_cov_data_alpha = i_covariates_alpha,
+            i_cov_data_log_disp = i_covariates_log_disp,
             PPs = PPs,
             nodes = weights_and_nodes$x,
             grid_mus = grid_mus,
@@ -510,6 +550,26 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
           betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
           
+          # define which covariates we are using per parameter
+          if (length(which_i_cov$delta) == 1) {
+            if (which_i_cov$delta == "all") {
+              i_covariates_delta <- as.matrix(i_covariates)
+            } else {
+              i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+            }
+          } else {
+            i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+          }
+          if (length(which_i_cov$log_disp) == 1) {
+            if (which_i_cov$log_disp == "all") {
+              i_covariates_log_disp <- as.matrix(i_covariates)
+            } else {
+              i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+            }
+          } else {
+            i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+          }
+          
           grads <- grad_cmp_with_icov_delta_nu_cpp(
             alphas = alphas,
             delta = deltas,
@@ -517,7 +577,8 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
             betas_delta = betas_i_delta,
             betas_logdisp = betas_i_logdisp,
             data = as.matrix(data),
-            i_cov_data = as.matrix(i_covariates),
+            i_cov_data_delta = i_covariates_delta,
+            i_cov_data_log_disp = i_covariates_log_disp,
             PPs = PPs,
             nodes = weights_and_nodes$x,
             grid_mus = grid_mus,
@@ -535,6 +596,26 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
         
+        # define which covariates we are using per parameter
+        if (length(which_i_cov$alpha) == 1) {
+          if (which_i_cov$alpha == "all") {
+            i_covariates_alpha <- as.matrix(i_covariates)
+          } else {
+            i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+          }
+        } else {
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+        }
+        if (length(which_i_cov$delta) == 1) {
+          if (which_i_cov$delta == "all") {
+            i_covariates_delta <- as.matrix(i_covariates)
+          } else {
+            i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+          }
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }  
+        
         grads <- grad_cmp_with_icov_alpha_delta_cpp(
           alpha = alphas,
           delta = deltas,
@@ -542,7 +623,8 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           betas_alpha = betas_i_alpha,
           betas_delta = betas_i_delta,
           data = as.matrix(data),
-          i_cov_data = as.matrix(i_covariates),
+          i_cov_data_alpha = i_covariates_alpha,
+          i_cov_data_delta = i_covariates_delta,
           PPs = PPs,
           nodes = weights_and_nodes$x,
           grid_mus = grid_mus,
@@ -565,11 +647,11 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
 }
 
 # grad_cmp_with_cov_fixdisps----------------------------------------------------------
-# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes, 
                                        data, fix_disps,
                                        p_covariates, i_covariates,
                                        i_cov_on = c("alpha", "delta"),
+                                       which_i_cov = list(alpha="all", delta="all", log_disp=NULL),
                                        p_cov_cat = TRUE,
                                        resp_patterns_matrix = NULL) {
 
@@ -624,6 +706,8 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameters we have the covariates
     if (length(i_cov_on) == 1) {
+      # if we have item covariates only on one item parameter, then we don't need
+      # which_i_cov argument to figure out on which parameter we have covariates
       if (i_cov_on == "delta") {
         grads <- grad_cmp_with_icov_delta_fixdisps_cpp(
           alphas = alphas, 
@@ -669,6 +753,26 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       
+      # define which covariates we are using per parameter
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- as.matrix(i_covariates)
+        } else {
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+        }
+      } else {
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+      }
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
+      
       grads <- grad_cmp_with_icov_alpha_delta_fixdisps_cpp(
         alpha = alphas,
         delta = deltas,
@@ -676,7 +780,8 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         data = as.matrix(data),
-        i_cov_data = as.matrix(i_covariates),
+        i_cov_data_alpha = i_covariates_alpha,
+        i_cov_data_delta = i_covariates_delta,
         PPs = PPs,
         nodes = weights_and_nodes$x,
         grid_mus = grid_mus,
@@ -702,11 +807,11 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
 }
 
 # grad_cmp_with_cov_fixalphas-------------------------------------------------------
-# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
                                         data, fix_alphas,
                                         p_covariates, i_covariates,
                                         i_cov_on = c("delta", "log_disp"),
+                                        which_i_cov = list(alpha=NULL, delta="all", log_disp="all"),
                                         p_cov_cat = TRUE, 
                                         resp_patterns_matrix = NULL) {
   
@@ -764,6 +869,9 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have the covariates
     if (length(i_cov_on) == 1) {
+      #if we have covariates only on one item parameter, then we don't need which_i_cov
+      # argument because its's clear which covariates are on which parameter
+      
       # note: if we have the constraint that alphas are fixed to specfic values
       # then we can't predict alphas through covariates
       if (i_cov_on == "delta") {
@@ -811,6 +919,26 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
       
+      # define which covariates we are using per parameter
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
+      if (length(which_i_cov$log_disp) == 1) {
+        if (which_i_cov$log_disp == "all") {
+          i_covariates_log_disp <- as.matrix(i_covariates)
+        } else {
+          i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+        }
+      } else {
+        i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+      }
+      
       grads <- grad_cmp_with_icov_delta_nu_fixalphas_cpp(
         alphas = alphas,
         delta = deltas,
@@ -818,7 +946,8 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
         data = as.matrix(data),
-        i_cov_data = as.matrix(i_covariates),
+        i_cov_data_delta = i_covariates_delta,
+        i_cov_data_log_disp = i_covariates_log_disp,
         PPs = PPs,
         nodes = weights_and_nodes$x,
         grid_mus = grid_mus,
@@ -846,11 +975,11 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
 }
 
 # grad_cmp_with_cov_samedisps ---------------------------------------------------------
-# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_samedisps <- function(item_params, PPs, 
                                         weights_and_nodes, data,
                                         p_covariates, i_covariates,
                                         i_cov_on = c("alpha", "delta"),
+                                        which_i_cov = list(alpha="all", delta="all", log_disp=NULL),
                                         p_cov_cat = TRUE,
                                         resp_patterns_matrix = NULL) {
   
@@ -908,6 +1037,8 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
+      # if we just have covariates on one item parameter, then we don't need which_i_cov
+      # argument because it's clear which covariates go on which item parameter
       if (i_cov_on == "delta") {
         grads <- grad_cmp_with_icov_delta_samedisps_cpp(
           alphas = alphas, 
@@ -954,6 +1085,26 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       
+      # define which covariates we are using per parameter
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- as.matrix(i_covariates)
+        } else {
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+        }
+      } else {
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+      }
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
+      
       grads <- grad_cmp_with_icov_alpha_delta_samedisps_cpp(
         alpha = alphas,
         delta = deltas,
@@ -961,7 +1112,8 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         data = as.matrix(data),
-        i_cov_data = as.matrix(i_covariates),
+        i_cov_data_alpha = i_covariates_alpha,
+        i_cov_data_delta = i_covariates_delta,
         PPs = PPs,
         nodes = weights_and_nodes$x,
         grid_mus = grid_mus,
@@ -988,11 +1140,11 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
 }
 
 # grad_cmp_with_cov_samealphas -----------------------------------------------------
-# TODO which_i_cov argument einbauen
 grad_cmp_with_cov_samealphas <- function(item_params, PPs, 
                                          weights_and_nodes, data,
                                          p_covariates, i_covariates,
                                          i_cov_on = c("delta", "log_disp"),
+                                         which_i_cov = list(alpha=NULL, delta="all", log_disp="all"),
                                          p_cov_cat = TRUE, 
                                          resp_patterns_matrix = NULL) {
   
@@ -1054,6 +1206,9 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
   } else if (!is.null(i_covariates)) {
     # distinguish between on which item parameter we have covariates
     if (length(i_cov_on) == 1) {
+      # if we have covariates only on one item parameter then we don't need
+      # which_i_cov argument because it's clear on which parameter covariates go
+      
       # note: we can't have covariates on alpha if we have the constraint same_alpha
       # as we would have different values for the items on the different covariates,
       # implying different alphas
@@ -1102,6 +1257,26 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       betas_i_logdisp <- betas_i[grepl("log_disp", names(betas_i))]
       
+      # define which covariates we are using per parameter
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
+      if (length(which_i_cov$log_disp) == 1) {
+        if (which_i_cov$log_disp == "all") {
+          i_covariates_log_disp <- as.matrix(i_covariates)
+        } else {
+          i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+        }
+      } else {
+        i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+      }
+      
       grads <- grad_cmp_with_icov_delta_nu_samealphas_cpp(
         alphas = alphas,
         delta = deltas,
@@ -1109,7 +1284,8 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
         data = as.matrix(data),
-        i_cov_data = as.matrix(i_covariates),
+        i_cov_data_delta = i_covariates_delta,
+        i_cov_data_log_disp = i_covariates_log_disp,
         PPs = PPs,
         nodes = weights_and_nodes$x,
         grid_mus = grid_mus,
@@ -1690,7 +1866,6 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
   return(new_item_params)
 }
 
-
 # marg_ll_cmp_with_cov --------------------------------------------------------------------------
 marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes, 
                                  p_covariates, i_covariates, 
@@ -1829,30 +2004,30 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
       # define which covariates we are using per parameter
       if (length(which_i_cov$alpha) == 1) {
         if (which_i_cov$alpha == "all") {
-          which_i_cov_alpha = 1:ncol(i_covariates)
+          i_covariates_alpha <- as.matrix(i_covariates)
         } else {
-          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
         }
       } else {
-        which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
       }
       if (length(which_i_cov$delta) == 1) {
         if (which_i_cov$delta == "all") {
-          which_i_cov_delta = 1:ncol(i_covariates)
+          i_covariates_delta <- as.matrix(i_covariates)
         } else {
-          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
         }
       } else {
-        which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
       }
       if (length(which_i_cov$log_disp) == 1) {
         if (which_i_cov$log_disp == "all") {
-          which_i_cov_logdisp = 1:ncol(i_covariates)
+          i_covariates_log_disp <- as.matrix(i_covariates)
         } else {
-          which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+          i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
         }
       } else {
-        which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+        i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
       }
       
       ll <- marg_ll_cmp_with_icov_all_cpp(data = as.matrix(data),
@@ -1862,10 +2037,9 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                          betas_alpha = betas_i_alpha,
                                          betas_delta = betas_i_delta,
                                          betas_logdisp = betas_i_log_disp,
-                                         which_i_cov_alpha = which_i_cov_alpha,
-                                         which_i_cov_delta = which_i_cov_delta,
-                                         which_i_cov_logdisp = which_i_cov_logdisp,
-                                         i_cov_data = as.matrix(i_covariates),
+                                         i_cov_data_alpha = i_covariates_alpha,
+                                         i_cov_data_delta = i_covariates_delta,
+                                         i_cov_data_log_disp = i_covariates_log_disp,
                                          nodes = weights_and_nodes$x,
                                          weights = weights_and_nodes$w,
                                          grid_mus = grid_mus,  
@@ -1883,16 +2057,25 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
           betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
           
           # define which covariates we are using per parameter
-          if (which_i_cov$alpha == "all") {
-            which_i_cov_alpha = 1:ncol(i_covariates)
+          if (length(which_i_cov$alpha) == 1) {
+            if (which_i_cov$alpha == "all") {
+              i_covariates_alpha <- as.matrix(i_covariates)
+            } else {
+              i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+            }
           } else {
-            which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+            i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
           }
-          if (which_i_cov$log_disp == "all") {
-            which_i_cov_logdisp = 1:ncol(i_covariates)
+          if (length(which_i_cov$log_disp) == 1) {
+            if (which_i_cov$log_disp == "all") {
+              i_covariates_log_disp <- as.matrix(i_covariates)
+            } else {
+              i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+            }
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+            i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
           }
+          
           
           ll <- marg_ll_cmp_with_icov_alpha_nu_cpp(data = as.matrix(data),
                                                    alpha = alphas,
@@ -1900,9 +2083,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                                    disp = disps, 
                                                    betas_alpha = betas_i_alpha,
                                                    betas_logdisp = betas_i_log_disp,
-                                                   which_i_cov_alpha = which_i_cov_alpha,
-                                                   which_i_cov_logdisp = which_i_cov_logdisp,
-                                                   i_cov_data = as.matrix(i_covariates),
+                                                   i_cov_data_alpha = i_covariates_alpha,
+                                                   i_cov_data_log_disp = i_covariates_log_disp,
                                                    nodes = weights_and_nodes$x,
                                                    weights = weights_and_nodes$w,
                                                    grid_mus = grid_mus,  
@@ -1918,15 +2100,23 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
           betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
           
           # define which covariates we are using per parameter
-          if (which_i_cov$delta == "all") {
-            which_i_cov_delta = 1:ncol(i_covariates)
+          if (length(which_i_cov$delta) == 1) {
+            if (which_i_cov$delta == "all") {
+              i_covariates_delta <- as.matrix(i_covariates)
+            } else {
+              i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+            }
           } else {
-            which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+            i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
           }
-          if (which_i_cov$log_disp == "all") {
-            which_i_cov_logdisp = 1:ncol(i_covariates)
+          if (length(which_i_cov$log_disp) == 1) {
+            if (which_i_cov$log_disp == "all") {
+              i_covariates_log_disp <- as.matrix(i_covariates)
+            } else {
+              i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
+            }
           } else {
-            which_i_cov_logdisp = which(colnames(i_covariates) %in% which_i_cov$log_disp)
+            i_covariates_log_disp <- as.matrix(i_covariates[, which_i_cov$log_disp, drop = FALSE])
           }
           
           ll <- marg_ll_cmp_with_icov_delta_nu_cpp(data = as.matrix(data),
@@ -1935,9 +2125,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                                    disp = disps, 
                                                    betas_delta = betas_i_delta,
                                                    betas_logdisp = betas_i_log_disp,
-                                                   which_i_cov_delta =  which_i_cov_delta,
-                                                   which_i_cov_logdisp = which_i_cov_logdisp,
-                                                   i_cov_data = as.matrix(i_covariates),
+                                                   i_cov_data_delta = i_covariates_delta,
+                                                   i_cov_data_log_disp = i_covariates_log_disp,
                                                    nodes = weights_and_nodes$x,
                                                    weights = weights_and_nodes$w,
                                                    grid_mus = grid_mus,  
@@ -1955,15 +2144,23 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
         
         # define which covariates we are using per parameter
-        if (which_i_cov$alpha == "all") {
-          which_i_cov_alpha = 1:ncol(i_covariates)
+        if (length(which_i_cov$alpha) == 1) {
+          if (which_i_cov$alpha == "all") {
+            i_covariates_alpha <- as.matrix(i_covariates)
+          } else {
+            i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+          }
         } else {
-          which_i_cov_alpha = which(colnames(i_covariates) %in% which_i_cov$alpha)
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
         }
-        if (which_i_cov$delta == "all") {
-          which_i_cov_delta = 1:ncol(i_covariates)
+        if (length(which_i_cov$delta) == 1) {
+          if (which_i_cov$delta == "all") {
+            i_covariates_delta <- as.matrix(i_covariates)
+          } else {
+            i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+          }
         } else {
-          which_i_cov_delta = which(colnames(i_covariates) %in% which_i_cov$delta)
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
         }
         
         ll <- marg_ll_cmp_with_icov_alpha_delta_cpp(data = as.matrix(data),
@@ -1972,9 +2169,8 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                                     disps = disps, 
                                                     betas_alpha = betas_i_alpha,
                                                     betas_delta = betas_i_delta,
-                                                    which_i_cov_alpha = which_i_cov_alpha,
-                                                    which_i_cov_delta = which_i_cov_delta,
-                                                    i_cov_data = as.matrix(i_covariates),
+                                                    i_cov_data_alpha = i_covariates_alpha,
+                                                    i_cov_data_delta = i_covariates_delta,
                                                     nodes = weights_and_nodes$x,
                                                     weights = weights_and_nodes$w,
                                                     grid_mus = grid_mus, 
@@ -2100,21 +2296,11 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
   }
 
   print("Done!")
-  
-  # model_vcov <- compute_vcov(
-  #   item_params = new_params,
-  #   weights_and_nodes = weights_and_nodes, 
-  #   data = data
-  # )
-  # 
-  # se_params <- se_from_vcov(model_vcov)
 
   out <- list(
     params = new_params,
-#    se_params = se_params,
     iter = iter,
     conv = conv,
-#    vcov = model_vcov,
     marg_ll = marg_lls
   )
   return(out)

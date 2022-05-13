@@ -793,8 +793,24 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       betas_i_alpha <- betas_i[grepl("alpha", names(betas_i))]
       betas_i_delta <- betas_i[grepl("delta", names(betas_i))]
       
-      i_covariates_alpha <- i_covariates[, which_i_cov$alpha, drop = FALSE]
-      i_covariates_delta <- i_covariates[, which_i_cov$delta, drop = FALSE]
+      if (length(which_i_cov$alpha) == 1) {
+        if (which_i_cov$alpha == "all") {
+          i_covariates_alpha <- as.matrix(i_covariates)
+        } else {
+          i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+        }
+      } else {
+        i_covariates_alpha <- as.matrix(i_covariates[, which_i_cov$alpha, drop = FALSE])
+      }
+      if (length(which_i_cov$delta) == 1) {
+        if (which_i_cov$delta == "all") {
+          i_covariates_delta <- as.matrix(i_covariates)
+        } else {
+          i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+        }
+      } else {
+        i_covariates_delta <- as.matrix(i_covariates[, which_i_cov$delta, drop = FALSE])
+      }
       
       # function to compute integral with quadrature over
       f <- function(z, data, i_cov_data_alpha, i_cov_data_delta,

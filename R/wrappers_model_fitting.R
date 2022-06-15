@@ -23,6 +23,7 @@
 #' @importFrom rootSolve gradient
 #' @importFrom tidyr pivot_wider
 #' @importFrom dplyr enquo
+#' @importFrom psych fa
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 cirt <- function(model, data, family,

@@ -12,7 +12,7 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
     alphas,
     ncol = ncol(data),
     nrow = ncol(weights_and_nodes$X),
-    byrow = FALSE
+    byrow = TRUE
   )
   deltas <- item_params[grepl("delta", names(item_params))]
   
@@ -31,6 +31,7 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
   # but in the multidimensional GH function, we already ge the log weights in W
   
   for (j in 1:ncol(data)) {
+    # TODO see if i can rewrite with some form of apply
     lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
                                 deltas[j]))
     PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
@@ -62,7 +63,7 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, data) {
     alphas,
     ncol = ncol(data),
     nrow = ncol(weights_and_nodes$X),
-    byrow = FALSE
+    byrow = TRUE
   )
   deltas <- item_params[grepl("delta", names(item_params))]
   # we have an alpha for each dimension-item combination
@@ -73,6 +74,7 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, data) {
   )
   grad_deltas <- numeric(length(deltas))
   
+  # TODO see if i can rewrite with some form of apply
   for (j in 1:ncol(data)) {
     # for lambdas, we multiply each trait dimension with respective
     # alpha and sum across those, so that we have a vector of the length
@@ -106,7 +108,7 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, data) {
     )
   }
   
-  grad_alphas <- grad_alphas_matrix
+  grad_alphas <- as.numeric(t(grad_alphas_matrix))
   out <- c(grad_alphas, grad_deltas)
   return(out)
 }
@@ -251,7 +253,7 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
     alphas,
     ncol = ncol(data),
     nrow = ncol(weights_and_nodes$X),
-    byrow = FALSE
+    byrow = TRUE
   )
   
   # function to compute integral with quadrature over
@@ -273,12 +275,19 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
   # }
   
   marg_prob <- numeric(n_persons)
+  lambdas <- matrix(
+    NA,
+    ncol = n_items,
+    nrow = length(weights_and_nodes$W)
+  )
+  for (j in 1:n_items) {
+    lambdas[,j] <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+                                deltas[j]))
+  } # TODO durch apply swappen oder matrixmultiplikation
   for (i in 1:n_persons) {
     out <- 0
     for (j in 1:n_items) {
-      lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
-                                   deltas[j]))
-      out <- out + dpois(data[,j], lambdas, log = TRUE)
+      out <- out + dpois(data[i,j], lambdas[,j], log = TRUE)
     }
     marg_prob[i] <- sum(exp(out + weights_and_nodes$W))
   }
@@ -384,30 +393,40 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
 # TODO startwerte fuer multi
 # get_start_values_pois -----------------------------------------------------------------
 
-get_start_values_pois <- function(data, same_alpha = FALSE) {
+get_start_values_pois <- function(data, n_traits, same_alpha = FALSE) {
+  # TODO constraints wie same alpha oder fixed alpha einbauen
   init_deltas <- log(apply(data, 2, mean))
   
   if (same_alpha) {
+    # TODO anpassen auf multi Fall
     # just one alpha for all items
-    init_alphas <- c()
-    for (i in 1:ncol(data)) {
-      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    }
-    init_alphas <- mean(init_alphas)
+    # init_alphas <- c()
+    # for (i in 1:ncol(data)) {
+    #   init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
+    # }
+    # init_alphas <- mean(init_alphas)
   } else {
     # different alpha for each item
-    init_alphas <- c()
-    for (i in 1:ncol(data)) {
-      init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    }
+    fa_log_data <- fa(log(test_data+0.01), nfactors = n_traits, rotate="varimax")
+    loadings_fa_log_data <- as.matrix(fa_log_data$loadings)
+    attributes(loadings_fa_log_data)$dimnames <- NULL
+    attributes(loadings_fa_log_data)$class <- NULL
+    init_alphas_matrix <- loadings_fa_log_data
+    init_alphas_matrix[init_alphas_matrix < 0] <- 0
   }
   
   # TODO # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
   # expect first all alphas (across all thetas) for item 1, and then all for item 2, etc.
-  start_values <- c(init_alphas, init_deltas)
+  # i need to transpose alpha matrix if i do as.numeric() because R works with column major order
+  start_values <- c(as.numeric(init_alphas_matrix), init_deltas)
+  theta_names <- paste0("_theta", 1:n_traits)
+  alpha_names <- paste0("alpha", 1:ncol(data))
+  c(outer(alpha_names, theta_names, paste0))
   names(start_values) <- c(
-    paste0("alpha", 1:length(init_alphas)),
-    paste0("delta", 1:length(init_deltas))
+    paste0("alpha", 1:ncol(data), "_theta1"),
+    paste0("alpha", 1:M, "_theta2"),
+    paste0("alpha", 1:M, "_theta3"),
+    paste0("delta", 1:ncol(data))
   )
   return(start_values)
 }

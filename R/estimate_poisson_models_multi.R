@@ -1,7 +1,9 @@
 
 # e_step_poisson_multi --------------------------------------------------------------------
-
 e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
+  # we don't need the alpha_constraints argument here; everything will automatically work
+  # TODO check that this still holds once i implement equality constraints for alpha
+  
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
   # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
@@ -47,195 +49,196 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
 
 # grad_poisson_multi ------------------------------------------------------------------
 
-grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, data) {
+grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, 
+                               data, alpha_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
   # each dimension combination and each person, so they actually have the same
   # dimensionality as in the unidimensional case N x K, just that now, 
   # K = length(weights_and_nodes$W), so the no. of quadrature points depending
   # on number of trait dimensions and number of nodes per dimension
+  
+  # alpha_constraints should be a vector of the length of all the alpha parameters
+  # with the same parameter names and provide the constraints for alphas
+  # we start off by just assuming that we only have 0-constraints where we don't 
+  # want certain items to load on certain factors
+  # if there is no constraint on the parameter, expect it to have an entry of NA
+  # if the value should be fixed to a certain value, then that value should be
+  # given in the appropriate place in alpha_constraints
+  # TODO in the future, implement also equality constraints via alpha_constraints
+  # and maybe even allow delta_constraints
+  
+  # we input the alphas for the m step here through item_params so that optimization
+  # method works, we then need to "supplement" the fixed values from alpha_constraints
+  
   data <- as.matrix(data)
+  # TODO check by debugging that this filling up of the NA's in the constraints works
   alphas <- item_params[grepl("alpha", names(item_params))]
-  # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
-  # expect first all alphas (across all thetas) for item 1, and then all for item 2, etc.
-  # restructure alphas into a matrix for easier combinatio with the
-  # quadrature nodes, we have a column for each item and a row for each theta
-  alphas_matrix <- matrix(
-    alphas,
-    ncol = ncol(data),
-    nrow = ncol(weights_and_nodes$X),
-    byrow = TRUE
-  )
+  if (!is.null(alpha_constraints)) {
+    full_alphas <- alpha_constraints
+    full_alphas[is.na(full_alphas)] <- alphas
+    full_alphas_matrix <- matrix(
+      full_alphas,
+      ncol = ncol(data),
+      nrow = ncol(weights_and_nodes$X),
+      byrow = TRUE
+    )
+  } else {
+    full_alphas_matrix <- matrix(
+      alphas,
+      ncol = ncol(data),
+      nrow = ncol(weights_and_nodes$X),
+      byrow = TRUE
+    )
+  }
   deltas <- item_params[grepl("delta", names(item_params))]
-  # we have an alpha for each dimension-item combination
+  
+  # set-up gradient storage
+  grad_deltas <- numeric(length(deltas))
+  # we have an alpha for each dimension-item combination in the exploratory models
   grad_alphas_matrix <- matrix(
     NA,
     ncol = ncol(data),
     nrow = ncol(weights_and_nodes$X)
   )
-  grad_deltas <- numeric(length(deltas))
+  # only write in gradient here for those alphas which aren't fixed, leave them at NA
+  # otherwise and then filter them out with alpha_constraints_m later (can't just
+  # filter for NAs caus gradient might break and produce NA's for estimated parameters
+  # and then input and output lengths of the functions won't work anymore)
+  
+  # set-up a way to check for which alphas we need gradients
+  if (!is.null(alpha_constraints)) {
+    compute_alpha_gradient <- matrix(
+      is.na(alpha_constraints),
+      nrow = n_traits,
+      ncol = M,
+      byrow = TRUE
+    )
+  } else {
+    compute_alpha_gradient <- matrix(
+      TRUE,
+      nrow = n_traits,
+      ncol = M,
+      byrow = TRUE
+    )
+  }
   
   # TODO see if i can rewrite with some form of apply
   for (j in 1:ncol(data)) {
     # for lambdas, we multiply each trait dimension with respective
     # alpha and sum across those, so that we have a vector of the length
     # of weights_and_nodes$W (number of quadrature points)
-    lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+    lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
                                 deltas[j]))
     # the output is a vector of length K (= no. of quadrature points)
-    x_minus_lambda <- outer(data[,j], lambdas, "-")
-    # matrix_nodes <- matrix(
-    #   weights_and_nodes$x,
-    #   nrow = nrow(data), 
-    #   ncol = length(weights_and_nodes$x),
-    #   byrow = TRUE
-    # )
-    x_minus_lambda_times_pp <- x_minus_lambda * PPs
+    x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K matrix
+    x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K matrix
+    
     grad_deltas[j] <- sum(x_minus_lambda_times_pp)
+    
     # for alpha gradient we just want the node of the trait we are
     # taking the gradient for, so just q_k_l for specific l as in alpha_jl
     grad_alphas_matrix[,j] <- apply(
-      weights_and_nodes$X,
-      2, 
-      function(x) {sum(
+      # apply for every trait for this one vector of data, so this is like
+      # a loop over traits just with apply
+      weights_and_nodes$X, # matrix of quadrature points for traits
+      2, # for each trait, which we put into output matrix, gradients are
+      # trait and item specific
+      function(x) {
+        sum( # sum across all persons and nodes for that trait
+        # from this matrix what we get is the multiplication with q_k_l
+        # (where k is a running index, of factor l, so all quad. values of factor l)
         matrix(
           x,
-          nrow = nrow(data), 
-          ncol = length(x),
+          nrow = nrow(data), # length N
+          ncol = length(x), # length K
           byrow = TRUE
+          # for each observation (N rows) we fill the row with the vector
+          # of length K (this is why K cols) of the nodes of factor l so that for each
+          # person they are multiplied with the rest of the gradient
         )*
-        x_minus_lambda_times_pp
-        )}
+        x_minus_lambda_times_pp # N x K matrix
+        )
+        # for alpha constraints in confirmatory models: we are in the loop for 
+        # a specific item j, so in the jth column of compute_alpha_gradient and we
+        # need to check on which factors this item loads 
+      }
     )
+    
   }
   
-  grad_alphas <- as.numeric(t(grad_alphas_matrix))
+  rownames(compute_alpha_gradient) <- paste0("theta", 1:nrow(compute_alpha_gradient))
+  colnames(compute_alpha_gradient) <- paste0("alpha", 1:ncol(compute_alpha_gradient))
+  element_names <- as.character(
+    outer(colnames(compute_alpha_gradient), 
+          rownames(compute_alpha_gradient),
+          "paste", sep = "_"))
+  compute_grad_alphas <- as.logical(t(compute_alpha_gradient))
+  
+  grad_alphas <- as.numeric(t(grad_alphas_matrix))[compute_grad_alphas]
   out <- c(grad_alphas, grad_deltas)
   return(out)
 }
 
-# grad_poisson_fixalphas --------------------------------------------------------------
-# TODO
-grad_poisson_fixalphas <- function(item_params, PPs, weights_and_nodes, 
-                                   data, fix_alphas) {
-  data <- as.matrix(data)
-  alphas <- fix_alphas
-  deltas <- item_params[grepl("delta", names(item_params))]
-  grad_deltas <- numeric(length(deltas))
-  
-  for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-    x_minus_lambda <- outer(data[,j], lambdas, "-")
-    matrix_nodes <- matrix(
-      weights_and_nodes$x,
-      nrow = nrow(data), 
-      ncol = length(weights_and_nodes$x),
-      byrow = TRUE
-    )
-    x_minus_lambda_times_pp <- x_minus_lambda * PPs
-    grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-  }
-  
-  return(grad_deltas)
-}
 
-# grad_poisson_samealpha --------------------------------------------------------------
-# TODO
-grad_poisson_samealpha <- function(item_params, PPs, weights_and_nodes, 
-                                   data) {
-  data <- as.matrix(data)
-  alphas <- rep(item_params[grepl("alpha", names(item_params))], ncol(data))
-  deltas <- item_params[grepl("delta", names(item_params))]
-  grad_deltas <- numeric(length(deltas))
-  grad_alpha <- 0
-  
-  for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
-    x_minus_lambda <- outer(data[,j], lambdas, "-")
-    matrix_nodes <- matrix(
-      weights_and_nodes$x,
-      nrow = nrow(data), 
-      ncol = length(weights_and_nodes$x),
-      byrow = TRUE
-    )
-    x_minus_lambda_times_pp <- x_minus_lambda * PPs
-    grad_deltas[j] <- sum(x_minus_lambda_times_pp)
-    grad_alpha <- grad_alpha + sum(matrix_nodes*x_minus_lambda_times_pp)
-  }
-  
-  out <- c(grad_alpha, grad_deltas)
-  return(out)
-}
 
 # em_cycle_poisson -------------------------------------------------------------------
 
-em_cycle_poisson_multi <- function(
-    data, item_params, weights_and_nodes,
-    fix_alphas = NULL, same_alpha = FALSE,
-    ctol_maxstep = 1e-8) {
+em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
+                                   alpha_constraints = NULL, ctol_maxstep = 1e-8) {
+  # alpha_constraints should be a vector of the length of all the alpha parameters
+  # with the same parameter names and provide the constraints for alphas
+  # we start off by just assuming that we only have 0-constraints where we don't 
+  # want certain items to load on certain factors
+  # if there is no constraint on the parameter, expect it to have an entry of NA
+  # if the value should be fixed to a certain value, then that value should be
+  # given in the appropriate place in alpha_constraints
+  # TODO in the future, implement also equality constraints via alpha_constraints
+  # and maybe even allow delta_constraints
   
-  # TODO
-  if (!is.null(fix_alphas)) {
-    # fix alphas to the provided values
-    # e step
-    item_params_fixa <- c(fix_alphas, item_params)
-    names(item_params_fixa) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
-    PPs <- e_step_poisson(data, item_params_fixa, weights_and_nodes)
+  # constraints on alpha don't need distctintion here because item_params includes
+  # the full set of alphas, including constraints, so alphas that aren't
+  # estimated are just 0 in there and that works
+  PPs <- e_step_poisson_multi(
+    data = data, 
+    item_params = item_params, 
+    weights_and_nodes = weights_and_nodes
+    )
     
-    # m step
-    new_item_params <- nleqslv(
-      x = item_params,
-      fn = grad_poisson_fixalphas,
-      PPs = PPs,
-      weights_and_nodes = weights_and_nodes,
-      data = data,
-      fix_alphas = fix_alphas,
-      control = list(xtol = ctol_maxstep)
-    )$x
-    # TODO
-  } else if (same_alpha) {
-    # fit the model with estimating one same alpha for all item
-    # e step
-    alpha <- item_params[grepl("alpha", names(item_params))]
-    item_params_samea <- c(rep(alpha, ncol(data)), item_params[-alpha])
-    names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
-                                  names(item_params[-alpha]))
-    PPs <- e_step_poisson(data, item_params_samea, weights_and_nodes)
-    
-    # m step
-    new_item_params <- nleqslv(
-      x = item_params,
-      fn = grad_poisson_samealpha,
-      PPs = PPs,
-      weights_and_nodes = weights_and_nodes,
-      data = data,
-      control = list(xtol = ctol_maxstep)
-    )$x
+  # m step
+  if (!is.null(alpha_constraints)) {
+    # we estimate a confirmatory 2pcmpm
+    # we need to only input those item parameters here which need estimation
+    # otherwise estimation won't work
+    deltas <- item_params[grepl("delta", names(item_params))]
+    alphas <- item_params[grepl("alpha", names(item_params))]
+    alphas_m_step <- alphas[is.na(alpha_constraints)]
+    names(alphas_m_step) <- names(alphas[is.na(alpha_constraints)])
+    item_params_m_step <- c(alphas_m_step, deltas)
+    names(item_params_m_step) <- c(names(alphas_m_step), names(deltas))
   } else {
-    # fit a full multidimensional two parameter model
-    # e step
-    PPs <- e_step_poisson_multi(data, item_params, weights_and_nodes)
-    
-    # m step
-    new_item_params <- nleqslv(
-      x = item_params,
-      fn = grad_poisson_multi,
-      PPs = PPs,
-      weights_and_nodes = weights_and_nodes,
-      data = data,
-      control = list(xtol = ctol_maxstep)
-    )$x
+    # we estimate an explanatory 2pcmpm, so all items load onto all factors
+    item_params_m_step <- item_params
   }
+  new_item_params <- nleqslv(
+    x = item_params_m_step,
+    fn = grad_poisson_multi,
+    PPs = PPs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    alpha_constraints = alpha_constraints,
+    control = list(xtol = ctol_maxstep)
+  )$x
   
   return(new_item_params)
 }
 
 # marg_ll_poisson_multi -------------------------------------------------------------
 
-marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes, 
-                                  fix_alphas = NULL, same_alphas = FALSE) {
-  # TODO allow for constraints on alpha, think about that a little bit
-  # as we have to have slightly more flexibility with this than in uni-dim
-  # case so that we can do confirmatory models
+marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes) {
+  # as we still set start values for the full alpha matrix, including for those
+  # alphas which we fix to certain values and don't estimate, we don't need the 
+  # alpha_constraints argument here; everything will automatically work
+  # TODO check that this still holds once i implement equality constraints for alpha
   
   n_items <- ncol(data)
   n_persons <- nrow(data)
@@ -243,7 +246,6 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
   data <- as.matrix(data)
   deltas <- item_params[grepl("delta", names(item_params))]
   
-  # TODO implement if-else cases for constraints on alpha
   alphas <- item_params[grepl("alpha", names(item_params))]
   # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
   # expect first all alphas (across all thetas) for item 1, and then all for item 2, etc.
@@ -255,24 +257,6 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes,
     nrow = ncol(weights_and_nodes$X),
     byrow = TRUE
   )
-  
-  # function to compute integral with quadrature over
-  # f <- function(z, data, alphas_matrix, deltas) {
-  #   out <- 0
-  #   for (j in 1:n_items) {
-  #     lambdas <- as.numeric(exp(sum(z * alphas_matrix[,j]) + deltas[j]))
-  #     out <- out + (dpois(data[,j], lambdas, log = TRUE))
-  #   }
-  #   return(exp(out))
-  # }
-  #   
-  # marg_prob <- numeric(n_persons)
-  # for (i in 1:n_persons) {
-  #   marg_prob[i] <- eval.quad(f, weights_and_nodes,
-  #                            data = data[i, , drop = FALSE],
-  #                            alphas_matrix = alphas_matrix, 
-  #                            deltas = deltas)
-  # }
   
   marg_prob <- numeric(n_persons)
   lambdas <- matrix(
@@ -304,7 +288,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
                                  truncate_grid = TRUE,
                                  maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                  convcrit = "marglik",
-                                 fix_alphas = NULL, same_alpha = FALSE) {
+                                 alpha_constraints = NULL) {
   # note that we now have n_nodes with nodes per dimension, so that total
   # number of quadrature points n_nodes^n_traits
   # we need to go down with n_nodes as we go up with n_traits
@@ -317,6 +301,17 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   # TODO when doing start values see if maybe i can get an estimate for
   # trait correlation to use for the prior here as it will help both
   # efficiency and accuracy if i do this right
+  # i cant do that for rotation as that expects orthogonal factor loadings to go in
+  
+  # alpha_constraints should be a vector of the length of all the alpha parameters
+  # with the same parameter names and provide the constraints for alphas
+  # we start off by just assuming that we only have 0-constraints where we don't 
+  # want certain items to load on certain factors
+  # if there is no constraint on the parameter, expect it to have an entry of NA
+  # if the value should be fixed to a certain value, then that value should be
+  # given in the appropriate place in alpha_constraints
+  # TODO in the future, implement also equality constraints via alpha_constraints
+  # and maybe even allow delta_constraints
    
   if (em_type == "gh") {
     # TODO actually use fcov_prior argument here
@@ -344,11 +339,12 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   while (!isTRUE(conv) && (iter <= maxiter)) {
     print(paste0("Iteration: ", iter))
     old_params <- new_params
-    # TODO em_type argument weiter durchreichen durch funktionen
+    # TODO em_type argument weiter durchreichen durch funktionen; das wird dann relevant,
+    # wenn ich mc em implementiere
     new_params <- em_cycle_poisson_multi(
       data, old_params, weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
-      fix_alphas = fix_alphas, same_alpha = same_alpha
+      alpha_constraints = alpha_constraints
     )
     print(new_params)
     
@@ -357,8 +353,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       old_ll <- new_ll
       new_ll <- marg_ll_poisson_multi(
         as.matrix(data), new_params,
-        weights_and_nodes,
-        fix_alphas = fix_alphas, same_alphas = same_alpha)
+        weights_and_nodes
+        )
       marg_lls[iter] <- new_ll
       plot(marg_lls)
       print(marg_lls)
@@ -368,8 +364,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       conv <- !any(abs(old_params - new_params) > convtol)
       marg_ll <- marg_ll_poisson_multi(
         as.matrix(data), new_params,
-        weights_and_nodes,
-        fix_alphas = fix_alphas, same_alphas = same_alpha)
+        weights_and_nodes
+        )
       marg_lls[iter] <- marg_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -390,23 +386,46 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   
 }
 
-# TODO startwerte fuer multi
+
 # get_start_values_pois -----------------------------------------------------------------
 
-get_start_values_pois <- function(data, n_traits, same_alpha = FALSE) {
-  # TODO constraints wie same alpha oder fixed alpha einbauen
+get_start_values_pois <- function(data, n_traits,  alpha_constraints = NULL) {
+  # alpha_constraints should be a vector of the length of all the alpha parameters
+  # with the same parameter names and provide the constraints for alphas
+  # we start off by just assuming that we only have 0-constraints where we don't 
+  # want certain items to load on certain factors
+  # if there is no constraint on the parameter, expect it to have an entry of NA
+  # if the value should be fixed to a certain value, then that value should be
+  # given in the appropriate place in alpha_constraints
+  # TODO in the future, implement also equality constraints via alpha_constraints
+  # and maybe even allow delta_constraints
+  
   init_deltas <- log(apply(data, 2, mean))
   
-  if (same_alpha) {
-    # TODO anpassen auf multi Fall
-    # just one alpha for all items
-    # init_alphas <- c()
-    # for (i in 1:ncol(data)) {
-    #   init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
-    # }
-    # init_alphas <- mean(init_alphas)
+  M <- ncol(data)
+  
+  if (!is.null(alpha_constraints)) {
+    # confirmatory model with constraints on alphas
+     alpha_constraints_m <- t(matrix(
+       alpha_constraints[grepl("alpha", names(alpha_constraints))],
+       nrow = n_traits,
+       ncol = M,
+       byrow = TRUE
+     ))
+     # we have entries everywhere in this matrix where we have a constraint
+     for (i in 1:ncol(alpha_constraints_m)) {
+       item_indices <- which(is.na(alpha_constraints_m[,i]))
+       for (j in item_indices) {
+         alpha_constraints_m[j, i] <- 
+           cor(data[,j], apply(data[,item_indices[!item_indices == j]], 1, mean))
+       }
+     }
+     init_alphas_matrix <- alpha_constraints_m
+     # i am always going to also pass alpha_constraints to all functions
+     # so that i can check which parameters have constraints and thus don't need
+     # to be estimated but can instead just stay at their start values
   } else {
-    # different alpha for each item
+    # exploratory case where we have laodings of all items on all factors
     fa_log_data <- fa(log(test_data+0.01), nfactors = n_traits, rotate="varimax")
     loadings_fa_log_data <- as.matrix(fa_log_data$loadings)
     attributes(loadings_fa_log_data)$dimnames <- NULL
@@ -415,9 +434,6 @@ get_start_values_pois <- function(data, n_traits, same_alpha = FALSE) {
     init_alphas_matrix[init_alphas_matrix < 0] <- 0
   }
   
-  # TODO # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
-  # expect first all alphas (across all thetas) for item 1, and then all for item 2, etc.
-  # i need to transpose alpha matrix if i do as.numeric() because R works with column major order
   start_values <- c(as.numeric(init_alphas_matrix), init_deltas)
   theta_names <- paste0("_theta", 1:n_traits)
   alpha_names <- paste0("alpha", 1:ncol(data))
@@ -429,6 +445,7 @@ get_start_values_pois <- function(data, n_traits, same_alpha = FALSE) {
     paste0("delta", 1:ncol(data))
   )
   return(start_values)
+
 }
 
 

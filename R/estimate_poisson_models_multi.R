@@ -109,15 +109,15 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
   if (!is.null(alpha_constraints)) {
     compute_alpha_gradient <- matrix(
       is.na(alpha_constraints),
-      nrow = n_traits,
-      ncol = M,
+      nrow = ncol(weights_and_nodes$X),
+      ncol = ncol(data),
       byrow = TRUE
     )
   } else {
     compute_alpha_gradient <- matrix(
       TRUE,
-      nrow = n_traits,
-      ncol = M,
+      nrow = ncol(weights_and_nodes$X),
+      ncol = ncol(data),
       byrow = TRUE
     )
   }
@@ -229,6 +229,35 @@ em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
     control = list(xtol = ctol_maxstep)
   )$x
   
+  if (!is.null(alpha_constraints)) {
+    # if we have constraints, then new_item_params as returned by new_item_params
+    # is not yet the full set of item parameters but needs to be filled up
+    alphas <- new_item_params[grepl("alpha", names(new_item_params))]
+    deltas <- new_item_params[grepl("delta", names(new_item_params))]
+    new_alphas_m <- matrix(
+      alpha_constraints,
+      nrow = ncol(weights_and_nodes$X),
+      ncol = ncol(data),
+      byrow = TRUE
+    )
+    rownames(new_alphas_m) <- paste0("theta", 1:nrow(new_alphas_m))
+    colnames(new_alphas_m) <- paste0("alpha", 1:ncol(new_alphas_m))
+    estimated_alphas <- names(new_item_params)[grepl("alpha", names(new_item_params))]
+    estimated_alphas_l <- strsplit(estimated_alphas, "_")
+    # for each of the estimated alpha, find the correct spot in the new_alphas_m matrix
+    for (a in 1:length(estimated_alphas_l)) {
+      new_alphas_m[estimated_alphas_l[[a]][2], estimated_alphas_l[[a]][1]] <- alphas[a]
+    }
+    new_item_params <- c(as.numeric(t(new_alphas_m)), deltas)
+    theta_names <- paste0("_theta", 1:ncol(weights_and_nodes$X))
+    alpha_names <- paste0("alpha", 1:ncol(data))
+    full_alpha_names <- c(outer(alpha_names, theta_names, "paste0"))
+    names(new_item_params) <- c(
+      full_alpha_names,
+      paste0("delta", 1:ncol(data))
+    )
+  }
+  
   return(new_item_params)
 }
 
@@ -325,8 +354,18 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     # across the nodes of the traits)
     # and quadrature weights W as a vector with n_nodes^n_traits entries
     # the weights are for the combination of traits (so joint)
+  } else if (em_type == "mc") {
+    if (is.null(fcov_prior)) {
+      # multivariate standard normal prior
+      fcov_prior <- list(
+        mu = rep(0, n_traits),
+        sigma = diag(rep(1, n_traits))
+      )
+    }
+    # otherwise a fcov_prior has been specified and we draw samples from that for MC-EM
   }
   
+  # TODO hier weitermachen und em_type == "mc" implementieren
   new_params <- init_params
   conv <- FALSE
   iter <- 1
@@ -387,9 +426,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
 }
 
 
-# get_start_values_pois -----------------------------------------------------------------
+# get_start_values_pois_multi -----------------------------------------------------------------
 
-get_start_values_pois <- function(data, n_traits,  alpha_constraints = NULL) {
+get_start_values_pois_multi <- function(data, n_traits,  alpha_constraints = NULL) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
   # we start off by just assuming that we only have 0-constraints where we don't 
@@ -407,7 +446,7 @@ get_start_values_pois <- function(data, n_traits,  alpha_constraints = NULL) {
   if (!is.null(alpha_constraints)) {
     # confirmatory model with constraints on alphas
      alpha_constraints_m <- t(matrix(
-       alpha_constraints[grepl("alpha", names(alpha_constraints))],
+       alpha_constraints,
        nrow = n_traits,
        ncol = M,
        byrow = TRUE
@@ -437,11 +476,9 @@ get_start_values_pois <- function(data, n_traits,  alpha_constraints = NULL) {
   start_values <- c(as.numeric(init_alphas_matrix), init_deltas)
   theta_names <- paste0("_theta", 1:n_traits)
   alpha_names <- paste0("alpha", 1:ncol(data))
-  c(outer(alpha_names, theta_names, paste0))
+  full_alpha_names <- c(outer(alpha_names, theta_names, "paste0"))
   names(start_values) <- c(
-    paste0("alpha", 1:ncol(data), "_theta1"),
-    paste0("alpha", 1:M, "_theta2"),
-    paste0("alpha", 1:M, "_theta3"),
+    full_alpha_names,
     paste0("delta", 1:ncol(data))
   )
   return(start_values)

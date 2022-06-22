@@ -1,6 +1,7 @@
 
 # e_step_poisson_multi --------------------------------------------------------------------
-e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
+e_step_poisson_multi <- function(data, item_params, n_traits,
+                                 weights_and_nodes = NULL, theta_samples = NULL) {
   # we don't need the alpha_constraints argument here; everything will automatically work
   # TODO check that this still holds once i implement equality constraints for alpha
   
@@ -13,29 +14,44 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
   alphas_matrix <- matrix(
     alphas,
     ncol = ncol(data),
-    nrow = ncol(weights_and_nodes$X),
+    nrow = n_traits,
     byrow = TRUE
   )
   deltas <- item_params[grepl("delta", names(item_params))]
   
-  # the PPs are the joint posterior probabilities here; we get them for
-  # each dimension combination and each person, so they actually have the same
-  # dimensionality as in the unidimensional case N x K, just that now, 
-  # K = length(weights_and_nodes$W), so the no. of quadrature points depending
-  # on number of trait dimensions and number of nodes per dimension
-  PPs <- matrix(
-    weights_and_nodes$W,
-    nrow = nrow(data),
-    ncol = length(weights_and_nodes$W),
-    byrow = TRUE
-  )
-  # NOTE in uni-dimensional case, we take the log of the prior weights here
-  # but in the multidimensional GH function, we already ge the log weights in W
+  if (em_type == "gh") {
+    # the PPs are the joint posterior probabilities here; we get them for
+    # each dimension combination and each person, so they actually have the same
+    # dimensionality as in the unidimensional case N x K, just that now, 
+    # K = length(weights_and_nodes$W), so the no. of quadrature points depending
+    # on number of trait dimensions and number of nodes per dimension
+    PPs <- matrix(
+      weights_and_nodes$W,
+      nrow = nrow(data),
+      ncol = length(weights_and_nodes$W),
+      byrow = TRUE
+    )
+    # NOTE in uni-dimensional case, we take the log of the prior weights here
+    # but in the multidimensional GH function, we already ge the log weights in W
+  } else if (em_type == "mc") {
+    # for the PP in the MC-EM, we don't have the quadrature weights for the prior
+    # in fact, all theta_samples have a prior weight of 1/n_samples so that they cancel out
+    # (weighting is taken care of by sampling proportionally form prior to prior probability)
+    PPs <- matrix(
+      0, # initialize with 0 because we sum over items on log scale
+      nrow = nrow(data),
+      ncol = length(theta_samples),
+      byrow = TRUE
+    )
+  }
   
-  for (j in 1:ncol(data)) {
-    # TODO see if i can rewrite with some form of apply
-    lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
-                                deltas[j]))
+  for (j in 1:ncol(data)) { # TODO see if i can rewrite with some form of apply
+    if (em_type == "gh") {
+      lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+                                  deltas[j]))
+    } else if (em_type == "mc") {
+      lambdas <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
+    }
     PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
   }
   
@@ -43,14 +59,16 @@ e_step_poisson_multi <- function(data, item_params, weights_and_nodes) {
   
   PPs <- PPs / rowSums(PPs)
   
-  # output should be a matrix with N rows and K cols
+  # output should be a matrix with N rows and K cols for GH 
+  # and a matrix with N rows and n_sample cols for MC
   return(PPs)
 }
 
 # grad_poisson_multi ------------------------------------------------------------------
 
-grad_poisson_multi <- function(item_params, PPs, weights_and_nodes, 
-                               data, alpha_constraints = NULL) {
+grad_poisson_multi <- function(item_params, PPs, data, n_traits,
+                               weights_and_nodes = NULL, theta_samples = NULL, 
+                               alpha_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
   # each dimension combination and each person, so they actually have the same
   # dimensionality as in the unidimensional case N x K, just that now, 
@@ -71,7 +89,6 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
   # method works, we then need to "supplement" the fixed values from alpha_constraints
   
   data <- as.matrix(data)
-  # TODO check by debugging that this filling up of the NA's in the constraints works
   alphas <- item_params[grepl("alpha", names(item_params))]
   if (!is.null(alpha_constraints)) {
     full_alphas <- alpha_constraints
@@ -79,14 +96,14 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
     full_alphas_matrix <- matrix(
       full_alphas,
       ncol = ncol(data),
-      nrow = ncol(weights_and_nodes$X),
+      nrow = n_traits,
       byrow = TRUE
     )
   } else {
     full_alphas_matrix <- matrix(
       alphas,
       ncol = ncol(data),
-      nrow = ncol(weights_and_nodes$X),
+      nrow = n_traits,
       byrow = TRUE
     )
   }
@@ -98,7 +115,7 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
   grad_alphas_matrix <- matrix(
     NA,
     ncol = ncol(data),
-    nrow = ncol(weights_and_nodes$X)
+    nrow = n_traits
   )
   # only write in gradient here for those alphas which aren't fixed, leave them at NA
   # otherwise and then filter them out with alpha_constraints_m later (can't just
@@ -109,14 +126,14 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
   if (!is.null(alpha_constraints)) {
     compute_alpha_gradient <- matrix(
       is.na(alpha_constraints),
-      nrow = ncol(weights_and_nodes$X),
+      nrow = n_traits,
       ncol = ncol(data),
       byrow = TRUE
     )
   } else {
     compute_alpha_gradient <- matrix(
       TRUE,
-      nrow = ncol(weights_and_nodes$X),
+      nrow = n_traits,
       ncol = ncol(data),
       byrow = TRUE
     )
@@ -127,45 +144,73 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
     # for lambdas, we multiply each trait dimension with respective
     # alpha and sum across those, so that we have a vector of the length
     # of weights_and_nodes$W (number of quadrature points)
-    lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
-                                deltas[j]))
-    # the output is a vector of length K (= no. of quadrature points)
-    x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K matrix
-    x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K matrix
+    if (em_type == "gh") { 
+      lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
+                                  deltas[j]))
+      # lambdas is a vector of length K (= no. of quadrature points)
+    } else if (em_type == "mc") {
+      lambdas <- as.numeric(exp(theta_samples %*% full_alphas_matrix[,j,drop= FALSE] +
+                                  deltas[j]))
+      # lambdas is a vector of length n_samples
+    }
     
-    grad_deltas[j] <- sum(x_minus_lambda_times_pp)
+    x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K or N x n_samples matrix 
+    x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
     
-    # for alpha gradient we just want the node of the trait we are
-    # taking the gradient for, so just q_k_l for specific l as in alpha_jl
-    grad_alphas_matrix[,j] <- apply(
-      # apply for every trait for this one vector of data, so this is like
-      # a loop over traits just with apply
-      weights_and_nodes$X, # matrix of quadrature points for traits
-      2, # for each trait, which we put into output matrix, gradients are
-      # trait and item specific
-      function(x) {
-        sum( # sum across all persons and nodes for that trait
-        # from this matrix what we get is the multiplication with q_k_l
-        # (where k is a running index, of factor l, so all quad. values of factor l)
-        matrix(
-          x,
-          nrow = nrow(data), # length N
-          ncol = length(x), # length K
-          byrow = TRUE
-          # for each observation (N rows) we fill the row with the vector
-          # of length K (this is why K cols) of the nodes of factor l so that for each
-          # person they are multiplied with the rest of the gradient
-        )*
-        x_minus_lambda_times_pp # N x K matrix
-        )
-        # for alpha constraints in confirmatory models: we are in the loop for 
-        # a specific item j, so in the jth column of compute_alpha_gradient and we
-        # need to check on which factors this item loads 
-      }
-    )
+    grad_deltas[j] <- sum(x_minus_lambda_times_pp) 
+    # because we sum over the whole matrix here, we sum over all persons and 
+    # all quadrature nodes for GH and all persons and all theta samples for MC
     
+    if (em_type == "gh") {  
+      # for alpha gradient we just want the node of the trait we are
+      # taking the gradient for, so just q_k_l for specific l as in alpha_jl
+      grad_alphas_matrix[,j] <- apply(
+        # apply for every trait for this one vector of data, so this is like
+        # a loop over traits just with apply
+        weights_and_nodes$X, # matrix of quadrature points for traits
+        2, # for each trait, which we put into output matrix, gradients are
+        # trait and item specific
+        function(x) {
+          sum( # sum across all persons and nodes for that trait
+            # from this matrix what we get is the multiplication with q_k_l
+            # (where k is a running index, of factor l, so all quad. values of factor l)
+            matrix(
+              x,
+              nrow = nrow(data), # length N
+              ncol = length(x), # length K
+              byrow = TRUE
+              # for each observation (N rows) we fill the row with the vector
+              # of length K (this is why K cols) of the nodes of factor l so that for each
+              # person they are multiplied with the rest of the gradient
+            )*
+              x_minus_lambda_times_pp # N x K matrix
+          )
+          # for alpha constraints in confirmatory models: we are in the loop for 
+          # a specific item j, so in the jth column of compute_alpha_gradient and we
+          # need to check on which factors this item loads 
+        }
+      )
+    } else if (em_type == "mc") {  
+      #  this is the same code as in GH case, just swap nodes for theta samples
+      # so for details on code, compare comments in GH case
+      grad_alphas_matrix[,j] <- apply(
+        theta_samples, # matrix with n_traits columns for each of which we need a gradient
+        2,
+        function(x) {
+          sum(matrix(
+            x,
+            nrow = nrow(data), 
+            ncol = length(x), 
+            byrow = TRUE
+            )*x_minus_lambda_times_pp
+          )
+        }
+      )
+    }
   }
   
+  # prep for output, if we have constraints: here we check which alphas to output
+  # gradients for and output only those so that optimizer works
   rownames(compute_alpha_gradient) <- paste0("theta", 1:nrow(compute_alpha_gradient))
   colnames(compute_alpha_gradient) <- paste0("alpha", 1:ncol(compute_alpha_gradient))
   element_names <- as.character(
@@ -179,11 +224,16 @@ grad_poisson_multi <- function(item_params, PPs, weights_and_nodes,
   return(out)
 }
 
-
-
 # em_cycle_poisson -------------------------------------------------------------------
-
-em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
+# TODO ueberlegen, ob wir theta samples sinnvoller weise jedes mal ziehen sollten
+# oder nur einmal; ich ziehe die jetzt hier mal pro em_cycle (weil ich ja conditione)
+# im m step auf die pps aus dem e step die auf bestimmten samples berechnet wurden
+# und dann auch ueberlegen ob ich die marg LL auf den gleichen samples berechnen soll?
+# ich muss aber eh noch mal ueberlegen, wie es am meisten sinn macht bei MC die 
+# convergence zu pruefen
+em_cycle_poisson_multi <- function(data, item_params, n_traits,
+                                   em_type = c("gh", "mc"), weights_and_nodes = NULL, 
+                                   fcov_prior = NULL, n_samples = NULL,
                                    alpha_constraints = NULL, ctol_maxstep = 1e-8) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
@@ -195,15 +245,24 @@ em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
   # TODO in the future, implement also equality constraints via alpha_constraints
   # and maybe even allow delta_constraints
   
+  if (em_type == "mc") {
+    # draw one set of theta samples for each em cycle
+    theta_samples <- mvrnorm(n_samples, fcov_prior$mu, fcov_prior$sigma)
+  } else {
+    theta_samples <- NULL
+  }
+  
   # constraints on alpha don't need distctintion here because item_params includes
   # the full set of alphas, including constraints, so alphas that aren't
   # estimated are just 0 in there and that works
   PPs <- e_step_poisson_multi(
     data = data, 
     item_params = item_params, 
-    weights_and_nodes = weights_and_nodes
-    )
-    
+    n_traits = n_traits,
+    weights_and_nodes = weights_and_nodes,
+    theta_samples = theta_samples
+  )
+  
   # m step
   if (!is.null(alpha_constraints)) {
     # we estimate a confirmatory 2pcmpm
@@ -223,8 +282,10 @@ em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
     x = item_params_m_step,
     fn = grad_poisson_multi,
     PPs = PPs,
-    weights_and_nodes = weights_and_nodes,
     data = data,
+    n_traits = n_traits,
+    weights_and_nodes = weights_and_nodes,
+    theta_samples = theta_samples,
     alpha_constraints = alpha_constraints,
     control = list(xtol = ctol_maxstep)
   )$x
@@ -236,7 +297,7 @@ em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
     deltas <- new_item_params[grepl("delta", names(new_item_params))]
     new_alphas_m <- matrix(
       alpha_constraints,
-      nrow = ncol(weights_and_nodes$X),
+      nrow = n_traits,
       ncol = ncol(data),
       byrow = TRUE
     )
@@ -249,7 +310,7 @@ em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
       new_alphas_m[estimated_alphas_l[[a]][2], estimated_alphas_l[[a]][1]] <- alphas[a]
     }
     new_item_params <- c(as.numeric(t(new_alphas_m)), deltas)
-    theta_names <- paste0("_theta", 1:ncol(weights_and_nodes$X))
+    theta_names <- paste0("_theta", 1:n_traits)
     alpha_names <- paste0("alpha", 1:ncol(data))
     full_alpha_names <- c(outer(alpha_names, theta_names, "paste0"))
     names(new_item_params) <- c(
@@ -262,8 +323,13 @@ em_cycle_poisson_multi <- function(data, item_params, weights_and_nodes,
 }
 
 # marg_ll_poisson_multi -------------------------------------------------------------
-
-marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes) {
+# TODO ueberloegen ob es sinn macht die gleichen samples zu verwenden wie im
+# em_cycle oder ob es eh egal ist weil ich fuer mc convergence anders assesse
+marg_ll_poisson_multi <- function(data, item_params, n_traits,
+                                  weights_and_nodes = NULL,
+                                  em_type = c("gh", "mc"),
+                                  fcov_prior = NULL,
+                                  n_samples = NULL) {
   # as we still set start values for the full alpha matrix, including for those
   # alphas which we fix to certain values and don't estimate, we don't need the 
   # alpha_constraints argument here; everything will automatically work
@@ -283,29 +349,50 @@ marg_ll_poisson_multi <- function(data, item_params, weights_and_nodes) {
   alphas_matrix <- matrix(
     alphas,
     ncol = ncol(data),
-    nrow = ncol(weights_and_nodes$X),
+    nrow = ncol(n_traits),
     byrow = TRUE
   )
   
   marg_prob <- numeric(n_persons)
-  lambdas <- matrix(
-    NA,
-    ncol = n_items,
-    nrow = length(weights_and_nodes$W)
-  )
-  for (j in 1:n_items) {
-    lambdas[,j] <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
-                                deltas[j]))
-  } # TODO durch apply swappen oder matrixmultiplikation
+  
+  if (em_type == "gh") {
+    lambdas <- matrix(
+      NA,
+      ncol = n_items,
+      nrow = length(weights_and_nodes$W)
+    )
+    for (j in 1:n_items) {
+      lambdas[,j] <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+                                      deltas[j]))
+    } # TODO durch apply swappen oder matrixmultiplikation
+  } else if (em_type == "mc") {
+    theta_samples <- mvrnorm(n_samples, fcov_prior$mu, fcov_prior$sigma)
+    lambdas <- matrix(
+      NA,
+      ncol = n_items,
+      nrow = length(n_samples)
+    )
+    for (j in 1:n_items) {
+      lambdas[,j] <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
+    } # TODO durch apply swappen oder matrixmultiplikation
+  }
+  
   for (i in 1:n_persons) {
     out <- 0
     for (j in 1:n_items) {
       out <- out + dpois(data[i,j], lambdas[,j], log = TRUE)
     }
-    marg_prob[i] <- sum(exp(out + weights_and_nodes$W))
+    if (em_type == "gh") {
+      # approximate integral
+      marg_prob[i] <- sum(exp(out + weights_and_nodes$W)) 
+    } else if (em_type == "mc") {
+      # approximate integral
+      marg_prob[i] <- mean(exp(out))
+      # take mean here over theta samples; out should be of length n_samples
+    }
   }
   
-  ll <- sum(log(marg_prob))
+  ll <- sum(log(marg_prob)) # sum over persons
   
   return(ll)
 }
@@ -365,7 +452,6 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     # otherwise a fcov_prior has been specified and we draw samples from that for MC-EM
   }
   
-  # TODO hier weitermachen und em_type == "mc" implementieren
   new_params <- init_params
   conv <- FALSE
   iter <- 1
@@ -378,12 +464,16 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   while (!isTRUE(conv) && (iter <= maxiter)) {
     print(paste0("Iteration: ", iter))
     old_params <- new_params
-    # TODO em_type argument weiter durchreichen durch funktionen; das wird dann relevant,
-    # wenn ich mc em implementiere
     new_params <- em_cycle_poisson_multi(
-      data, old_params, weights_and_nodes,
+      data = data,
+      item_params = old_params, 
+      n_traits = n_traits,
+      weights_and_nodes = weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
-      alpha_constraints = alpha_constraints
+      alpha_constraints = alpha_constraints,
+      em_type = em_type,
+      fcov_prior = fcov_prior,
+      n_samples = n_samples
     )
     print(new_params)
     
@@ -391,8 +481,13 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     if (convcrit == "marglik") {
       old_ll <- new_ll
       new_ll <- marg_ll_poisson_multi(
-        as.matrix(data), new_params,
-        weights_and_nodes
+        data = as.matrix(data), 
+        item_params = new_params,
+        n_traits = n_traits,
+        weights_and_nodes = weights_and_nodes,
+        em_type = em_type,
+        fcov_prior = fcov_prior,
+        n_samples = n_samples
         )
       marg_lls[iter] <- new_ll
       plot(marg_lls)
@@ -402,12 +497,15 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
       marg_ll <- marg_ll_poisson_multi(
-        as.matrix(data), new_params,
-        weights_and_nodes
+        data = as.matrix(data), 
+        item_params = new_params,
+        n_traits = n_traits,
+        weights_and_nodes = weights_and_nodes,
+        em_type = em_type,
+        fcov_prior = fcov_prior,
+        n_samples = n_samples
         )
       marg_lls[iter] <- marg_ll
-      #plot(marg_lls)
-      #print(marg_lls)
     }
     
     iter <- iter + 1
@@ -419,7 +517,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     params = new_params,
     iter = iter,
     conv = conv,
-    marg_ll = marg_lls
+    marg_ll = marg_lls,
+    em_type = em_type
   )
   return(out)
   

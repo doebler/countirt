@@ -24,6 +24,7 @@
 #' @importFrom tidyr pivot_wider
 #' @importFrom dplyr enquo
 #' @importFrom psych fa
+#' @importFrom MASS mvrnorm
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 cirt <- function(model, data, family,
@@ -378,4 +379,8 @@ add_inference <- function(model, prob = 0.95) {
 # dafuer brauche ich die funktion: init.quad aus MultiGHQuad
 # und das muss ich dann noch zu den paket dependencies hinzufuegen
 # und fuer die multi marg ll brauche ich auch eval.quad aus dem paket
+# @importFrom psych fa
+# @importFrom MASS mvrnorm
+# TODO diese imports dann ruhig bei cirt rausnehmen weil es ja reicht, wenn ich die
+# dann hier importiere
 

@@ -395,21 +395,11 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
   }
 
   print("Done!")
-  
-  # model_vcov <- compute_vcov(
-  #   item_params = new_params,
-  #   weights_and_nodes = weights_and_nodes, 
-  #   data = data
-  # )
-  # 
-  # se_params <- se_from_vcov(model_vcov)
 
   out <- list(
     params = new_params,
-#    se_params = se_params,
     iter = iter,
     conv = conv,
-#    vcov = model_vcov,
     marg_ll = marg_lls
   )
   return(out)
@@ -420,13 +410,22 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 # get_start_values -----------------------------------------------------------------
 
 get_start_values <- function(data, nodes = 121, nsim = 1000,
-                             init_disp_one = TRUE, same_alpha = FALSE) {
+                             init_disp_one = TRUE, 
+                             fix_disps = NULL, fix_alphas = NULL,
+                             same_disps = FALSE, same_alpha = FALSE) {
   # for CMP start values, we fit a Poisson model and get deltas and alphas from there
-  if (same_alpha) {
+  if (same_alphas) {
     # just one alpha for all items
     init_values_pois <- get_start_values_pois(data, same_alpha = TRUE)
     fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE)
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
+    init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
+  } else if (!is.null(fix_alphas)) {
+    # we fix alphas to certain values so we don't need start values for them as
+    # run_newem won't need them in the parameter vector, it will take them via
+    # the fix_alphas argument
+    init_values_pois <- get_start_values_pois(data, fix_alphas = fix_alphas)
+    fit_pois <- run_em_poisson(data, init_values_pois, nodes, fix_alphas = fix_alphas)
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
     # different alpha for each item
@@ -436,24 +435,52 @@ get_start_values <- function(data, nodes = 121, nsim = 1000,
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   }
   
-  init_logdisps<-c()
-  sim_abilities=rnorm(nsim)
-  for (i in 1:ncol(data)) {
-    if (same_alpha) {
-      mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
-    } else {
-      mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+  if (!is.null(fix_disps)) {
+    # we don't need start values for dispersions as they are fixed and so run_newem
+    # won't need them to be part of the item params vector, it will take them via
+    # the fix_disps argument
+    start_values <- c(init_alphas, init_deltas)
+    names(start_values) <- c(
+      paste0("alpha", 1:length(init_alphas)),
+      paste0("delta", 1:length(init_deltas))
+    )
+  } else {
+    # we need start values for disps; if they are constrained to be equal, that
+    # will be taken care of below
+    init_logdisps<-c()
+    sim_abilities=rnorm(nsim)
+    for (i in 1:ncol(data)) {
+      if (same_alpha) {
+        mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+      } else {
+        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+      }
+      sim <- rpois(nsim, mu)
+      init_logdisps[i] <- log((var(sim) / var(data[,i])))
     }
-    sim <- rpois(nsim, mu)
-    init_logdisps[i] <- log((var(sim) / var(data[,i])))
+    # take mean for the constraint of equal dispersions
+    if (same_disps) {
+      init_logdisps <- mean(init_logdisps)
+    }
+    # for output, distinguish between cases of fixed alphas or not fixed alphas
+    if (!is.null(fix_alphas)) {
+      # fixed alphas, so don't output start values for them
+      start_values <- c(init_deltas, init_logdisps)
+      names(start_values) <- c(
+        paste0("delta", 1:length(init_deltas)),
+        paste0("log_disp", 1:length(init_logdisps))
+      )
+    } else {
+      # we have at least one of each parameter type
+      start_values <- c(init_alphas, init_deltas, init_logdisps)
+      names(start_values) <- c(
+        paste0("alpha", 1:length(init_alphas)),
+        paste0("delta", 1:length(init_deltas)),
+        paste0("log_disp", 1:length(init_logdisps))
+      )
+    }
   }
-  
-  start_values <- c(init_alphas, init_deltas, init_logdisps)
-  names(start_values) <- c(
-    paste0("alpha", 1:length(init_alphas)),
-    paste0("delta", 1:length(init_deltas)),
-    paste0("log_disp", 1:length(init_logdisps))
-  )
+
   return(start_values)
 }
 

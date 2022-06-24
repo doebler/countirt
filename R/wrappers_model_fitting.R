@@ -37,6 +37,8 @@ cirt <- function(model, data, family,
                  )) {
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
+  # TODO add verbose argument and only print iterations if TRUE
+  # TODO print nicer when prining iterations
   
   data <- as.data.frame(data)
   
@@ -122,8 +124,6 @@ cirt <- function(model, data, family,
     if (family == "cmp") {
       print("Start determining start values.")
       
-      # TODO start values hier noch mal ueberarbeiten so dass ich die constraints
-      # mit beruecksichtige; das muss ich einmal durch alle funktionen durch hier anschauen
       if (!is.null(model_list$fixed_log_disps)) {
         fixed_disps <- exp(model_list$fixed_log_disps)
       } else {
@@ -133,7 +133,11 @@ cirt <- function(model, data, family,
       # TODO init_disp_one argument entfernen; auch aus der get_start_value funktion
       start_values <- get_start_values(
         data = model_list$item_data,
-        init_disp_one = control$init_disp_one
+        init_disp_one = control$init_disp_one,
+        fix_disps = fixed_disps, 
+        fix_alphas = model_list$fixed_alphas,
+        same_disps = model_list$equal_log_disps, 
+        same_alpha = model_list$equal_alphas
       )
       
       print("Start model fitting. This will take a little bit of time.")
@@ -156,7 +160,9 @@ cirt <- function(model, data, family,
 
     } else if (family == "poisson") {
       start_values <- get_start_values_pois(
-        data = model_list$item_data
+        data = model_list$item_data,
+        same_alphas = model_list$equal_alphas,
+        fix_alphas = model_list$fixed_alphas
       )
       
       print("Start model fitting.")
@@ -182,7 +188,8 @@ cirt <- function(model, data, family,
     if (family == "cmp") {
       print("Start determining start values.")
       # TODO think about whether I am dealing correctly here with all possible constraints,
-      # what about fixed alphas and/or disps?
+      # what about fixed alphas and/or disps
+      # TODO i think i still need to implement fix alphas into start values for covariate models
       start_values <- get_start_values_cmp_with_cov(
         data = model_list$item_data,
         p_covariates = model_list$p_covariates,

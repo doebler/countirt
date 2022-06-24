@@ -174,9 +174,6 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
                               fix_alphas = NULL, same_alpha = FALSE) {
   
   # get nodes and weights for GH quadrature
-  # weights_and_nodes <- gaussHermiteData(n_nodes)
-  # weights_and_nodes$x <- weights_and_nodes$x * sqrt(2)
-  # weights_and_nodes$w <- weights_and_nodes$w / sqrt(pi)
   weights_and_nodes<- quad_rule(n_nodes, thres = thres,prob = prob)
   
   new_params <- init_params
@@ -194,7 +191,8 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
     new_params <- em_cycle_poisson(
       data, old_params, weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
-      fix_alphas = fix_alphas, same_alpha = same_alpha
+      fix_alphas = fix_alphas, 
+      same_alpha = same_alpha
     )
     
     # check for convergence
@@ -225,20 +223,10 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
   
   print("Done!")
   
-  # model_vcov <- compute_vcov(
-  #   item_params = new_params,
-  #   weights_and_nodes = weights_and_nodes, 
-  #   data = data
-  # )
-  # 
-  # se_params <- se_from_vcov(model_vcov)
-  
   out <- list(
     params = new_params,
-    #    se_params = se_params,
     iter = iter,
     conv = conv,
-    #    vcov = model_vcov,
     marg_ll = marg_lls
   )
   return(out)
@@ -247,7 +235,7 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 
 # get_start_values_pois -----------------------------------------------------------------
 
-get_start_values_pois <- function(data, same_alpha = FALSE) {
+get_start_values_pois <- function(data, same_alpha = FALSE, fix_alphas = NULL) {
   init_deltas <- log(apply(data, 2, mean))
   
   if (same_alpha) {
@@ -257,19 +245,33 @@ get_start_values_pois <- function(data, same_alpha = FALSE) {
       init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
     }
     init_alphas <- mean(init_alphas)
+    
+    start_values <- c(init_alphas, init_deltas)
+    names(start_values) <- c(
+      paste0("alpha", 1:length(init_alphas)),
+      paste0("delta", 1:length(init_deltas))
+    )
+  } else if (!is.null(fix_alphas)) { 
+    # we fix alphas; for current implementation of run_em_poisson, that means
+    # we just don't need them to be in the item parameter vector then, because
+    # they will be supplied via the fix_alphas arguments
+    # so just return the delta values here
+    start_values <- init_deltas
+    names(start_values) <- paste0("delta", 1:length(init_deltas))
   } else {
-    # different alpha for each item
+    # different alpha for each item (full 2PPCM)
     init_alphas <- c()
     for (i in 1:ncol(data)) {
       init_alphas[i] <- cor(data[,i], apply(data[,-i], 1, mean))
     }
+    
+    start_values <- c(init_alphas, init_deltas)
+    names(start_values) <- c(
+      paste0("alpha", 1:length(init_alphas)),
+      paste0("delta", 1:length(init_deltas))
+    )
   }
   
-  start_values <- c(init_alphas, init_deltas)
-  names(start_values) <- c(
-    paste0("alpha", 1:length(init_alphas)),
-    paste0("delta", 1:length(init_deltas))
-  )
   return(start_values)
 }
 

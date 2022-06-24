@@ -1,6 +1,7 @@
 
 # e_step_poisson_multi --------------------------------------------------------------------
 e_step_poisson_multi <- function(data, item_params, n_traits,
+                                 em_type = c("gh", "mc"),
                                  weights_and_nodes = NULL, theta_samples = NULL) {
   # we don't need the alpha_constraints argument here; everything will automatically work
   # TODO check that this still holds once i implement equality constraints for alpha
@@ -40,7 +41,7 @@ e_step_poisson_multi <- function(data, item_params, n_traits,
     PPs <- matrix(
       0, # initialize with 0 because we sum over items on log scale
       nrow = nrow(data),
-      ncol = length(theta_samples),
+      ncol = length(theta_samples[,1]),
       byrow = TRUE
     )
   }
@@ -67,6 +68,7 @@ e_step_poisson_multi <- function(data, item_params, n_traits,
 # grad_poisson_multi ------------------------------------------------------------------
 
 grad_poisson_multi <- function(item_params, PPs, data, n_traits,
+                               em_type = c("gh", "mc"),
                                weights_and_nodes = NULL, theta_samples = NULL, 
                                alpha_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
@@ -259,6 +261,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     data = data, 
     item_params = item_params, 
     n_traits = n_traits,
+    em_type = em_type,
     weights_and_nodes = weights_and_nodes,
     theta_samples = theta_samples
   )
@@ -284,6 +287,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     PPs = PPs,
     data = data,
     n_traits = n_traits,
+    em_type = em_type,
     weights_and_nodes = weights_and_nodes,
     theta_samples = theta_samples,
     alpha_constraints = alpha_constraints,
@@ -349,7 +353,7 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
   alphas_matrix <- matrix(
     alphas,
     ncol = ncol(data),
-    nrow = ncol(n_traits),
+    nrow = n_traits,
     byrow = TRUE
   )
   
@@ -370,7 +374,7 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
     lambdas <- matrix(
       NA,
       ncol = n_items,
-      nrow = length(n_samples)
+      nrow = n_samples
     )
     for (j in 1:n_items) {
       lambdas[,j] <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
@@ -403,7 +407,13 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
                                  em_type = c("gh", "mc"), fcov_prior = NULL,
                                  truncate_grid = TRUE,
                                  maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
-                                 convcrit = "marglik",
+                                 mc_warmup = list(after_iters = 10, scale = 2),
+                                 # number of iterations with n_samples / scale
+                                 mc_toconv_tol = list(oscill_range = 0.5, scale = 2), 
+                                 # degree of MLL or params (depending on convcrit) 
+                                 # oscillation where we start to suspect convergence and 
+                                 # then use n_sample*scale to better assess convergence
+                                 convcrit = "marglik", # can also be "params"
                                  alpha_constraints = NULL) {
   # note that we now have n_nodes with nodes per dimension, so that total
   # number of quadrature points n_nodes^n_traits
@@ -463,7 +473,28 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   
   while (!isTRUE(conv) && (iter <= maxiter)) {
     print(paste0("Iteration: ", iter))
+    
+    if (em_type == "mc") {
+      if (iter <= mc_warmup$after_iters) {
+        n_samples_for_cycle <- round(n_samples / mc_warmup$scale)
+      } else if (iter > 2) {
+        if (convcrit == "marglik") {
+          if (abs(marg_lls[length(marg_lls)]-marg_lls[length(marg_lls)-1]) <=
+              mc_toconv_tol$oscill_range) {
+            n_samples_for_cycle <- round(n_samples*mc_toconv_tol$scale)
+          } 
+        } else if (convcrit == "params") {
+          if (all(abs(old_params - new_params) <= mc_toconv_tol$oscill_range)) {
+            n_samples_for_cycle <- round(n_samples*mc_toconv_tol$scale)
+          }
+        }
+      }
+    } else if (em_type == "gh") {
+      n_samples_for_cycle <- n_samples
+    }
+    
     old_params <- new_params
+    
     new_params <- em_cycle_poisson_multi(
       data = data,
       item_params = old_params, 
@@ -473,7 +504,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       alpha_constraints = alpha_constraints,
       em_type = em_type,
       fcov_prior = fcov_prior,
-      n_samples = n_samples
+      n_samples = n_samples_for_cycle
     )
     print(new_params)
     
@@ -487,15 +518,17 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         weights_and_nodes = weights_and_nodes,
         em_type = em_type,
         fcov_prior = fcov_prior,
-        n_samples = n_samples
+        n_samples = n_samples_for_cycle
         )
       marg_lls[iter] <- new_ll
       plot(marg_lls)
       print(marg_lls)
       conv <- (abs(old_ll - new_ll) < convtol)
-    } else {
+    } else if (convcrit == "params") {
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
+      # TODO move marg_ll computation to after convergence and just do it
+      # once if i assess convergence on params
       marg_ll <- marg_ll_poisson_multi(
         data = as.matrix(data), 
         item_params = new_params,
@@ -503,9 +536,11 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         weights_and_nodes = weights_and_nodes,
         em_type = em_type,
         fcov_prior = fcov_prior,
-        n_samples = n_samples
+        n_samples = n_samples_for_cycle
         )
       marg_lls[iter] <- marg_ll
+      plot(marg_lls)
+      print(marg_lls)
     }
     
     iter <- iter + 1
@@ -526,7 +561,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
 
 
 # get_start_values_pois_multi -----------------------------------------------------------------
-
+# TODO ueberlegen was ich mit moeglichen heywood cases in start values mache
 get_start_values_pois_multi <- function(data, n_traits,  alpha_constraints = NULL) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas

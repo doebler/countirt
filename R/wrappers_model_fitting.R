@@ -161,7 +161,7 @@ cirt <- function(model, data, family,
     } else if (family == "poisson") {
       start_values <- get_start_values_pois(
         data = model_list$item_data,
-        same_alphas = model_list$equal_alphas,
+        same_alpha = model_list$equal_alphas,
         fix_alphas = model_list$fixed_alphas
       )
       

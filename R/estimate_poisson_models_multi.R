@@ -235,7 +235,7 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
 # convergence zu pruefen
 em_cycle_poisson_multi <- function(data, item_params, n_traits,
                                    em_type = c("gh", "mc"), weights_and_nodes = NULL, 
-                                   fcov_prior = NULL, n_samples = NULL,
+                                   theta_samples = NULL,
                                    alpha_constraints = NULL, ctol_maxstep = 1e-8) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
@@ -246,13 +246,6 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   # given in the appropriate place in alpha_constraints
   # TODO in the future, implement also equality constraints via alpha_constraints
   # and maybe even allow delta_constraints
-  
-  if (em_type == "mc") {
-    # draw one set of theta samples for each em cycle
-    theta_samples <- mvrnorm(n_samples, fcov_prior$mu, fcov_prior$sigma)
-  } else {
-    theta_samples <- NULL
-  }
   
   # constraints on alpha don't need distctintion here because item_params includes
   # the full set of alphas, including constraints, so alphas that aren't
@@ -327,13 +320,10 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
 }
 
 # marg_ll_poisson_multi -------------------------------------------------------------
-# TODO ueberloegen ob es sinn macht die gleichen samples zu verwenden wie im
-# em_cycle oder ob es eh egal ist weil ich fuer mc convergence anders assesse
 marg_ll_poisson_multi <- function(data, item_params, n_traits,
                                   weights_and_nodes = NULL,
-                                  em_type = c("gh", "mc"),
-                                  fcov_prior = NULL,
-                                  n_samples = NULL) {
+                                  theta_samples = NULL,
+                                  em_type = c("gh", "mc")) {
   # as we still set start values for the full alpha matrix, including for those
   # alphas which we fix to certain values and don't estimate, we don't need the 
   # alpha_constraints argument here; everything will automatically work
@@ -370,11 +360,10 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
                                       deltas[j]))
     } # TODO durch apply swappen oder matrixmultiplikation
   } else if (em_type == "mc") {
-    theta_samples <- mvrnorm(n_samples, fcov_prior$mu, fcov_prior$sigma)
     lambdas <- matrix(
       NA,
       ncol = n_items,
-      nrow = n_samples
+      nrow = length(theta_samples[,1])
     )
     for (j in 1:n_items) {
       lambdas[,j] <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
@@ -406,13 +395,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
                                  n_nodes = NULL, n_samples = NULL, 
                                  em_type = c("gh", "mc"), fcov_prior = NULL,
                                  truncate_grid = TRUE,
-                                 maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
-                                 mc_warmup = list(after_iters = 10, scale = 2),
-                                 # number of iterations with n_samples / scale
-                                 mc_toconv_tol = list(oscill_range = 0.5, scale = 2), 
-                                 # degree of MLL or params (depending on convcrit) 
-                                 # oscillation where we start to suspect convergence and 
-                                 # then use n_sample*scale to better assess convergence
+                                 maxiter = 2000, convtol = 1e-5, ctol_maxstep = 1e-8,
+                                 n_samples_conv = 10, final_n_samples = 8000,
                                  convcrit = "marglik", # can also be "params"
                                  alpha_constraints = NULL) {
   # note that we now have n_nodes with nodes per dimension, so that total
@@ -475,22 +459,10 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     print(paste0("Iteration: ", iter))
     
     if (em_type == "mc") {
-      if (iter <= mc_warmup$after_iters) {
-        n_samples_for_cycle <- round(n_samples / mc_warmup$scale)
-      } else if (iter > 2) {
-        if (convcrit == "marglik") {
-          if (abs(marg_lls[length(marg_lls)]-marg_lls[length(marg_lls)-1]) <=
-              mc_toconv_tol$oscill_range) {
-            n_samples_for_cycle <- round(n_samples*mc_toconv_tol$scale)
-          } 
-        } else if (convcrit == "params") {
-          if (all(abs(old_params - new_params) <= mc_toconv_tol$oscill_range)) {
-            n_samples_for_cycle <- round(n_samples*mc_toconv_tol$scale)
-          }
-        }
-      }
-    } else if (em_type == "gh") {
-      n_samples_for_cycle <- n_samples
+      # draw one set of theta samples for each em cycle
+      theta_samples <- mvrnorm(n_samples, fcov_prior$mu, fcov_prior$sigma)
+    } else {
+      theta_samples <- NULL
     }
     
     old_params <- new_params
@@ -503,8 +475,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       ctol_maxstep = ctol_maxstep,
       alpha_constraints = alpha_constraints,
       em_type = em_type,
-      fcov_prior = fcov_prior,
-      n_samples = n_samples_for_cycle
+      theta_samples = theta_samples
     )
     print(new_params)
     
@@ -517,13 +488,19 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         n_traits = n_traits,
         weights_and_nodes = weights_and_nodes,
         em_type = em_type,
-        fcov_prior = fcov_prior,
-        n_samples = n_samples_for_cycle
+        theta_samples = theta_samples
         )
       marg_lls[iter] <- new_ll
       plot(marg_lls)
       print(marg_lls)
-      conv <- (abs(old_ll - new_ll) < convtol)
+      if (em_type == "gh") {
+        conv <- (abs(old_ll - new_ll) < convtol)
+      } else if (em_type == "mc") {
+        if (iter > (n_samples_conv+1)) {
+          mean_marg_ll <- mean(marg_lls[(iter-n_samples_conv):iter])
+          conv <- !any(abs(marg_lls[(iter-n_samples_conv):iter] - mean_marg_ll) > convtol)
+        } 
+      }
     } else if (convcrit == "params") {
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
@@ -535,8 +512,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         n_traits = n_traits,
         weights_and_nodes = weights_and_nodes,
         em_type = em_type,
-        fcov_prior = fcov_prior,
-        n_samples = n_samples_for_cycle
+        theta_samples = theta_samples
         )
       marg_lls[iter] <- marg_ll
       plot(marg_lls)
@@ -544,6 +520,20 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     }
     
     iter <- iter + 1
+  }
+  
+  if (em_type == "mc" & convcrit == "marglik" & conv) {
+    theta_samples <- mvrnorm(final_n_samples, fcov_prior$mu, fcov_prior$sigma)
+    new_params <- em_cycle_poisson_multi(
+      data = data,
+      item_params = old_params, 
+      n_traits = n_traits,
+      weights_and_nodes = weights_and_nodes,
+      ctol_maxstep = ctol_maxstep,
+      alpha_constraints = alpha_constraints,
+      em_type = em_type,
+      theta_samples = theta_samples
+    )
   }
   
   print("Done!")

@@ -414,7 +414,7 @@ get_start_values <- function(data, nodes = 121, nsim = 1000,
                              fix_disps = NULL, fix_alphas = NULL,
                              same_disps = FALSE, same_alpha = FALSE) {
   # for CMP start values, we fit a Poisson model and get deltas and alphas from there
-  if (same_alphas) {
+  if (same_alpha) {
     # just one alpha for all items
     init_values_pois <- get_start_values_pois(data, same_alpha = TRUE)
     fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE)

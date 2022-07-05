@@ -5,6 +5,7 @@ e_step_poisson_multi <- function(data, item_params, n_traits,
                                  weights_and_nodes = NULL, theta_samples = NULL) {
   # we don't need the alpha_constraints argument here; everything will automatically work
   # TODO check that this still holds once i implement equality constraints for alpha
+  # we don't need to consider regualrization here, posterior probs will be the same regardless
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -69,7 +70,10 @@ e_step_poisson_multi <- function(data, item_params, n_traits,
 
 grad_poisson_multi <- function(item_params, PPs, data, n_traits,
                                em_type = c("gh", "mc"),
-                               weights_and_nodes = NULL, theta_samples = NULL, 
+                               weights_and_nodes = NULL, 
+                               theta_samples = NULL, 
+                               penalize = c("none", "ridge"), # only makes sense for exploratory models
+                               penalize_lambda = NULL, # TODO implement estimation option for lambda
                                alpha_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
   # each dimension combination and each person, so they actually have the same
@@ -192,6 +196,10 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
           # need to check on which factors this item loads 
         }
       )
+      if (penalize == "ridge") {
+        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] +
+          2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
+      } # TODO lasso penalty implementieren
     } else if (em_type == "mc") {  
       #  this is the same code as in GH case, just swap nodes for theta samples
       # so for details on code, compare comments in GH case
@@ -208,6 +216,10 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
           )
         }
       )
+      if (penalize == "ridge") {
+        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] +
+          2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
+      } # TODO lasso penalty implementieren
     }
   }
   
@@ -227,16 +239,14 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
 }
 
 # em_cycle_poisson -------------------------------------------------------------------
-# TODO ueberlegen, ob wir theta samples sinnvoller weise jedes mal ziehen sollten
-# oder nur einmal; ich ziehe die jetzt hier mal pro em_cycle (weil ich ja conditione)
-# im m step auf die pps aus dem e step die auf bestimmten samples berechnet wurden
-# und dann auch ueberlegen ob ich die marg LL auf den gleichen samples berechnen soll?
-# ich muss aber eh noch mal ueberlegen, wie es am meisten sinn macht bei MC die 
-# convergence zu pruefen
 em_cycle_poisson_multi <- function(data, item_params, n_traits,
-                                   em_type = c("gh", "mc"), weights_and_nodes = NULL, 
+                                   em_type = c("gh", "mc"), 
+                                   weights_and_nodes = NULL, 
                                    theta_samples = NULL,
-                                   alpha_constraints = NULL, ctol_maxstep = 1e-8) {
+                                   penalize = c("none", "ridge"), # only makes sense for exploratory models
+                                   penalize_lambda = NULL, # TODO implement estimation option for lambda
+                                   alpha_constraints = NULL, 
+                                   ctol_maxstep = 1e-8) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
   # we start off by just assuming that we only have 0-constraints where we don't 
@@ -247,9 +257,10 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   # TODO in the future, implement also equality constraints via alpha_constraints
   # and maybe even allow delta_constraints
   
-  # constraints on alpha don't need distctintion here because item_params includes
+  # constraints on alpha don't need distinction here because item_params includes
   # the full set of alphas, including constraints, so alphas that aren't
   # estimated are just 0 in there and that works
+  # regularization option doesn't need disctinction here (PPs are always calculated the same) 
   PPs <- e_step_poisson_multi(
     data = data, 
     item_params = item_params, 
@@ -284,8 +295,11 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     weights_and_nodes = weights_and_nodes,
     theta_samples = theta_samples,
     alpha_constraints = alpha_constraints,
+    penalize = penalize,
+    penalize_lambda = penalize_lambda,
     control = list(xtol = ctol_maxstep)
   )$x
+  
   
   if (!is.null(alpha_constraints)) {
     # if we have constraints, then new_item_params as returned by new_item_params
@@ -323,6 +337,8 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
 marg_ll_poisson_multi <- function(data, item_params, n_traits,
                                   weights_and_nodes = NULL,
                                   theta_samples = NULL,
+                                  penalize = c("none", "ridge"), # only makes sense for exploratory models
+                                  penalize_lambda = NULL, # TODO implement estimation option for lambda
                                   em_type = c("gh", "mc")) {
   # as we still set start values for the full alpha matrix, including for those
   # alphas which we fix to certain values and don't estimate, we don't need the 
@@ -387,14 +403,23 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
   
   ll <- sum(log(marg_prob)) # sum over persons
   
+  if (penalize == "ridge") {
+    if (!is.null(penalize_lambda)) { # TODO implement option to estimate lambda
+      ll <- ll + ridge_penalty(alphas = alphas, lambda = penalize_lambda)
+    }
+  } # TODO iher mit else dann auch lasso implementieren
+  
   return(ll)
 }
 
 # run_em_poisson_multi ---------------------------------------------------------------
+# TODO allow lambda to be estimated rather than fixed
 run_em_poisson_multi <- function(data, init_params, n_traits, 
                                  n_nodes = NULL, n_samples = NULL, 
                                  em_type = c("gh", "mc"), fcov_prior = NULL,
                                  truncate_grid = TRUE,
+                                 penalize = c("none", "ridge"), # only makes sense for exploratory models
+                                 penalize_lambda = NULL, # TODO implement estimation option for lambda
                                  maxiter = 2000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                  n_samples_conv = 10, final_n_samples = 8000,
                                  convcrit = "marglik", # can also be "params"
@@ -475,7 +500,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       ctol_maxstep = ctol_maxstep,
       alpha_constraints = alpha_constraints,
       em_type = em_type,
-      theta_samples = theta_samples
+      theta_samples = theta_samples,
+      penalize = penalize,
+      penalize_lambda = penalize_lambda
     )
     print(new_params)
     
@@ -488,7 +515,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         n_traits = n_traits,
         weights_and_nodes = weights_and_nodes,
         em_type = em_type,
-        theta_samples = theta_samples
+        theta_samples = theta_samples,
+        penalize = penalize,
+        penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- new_ll
       plot(marg_lls)
@@ -512,7 +541,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         n_traits = n_traits,
         weights_and_nodes = weights_and_nodes,
         em_type = em_type,
-        theta_samples = theta_samples
+        theta_samples = theta_samples,
+        penalize = penalize,
+        penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- marg_ll
       plot(marg_lls)

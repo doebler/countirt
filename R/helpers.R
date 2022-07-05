@@ -1,3 +1,14 @@
+# ridge_penalty ------------------------------------------------------------------------
+
+ridge_penalty <- function(alphas, lambda) {
+  lambda * sum(alphas^2)
+}
+
+# lasso_penalty ------------------------------------------------------------------------
+
+lasso_penalty <- function(alphas, lambda) {
+  lambda * sum(abs(alphas))
+}
 
 # get_resp_patterns_pcov_cat -------------------------------------------------------------
 

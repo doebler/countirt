@@ -6,9 +6,12 @@ estep_cmp_with_cov <- function(data, item_params,
                                i_cov_on = c("alpha", "delta", "log_disp"),
                                which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                p_cov_cat = TRUE,
-                               resp_patterns_matrix = NULL) {
+                               resp_patterns_matrix = NULL,
+                               item_offset = NULL) {
   # p_covariates is a matrix with the person covariates (MxP)
   # i_covariates is a matrix with the item covariates (M+I)
+  
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
   
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params)) &
@@ -32,6 +35,7 @@ estep_cmp_with_cov <- function(data, item_params,
         deltas = deltas,
         disps = disps,
         betas = betas_p,
+        item_offset = item_offset,
         p_cov_data = as.matrix(p_covariates),
         resp_pattern = resp_patterns_matrix,
         nodes = weights_and_nodes$x,
@@ -53,6 +57,7 @@ estep_cmp_with_cov <- function(data, item_params,
         deltas = deltas,
         disps = disps,
         betas = betas_p,
+        item_offset = item_offset,
         p_cov_data = as.matrix(p_covariates),
         nodes = weights_and_nodes$x,
         weights = weights_and_nodes$w,
@@ -76,6 +81,7 @@ estep_cmp_with_cov <- function(data, item_params,
           delta = deltas,
           disps = disps,
           betas = betas_i,
+          item_offset = item_offset,
           i_cov_data = as.matrix(i_covariates),
           nodes = weights_and_nodes$x,
           weights = weights_and_nodes$w,
@@ -93,6 +99,7 @@ estep_cmp_with_cov <- function(data, item_params,
           deltas = deltas,
           disps = disps,
           betas = betas_i,
+          item_offset = item_offset,
           i_cov_data = as.matrix(i_covariates),
           nodes = weights_and_nodes$x,
           weights = weights_and_nodes$w,
@@ -110,6 +117,7 @@ estep_cmp_with_cov <- function(data, item_params,
           deltas = deltas,
           disp = disps,
           betas = betas_i,
+          item_offset = item_offset,
           i_cov_data = as.matrix(i_covariates),
           nodes = weights_and_nodes$x,
           weights = weights_and_nodes$w,
@@ -167,6 +175,7 @@ estep_cmp_with_cov <- function(data, item_params,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
+        item_offset = item_offset,
         i_cov_data_alpha = i_covariates_alpha,
         i_cov_data_delta = i_covariates_delta,
         i_cov_data_log_disp = i_covariates_log_disp,
@@ -216,6 +225,7 @@ estep_cmp_with_cov <- function(data, item_params,
             disp = disps,
             betas_alpha = betas_i_alpha,
             betas_logdisp = betas_i_logdisp,
+            item_offset = item_offset,
             i_cov_data_alpha = i_covariates_alpha,
             i_cov_data_log_disp = i_covariates_log_disp,
             nodes = weights_and_nodes$x,
@@ -261,6 +271,7 @@ estep_cmp_with_cov <- function(data, item_params,
             disp = disps,
             betas_delta = betas_i_delta,
             betas_logdisp = betas_i_logdisp,
+            item_offset = item_offset,
             i_cov_data_delta = i_covariates_delta,
             i_cov_data_log_disp = i_covariates_log_disp,
             nodes = weights_and_nodes$x,
@@ -307,6 +318,7 @@ estep_cmp_with_cov <- function(data, item_params,
           disps = disps,
           betas_alpha = betas_i_alpha,
           betas_delta = betas_i_delta,
+          item_offset = item_offset,
           i_cov_data_alpha = i_covariates_alpha,
           i_cov_data_delta = i_covariates_delta,
           nodes = weights_and_nodes$x,
@@ -331,7 +343,10 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
                               i_cov_on = c("alpha", "delta", "log_disp"),
                               which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                               p_cov_cat = TRUE,
-                              resp_patterns_matrix = NULL) {
+                              resp_patterns_matrix = NULL, 
+                              item_offset = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
+  
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params)) &
                           !grepl("beta", names(item_params))]
@@ -353,6 +368,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         deltas = deltas,
         disps = disps,
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         resp_pattern = resp_patterns_matrix,
@@ -371,6 +387,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         deltas = deltas,
         disps = disps,
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         PPs = PPs,
@@ -394,6 +411,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           delta = deltas,
           disps = disps,
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -411,6 +429,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           deltas = deltas,
           disps = disps,
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -428,6 +447,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           deltas = deltas,
           disp = disps,
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -483,6 +503,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
+        item_offset = item_offset,
         data = as.matrix(data),
         i_cov_data_alpha = i_covariates_alpha,
         i_cov_data_delta = i_covariates_delta,
@@ -531,6 +552,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
             disp = disps,
             betas_alpha = betas_i_alpha,
             betas_logdisp = betas_i_logdisp,
+            item_offset = item_offset,
             data = as.matrix(data),
             i_cov_data_alpha = i_covariates_alpha,
             i_cov_data_log_disp = i_covariates_log_disp,
@@ -576,6 +598,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
             disp = disps,
             betas_delta = betas_i_delta,
             betas_logdisp = betas_i_logdisp,
+            item_offset = item_offset,
             data = as.matrix(data),
             i_cov_data_delta = i_covariates_delta,
             i_cov_data_log_disp = i_covariates_log_disp,
@@ -622,6 +645,7 @@ grad_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, data,
           disps = disps, 
           betas_alpha = betas_i_alpha,
           betas_delta = betas_i_delta,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data_alpha = i_covariates_alpha,
           i_cov_data_delta = i_covariates_delta,
@@ -654,6 +678,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
                                        which_i_cov = list(alpha="all", delta="all", log_disp=NULL),
                                        p_cov_cat = TRUE,
                                        resp_patterns_matrix = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
 
   alphas <- item_params[grepl("alpha", names(item_params))]
   # note that alphas is a scalar if we have item covariates on alpha
@@ -671,6 +696,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         resp_pattern = resp_patterns_matrix,
@@ -690,6 +716,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         PPs = PPs,
@@ -714,6 +741,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
           delta = deltas, 
           disps = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -732,6 +760,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
           deltas = deltas, 
           disps = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -779,6 +808,7 @@ grad_cmp_with_cov_fixdisps <- function(item_params, PPs, weights_and_nodes,
         disps = disps,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
+        item_offset = item_offset,
         data = as.matrix(data),
         i_cov_data_alpha = i_covariates_alpha,
         i_cov_data_delta = i_covariates_delta,
@@ -813,7 +843,9 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
                                         i_cov_on = c("delta", "log_disp"),
                                         which_i_cov = list(alpha=NULL, delta="all", log_disp="all"),
                                         p_cov_cat = TRUE, 
-                                        resp_patterns_matrix = NULL) {
+                                        resp_patterns_matrix = NULL,
+                                        item_offset = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
   
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params)) &
@@ -834,6 +866,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         resp_pattern = resp_patterns_matrix,
@@ -853,6 +886,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         PPs = PPs,
@@ -880,6 +914,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
           delta = deltas, 
           disps = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -898,6 +933,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
           deltas = deltas, 
           disp = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -945,6 +981,7 @@ grad_cmp_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
         disp = disps,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
+        item_offset = item_offset,
         data = as.matrix(data),
         i_cov_data_delta = i_covariates_delta,
         i_cov_data_log_disp = i_covariates_log_disp,
@@ -981,7 +1018,9 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
                                         i_cov_on = c("alpha", "delta"),
                                         which_i_cov = list(alpha="all", delta="all", log_disp=NULL),
                                         p_cov_cat = TRUE,
-                                        resp_patterns_matrix = NULL) {
+                                        resp_patterns_matrix = NULL,
+                                        item_offset = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
   
   alphas <- item_params[grepl("alpha", names(item_params)) &
                           !grepl("beta", names(item_params))]
@@ -1002,6 +1041,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         resp_pattern = resp_patterns_matrix,
@@ -1021,6 +1061,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         PPs = PPs,
@@ -1045,6 +1086,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
           delta = deltas, 
           disps = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(c_covariates),
           PPs = PPs,
@@ -1063,6 +1105,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
           deltas = deltas, 
           disps = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(c_covariates),
           PPs = PPs,
@@ -1111,6 +1154,7 @@ grad_cmp_with_cov_samedisps <- function(item_params, PPs,
         disps = disps,
         betas_alpha = betas_i_alpha,
         betas_delta = betas_i_delta,
+        item_offset = item_offset,
         data = as.matrix(data),
         i_cov_data_alpha = i_covariates_alpha,
         i_cov_data_delta = i_covariates_delta,
@@ -1146,7 +1190,9 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
                                          i_cov_on = c("delta", "log_disp"),
                                          which_i_cov = list(alpha=NULL, delta="all", log_disp="all"),
                                          p_cov_cat = TRUE, 
-                                         resp_patterns_matrix = NULL) {
+                                         resp_patterns_matrix = NULL,
+                                         item_offset = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
   
   deltas <- item_params[grepl("delta", names(item_params)) & 
                           !grepl("beta", names(item_params))]
@@ -1171,6 +1217,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         resp_pattern = resp_patterns_matrix,
@@ -1190,6 +1237,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
         deltas = deltas, 
         disps = disps, 
         betas = betas_p,
+        item_offset = item_offset,
         data = as.matrix(data),
         p_cov_data = as.matrix(p_covariates),
         PPs = PPs,
@@ -1218,6 +1266,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           delta = deltas, 
           disps = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -1236,6 +1285,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
           deltas = deltas, 
           disp = disps, 
           betas = betas_i,
+          item_offset = item_offset,
           data = as.matrix(data),
           i_cov_data = as.matrix(i_covariates),
           PPs = PPs,
@@ -1283,6 +1333,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
         disp = disps,
         betas_delta = betas_i_delta,
         betas_logdisp = betas_i_logdisp,
+        item_offset = item_offset,
         data = as.matrix(data),
         i_cov_data_delta = i_covariates_delta,
         i_cov_data_log_disp = i_covariates_log_disp,
@@ -1313,7 +1364,7 @@ grad_cmp_with_cov_samealphas <- function(item_params, PPs,
 }
 
 # ell_cmp_with_cov -------------------------------------------------------------------
-# FIXME hier habe ich jetzt kein which_i_cov argument aber eigentlich brauche fuer countirt auch die ganze funktion nicht
+# TODO rausnehmen weil ich das hier nicht brauche
 ell_cmp_with_cov <- function(item_params, PPs, weights_and_nodes, 
                              data, p_covariates, i_covariates,
                              i_cov_on = c("alpha", "delta", "log_disp"),
@@ -1552,7 +1603,9 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                   resp_patterns_matrix = NULL,
                                   ctol_maxstep = 1e-8, m_method = "nleqslv",
                                   fix_disps = NULL, fix_alphas = NULL,
-                                  same_disps = FALSE, same_alphas = FALSE) {
+                                  same_disps = FALSE, same_alphas = FALSE,
+                                  item_offset = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
   
   if (is.null(fix_disps) & is.null(fix_alphas)) {
     if (!same_disps & !same_alphas) {
@@ -1566,7 +1619,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
-        resp_patterns_matrix = resp_patterns_matrix
+        resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset
       )
       # m step
       new_item_params <- nleqslv(
@@ -1581,6 +1635,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!same_disps & same_alphas) { 
@@ -1637,7 +1692,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
-        resp_patterns_matrix = resp_patterns_matrix
+        resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset
       )
       # m step
       new_item_params <- nleqslv(
@@ -1652,6 +1708,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_disps & !same_alphas) {
@@ -1705,7 +1762,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
-        resp_patterns_matrix = resp_patterns_matrix
+        resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset
       )
       # m step
       new_item_params <- nleqslv(
@@ -1720,6 +1778,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -1773,7 +1832,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
-        resp_patterns_matrix = resp_patterns_matrix
+        resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset
       )
       # m step
       new_item_params <- nleqslv(
@@ -1789,6 +1849,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!is.null(fix_alphas)) {
@@ -1842,7 +1903,8 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
-        resp_patterns_matrix = resp_patterns_matrix
+        resp_patterns_matrix = resp_patterns_matrix,
+        item_offset = item_offset
       )
       # m step
       new_item_params <- nleqslv(
@@ -1858,6 +1920,7 @@ em_cycle_cmp_with_cov <- function(data, item_params, weights_and_nodes,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -1874,7 +1937,10 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                  p_cov_cat = TRUE,
                                  resp_patterns_matrix = NULL,
                                  fix_disps = NULL, fix_alphas = NULL, 
-                                 same_disps = FALSE, same_alphas = FALSE) {
+                                 same_disps = FALSE, same_alphas = FALSE,
+                                 item_offset = NULL) {
+  # here, i can expect item_offset to already be a non-empty vector of length n_items
+  
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params)) & 
@@ -1917,6 +1983,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                       deltas = deltas, 
                                       disps = disps, 
                                       betas = betas_p,
+                                      item_offset = item_offset,
                                       p_cov_data = as.matrix(p_covariates),
                                       resp_pattern = resp_patterns_matrix,
                                       nodes = weights_and_nodes$x,
@@ -1933,6 +2000,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                       deltas = deltas, 
                                       disps = disps, 
                                       betas = betas_p,
+                                      item_offset = item_offset,
                                       p_cov_data = as.matrix(p_covariates),
                                       nodes = weights_and_nodes$x,
                                       weights = weights_and_nodes$w,
@@ -1954,6 +2022,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                         delta = deltas, 
                                         disps = disps, 
                                         betas = betas_i,
+                                        item_offset = item_offset,
                                         i_cov_data = as.matrix(i_covariates),
                                         nodes = weights_and_nodes$x,
                                         weights = weights_and_nodes$w,
@@ -1969,6 +2038,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                               deltas = deltas, 
                                               disps = disps, 
                                               betas = betas_i,
+                                              item_offset = item_offset,
                                               i_cov_data = as.matrix(i_covariates),
                                               nodes = weights_and_nodes$x,
                                               weights = weights_and_nodes$w,
@@ -1984,6 +2054,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                               deltas = deltas, 
                                               disp = disps, 
                                               betas = betas_i,
+                                           item_offset = item_offset,
                                               i_cov_data = as.matrix(i_covariates),
                                               nodes = weights_and_nodes$x,
                                               weights = weights_and_nodes$w,
@@ -2037,6 +2108,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                          betas_alpha = betas_i_alpha,
                                          betas_delta = betas_i_delta,
                                          betas_logdisp = betas_i_log_disp,
+                                         item_offset = item_offset,
                                          i_cov_data_alpha = i_covariates_alpha,
                                          i_cov_data_delta = i_covariates_delta,
                                          i_cov_data_log_disp = i_covariates_log_disp,
@@ -2083,6 +2155,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                                    disp = disps, 
                                                    betas_alpha = betas_i_alpha,
                                                    betas_logdisp = betas_i_log_disp,
+                                                   item_offset = item_offset,
                                                    i_cov_data_alpha = i_covariates_alpha,
                                                    i_cov_data_log_disp = i_covariates_log_disp,
                                                    nodes = weights_and_nodes$x,
@@ -2125,6 +2198,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                                    disp = disps, 
                                                    betas_delta = betas_i_delta,
                                                    betas_logdisp = betas_i_log_disp,
+                                                   item_offset = item_offset,
                                                    i_cov_data_delta = i_covariates_delta,
                                                    i_cov_data_log_disp = i_covariates_log_disp,
                                                    nodes = weights_and_nodes$x,
@@ -2169,6 +2243,7 @@ marg_ll_cmp_with_cov <- function(data, item_params, weights_and_nodes,
                                                     disps = disps, 
                                                     betas_alpha = betas_i_alpha,
                                                     betas_delta = betas_i_delta,
+                                                    item_offset = item_offset,
                                                     i_cov_data_alpha = i_covariates_alpha,
                                                     i_cov_data_delta = i_covariates_delta,
                                                     nodes = weights_and_nodes$x,
@@ -2197,13 +2272,14 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
                                 maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                 m_method = "nleqslv", convcrit = "marglik",
                                 fix_disps = NULL, fix_alphas = NULL,
-                                same_disps = FALSE, same_alphas = FALSE) {
+                                same_disps = FALSE, same_alphas = FALSE,
+                                item_offset = NULL) {
 
   # get nodes and weights for GH quadrature
   # weights_and_nodes <- gaussHermiteData(n_nodes)
   # weights_and_nodes$x <- weights_and_nodes$x * sqrt(2)
   # weights_and_nodes$w <- weights_and_nodes$w / sqrt(pi)
-  weights_and_nodes<- quad_rule(n_nodes, thres = thres,prob = prob)
+  weights_and_nodes <- quad_rule(n_nodes, thres = thres,prob = prob)
 
   new_params <- init_params
   conv <- FALSE
@@ -2211,6 +2287,10 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 
   new_ll <- 0
   marg_lls <- c()
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
+  }
   
   # prepare response patterns for categorical covariates
   if (!is.null(p_covariates) & p_cov_cat) {
@@ -2245,7 +2325,8 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
       fix_disps = fix_disps, 
       fix_alphas = fix_alphas,
       same_disps = same_disps, 
-      same_alphas = same_alphas
+      same_alphas = same_alphas,
+      item_offset = item_offset
     )
     #print(new_params)
 
@@ -2265,7 +2346,9 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
         same_disps = same_disps, 
-        same_alphas = same_alphas)
+        same_alphas = same_alphas,
+        item_offset = item_offset
+        )
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -2286,7 +2369,9 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
         fix_disps = fix_disps, 
         fix_alphas = fix_alphas,
         same_disps = same_disps, 
-        same_alphas = same_alphas)
+        same_alphas = same_alphas,
+        item_offset = item_offset
+        )
       marg_lls[iter] <- marg_ll
       plot(marg_lls)
       print(marg_lls)
@@ -2299,6 +2384,9 @@ run_em_cmp_with_cov <- function(data, init_params, n_nodes,
 
   out <- list(
     params = new_params,
+    item_offset = item_offset,
+    constraints = list(fix_alphas = fix_alphas, same_alphas = same_alphas,
+                       fix_disps = fix_disps, same_disps = same_disps),
     iter = iter,
     conv = conv,
     marg_ll = marg_lls
@@ -2315,10 +2403,14 @@ get_start_values_cmp_with_cov <- function(data,
                                           nodes = 121, nsim = 1000,
                                           same_alpha = FALSE,
                                           i_cov_on = c("alpha", "delta", "log_disp"),
-                                          which_i_cov = list(alpha="all", delta="all", log_disp="all")
+                                          which_i_cov = list(alpha="all", delta="all", log_disp="all"),
+                                          item_offset = NULL
                                           ) {
   # TODO constraints einbauen, dass alpha und log_disp ja ggf. auch noch gefixt sein
   # koennten auf einen spezifischen wert
+  
+  # expect that item_offset is already a vector of length n_items here
+  # (regardless of whether constant or item-specific, this was adjusted before)
   
   # p_covariates will work just like this, because poisson takes continuous or
   # categorical with dummy coding as it is and over than that we're not using it
@@ -2335,13 +2427,15 @@ get_start_values_cmp_with_cov <- function(data,
         if (i_cov_on == "log_disp") {
           init_values_pois <- get_start_values_pois(
             data = data,
-            same_alpha = TRUE
+            same_alpha = TRUE,
+            item_offset = item_offset
           )
           fit_pois <- run_em_poisson(
             data = data,
             init_params = init_values_pois,
             n_nodes = nodes,
-            same_alpha = TRUE
+            same_alpha = TRUE,
+            item_offset = item_offset
           )
         } else {
           init_values_pois <- get_start_values_poisson_with_cov(
@@ -2349,7 +2443,8 @@ get_start_values_cmp_with_cov <- function(data,
             p_covariates = p_covariates,
             i_covariates = i_covariates,
             same_alpha = TRUE,
-            i_cov_on = "delta"
+            i_cov_on = "delta",
+            item_offset = item_offset
           )
           fit_pois <- run_em_poisson_with_cov(
             data = data,
@@ -2358,7 +2453,8 @@ get_start_values_cmp_with_cov <- function(data,
             init_params = init_values_pois, 
             n_nodes = nodes,
             same_alpha = TRUE,
-            i_cov_on = "delta"
+            i_cov_on = "delta",
+            item_offset = item_offset
           )
         }
       } else {
@@ -2380,7 +2476,8 @@ get_start_values_cmp_with_cov <- function(data,
           i_covariates = i_covariates,
           same_alpha = TRUE,
           i_cov_on = "delta",
-          which_i_cov = which_i_cov_poisson
+          which_i_cov = which_i_cov_poisson,
+          item_offset = item_offset
         )
         fit_pois <- run_em_poisson_with_cov(
           data = data,
@@ -2390,20 +2487,23 @@ get_start_values_cmp_with_cov <- function(data,
           n_nodes = nodes,
           same_alpha = TRUE,
           i_cov_on = "delta", 
-          which_i_cov = which_i_cov_poisson
+          which_i_cov = which_i_cov_poisson,
+          item_offset = item_offset
         )
       } 
     } else if (!is.null(p_covariates)) { # with constrained alpha
       # FIXME das muss noch auf kovariaten angepasst werden
       init_values_pois <- get_start_values_pois(
         data = data,
-        same_alpha = TRUE
+        same_alpha = TRUE,
+        item_offset = item_offset
       )
       fit_pois <- run_em_poisson(
         data = data,
         init_params = init_values_pois,
         n_nodes = nodes,
-        same_alpha = TRUE
+        same_alpha = TRUE,
+        item_offset = item_offset
       )
     }
   } else { # no constraint on alpha
@@ -2413,19 +2513,22 @@ get_start_values_cmp_with_cov <- function(data,
         # to worry about on which item parameter we have them
         if (i_cov_on == "log_disp") {
           init_values_pois <- get_start_values_pois(
-            data = data
+            data = data,
+            item_offset = item_offset
           )
           fit_pois <- run_em_poisson(
             data = data,
             init_params = init_values_pois,
-            n_nodes = nodes
+            n_nodes = nodes,
+            item_offset = item_offset
           )
         } else {
           init_values_pois <- get_start_values_poisson_with_cov(
             data = data,
             p_covariates = p_covariates,
             i_covariates = i_covariates,
-            i_cov_on = i_cov_on
+            i_cov_on = i_cov_on,
+            item_offset = item_offset
           )
           fit_pois <- run_em_poisson_with_cov(
             data = data,
@@ -2433,7 +2536,8 @@ get_start_values_cmp_with_cov <- function(data,
             i_covariates = i_covariates,
             init_params = init_values_pois, 
             n_nodes = nodes,
-            i_cov_on = i_cov_on
+            i_cov_on = i_cov_on,
+            item_offset = item_offset
           )
         }
       } else if (length(i_cov_on) == 3) {
@@ -2445,7 +2549,8 @@ get_start_values_cmp_with_cov <- function(data,
           p_covariates = p_covariates,
           i_covariates = i_covariates,
           i_cov_on = c("alpha", "delta"),
-          which_i_cov = which_i_cov_poisson
+          which_i_cov = which_i_cov_poisson,
+          item_offset = item_offset
         )
         fit_pois <- run_em_poisson_with_cov(
           data = data,
@@ -2454,7 +2559,8 @@ get_start_values_cmp_with_cov <- function(data,
           init_params = init_values_pois, 
           n_nodes = nodes,
           i_cov_on =  c("alpha", "delta"),
-          which_i_cov = which_i_cov_poisson
+          which_i_cov = which_i_cov_poisson,
+          item_offset = item_offset
         )
       } else if (length(i_cov_on) == 2) {
         # if we have covariates on two parameters, we also need to distinguish between
@@ -2468,7 +2574,8 @@ get_start_values_cmp_with_cov <- function(data,
             p_covariates = p_covariates,
             i_covariates = i_covariates,
             i_cov_on = i_cov_on[-which(i_cov_on == "log_disp")],
-            which_i_cov = which_i_cov_poisson
+            which_i_cov = which_i_cov_poisson,
+            item_offset = item_offset
           )
           fit_pois <- run_em_poisson_with_cov(
             data = data,
@@ -2477,7 +2584,8 @@ get_start_values_cmp_with_cov <- function(data,
             init_params = init_values_pois, 
             n_nodes = nodes,
             i_cov_on =  i_cov_on[-which(i_cov_on == "log_disp")],
-            which_i_cov = which_i_cov_poisson
+            which_i_cov = which_i_cov_poisson,
+            item_offset = item_offset
           )
         } else {
           init_values_pois <- get_start_values_poisson_with_cov(
@@ -2485,7 +2593,8 @@ get_start_values_cmp_with_cov <- function(data,
             p_covariates = p_covariates,
             i_covariates = i_covariates,
             i_cov_on = i_cov_on,
-            which_i_cov = which_i_cov_poisson
+            which_i_cov = which_i_cov_poisson,
+            item_offset = item_offset
           )
           fit_pois <- run_em_poisson_with_cov(
             data = data,
@@ -2494,7 +2603,8 @@ get_start_values_cmp_with_cov <- function(data,
             init_params = init_values_pois, 
             n_nodes = nodes,
             i_cov_on =  i_cov_on,
-            which_i_cov = which_i_cov_poisson
+            which_i_cov = which_i_cov_poisson,
+            item_offset = item_offset
           )
         }
     }
@@ -2503,7 +2613,8 @@ get_start_values_cmp_with_cov <- function(data,
         data = data,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
-        i_cov_on = NULL
+        i_cov_on = NULL,
+        item_offset = item_offset
       )
       fit_pois <- run_em_poisson_with_cov(
         data = data,
@@ -2511,7 +2622,8 @@ get_start_values_cmp_with_cov <- function(data,
         i_covariates = i_covariates,
         init_params = init_values_pois, 
         n_nodes = nodes,
-        i_cov_on =  NULL
+        i_cov_on =  NULL,
+        item_offset = item_offset
       )
     }
   }
@@ -2520,6 +2632,10 @@ get_start_values_cmp_with_cov <- function(data,
   init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params)) &
                                    !grepl("beta", names(fit_pois$params))]
   
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
+  }
+  
   if (!is.null(p_covariates)) {
     # we have a model with person covariates
     init_betas_p <- fit_pois$params[grepl("beta_p", names(fit_pois$params))]
@@ -2527,11 +2643,11 @@ get_start_values_cmp_with_cov <- function(data,
     sim_abilities=rnorm(nsim)
     for (i in 1:ncol(data)) { 
       if (same_alpha) {
-        mu <- exp(init_deltas[i] + init_alphas*sim_abilities) 
+        mu <- exp(init_deltas[i] + init_alphas*sim_abilities + item_offset[i]) 
                     # + init_alphas*sum(t(init_betas_p * t(p_covariates))))
         # here alphas is a scalar because we have the constraint same alpha here
       } else {
-        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities) 
+        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities + item_offset[i]) 
                   # +  init_alphas[i]*sum(t(init_betas_p * t(p_covariates))))
       }
       sim <- rpois(nsim, mu)
@@ -2558,10 +2674,10 @@ get_start_values_cmp_with_cov <- function(data,
         init_betas_i <- fit_pois$params[grepl("beta_i", names(fit_pois$params))]
         for (i in 1:ncol(data)) {
           if (same_alpha) {
-            mu <- exp(init_deltas + init_alphas*sim_abilities)
+            mu <- exp(init_deltas + init_alphas*sim_abilities + item_offset[i])
                         # + sum(t(init_betas_i * t(i_covariates))))
           } else {
-            mu <- exp(init_deltas + init_alphas[i]*sim_abilities)
+            mu <- exp(init_deltas + init_alphas[i]*sim_abilities + item_offset[i])
                         # + sum(t(init_betas_i * t(i_covariates))))
           }
           sim <- rpois(nsim, mu)
@@ -2580,7 +2696,7 @@ get_start_values_cmp_with_cov <- function(data,
         # alpha because the covariates have different values for the different
         # items implying different alphas
         for (i in 1:ncol(data)) {
-          mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+          mu <- exp(init_deltas[i] + init_alphas*sim_abilities + item_offset[i])
                      # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
           sim <- rpois(nsim, mu)
           init_logdisps[i] <- log((var(sim) / var(data[,i])))
@@ -2601,7 +2717,7 @@ get_start_values_cmp_with_cov <- function(data,
           # constraints but as a consequence of having covariates on all item parameters,
           # we have only scalars for init_alphas and init_deltas
           # first compute item specific alphas and deltas
-          mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+          mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities + item_offset[i])
           sim <- rpois(nsim, mu)
           init_logdisps[i] <- log((var(sim) / var(data[,i])))
         }
@@ -2672,7 +2788,7 @@ get_start_values_cmp_with_cov <- function(data,
       item_deltas <- init_deltas + 
         apply(as.matrix(i_covariates_delta), 1, function(x){sum(x*init_betas_i_delta)})
       for (i in 1:ncol(data)) {
-        mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities)
+        mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities + item_offset[i])
         sim <- rpois(nsim, mu)
         init_logdisps[i] <- log((var(sim) / var(data[,i])))
       }
@@ -2724,7 +2840,7 @@ get_start_values_cmp_with_cov <- function(data,
           item_alphas <- init_alphas + 
             apply(as.matrix(i_covariates_alpha), 1, function(x){sum(x*init_betas_i_alpha)})
           for (i in 1:ncol(data)) {
-            mu <- exp(init_deltas[i] + item_alphas[i]*sim_abilities)
+            mu <- exp(init_deltas[i] + item_alphas[i]*sim_abilities + item_offset[i])
             sim <- rpois(nsim, mu)
             init_logdisps[i] <- log((var(sim) / var(data[,i])))
           }
@@ -2777,10 +2893,10 @@ get_start_values_cmp_with_cov <- function(data,
           for (i in 1:ncol(data)) {
             if (same_alpha) {
               # only one alpha for all items
-              mu <- exp(item_deltas[i] + init_alphas*sim_abilities)
+              mu <- exp(item_deltas[i] + init_alphas*sim_abilities + item_offset[i])
             } else {
               # item-specific alphas
-              mu <- exp(item_deltas[i] + init_alphas[i]*sim_abilities)
+              mu <- exp(item_deltas[i] + init_alphas[i]*sim_abilities + item_offset[i])
             }
             sim <- rpois(nsim, mu)
             init_logdisps[i] <- log((var(sim) / var(data[,i])))
@@ -2830,7 +2946,7 @@ get_start_values_cmp_with_cov <- function(data,
           apply(as.matrix(i_covariates_delta), 1, function(x){sum(x*init_betas_i_delta)})
         # start values for the log_disps
         for (i in 1:ncol(data)) {
-          mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities)
+          mu <- exp(item_deltas[i] + item_alphas[i]*sim_abilities + item_offset[i])
           # + sim_abilities * sum(t(init_betas_i * t(i_covariates))))
           sim <- rpois(nsim, mu)
           init_logdisps[i] <- log((var(sim) / var(data[,i])))

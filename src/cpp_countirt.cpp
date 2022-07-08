@@ -1646,6 +1646,7 @@ double marg_ll_cpp (NumericMatrix data,
                     NumericVector alphas,
                     NumericVector deltas,
                     NumericVector disps,
+                    NumericVector item_offset,
                     NumericVector nodes,
                     NumericVector weights,
                     NumericVector grid_mus,
@@ -1666,7 +1667,7 @@ double marg_ll_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int j=0;j<K;j++) {
       // loop over nodes (rows)
-      mu(j,i) = exp(alphas[i] * nodes[j] + deltas[i]);
+      mu(j,i) = exp(alphas[i] * nodes[j] + deltas[i] + item_offset[i]); 
       mu_interp(j,i) = mu(j,i);
       if (mu(j,i) > max_mu) { mu_interp(j,i) = max_mu; }
       if (mu(j,i) < min_mu) { mu_interp(j,i) = min_mu; }
@@ -1711,6 +1712,7 @@ double marg_ll_cmp_with_pcov_cpp (NumericMatrix data,
                                   NumericVector deltas,
                                   NumericVector disps,
                                   NumericVector betas,
+                                  NumericVector item_offset,
                                   NumericMatrix p_cov_data,
                                   NumericVector nodes,
                                   NumericVector weights,
@@ -1739,7 +1741,7 @@ double marg_ll_cmp_with_pcov_cpp (NumericMatrix data,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
@@ -1791,6 +1793,7 @@ double marg_ll_cmp_with_pcov_cat_cpp (NumericMatrix data,
                                   NumericVector deltas,
                                   NumericVector disps,
                                   NumericVector betas,
+                                  NumericVector item_offset,
                                   NumericMatrix p_cov_data,
                                   NumericMatrix resp_pattern, 
                                   NumericVector nodes,
@@ -1822,7 +1825,7 @@ double marg_ll_cmp_with_pcov_cat_cpp (NumericMatrix data,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row
@@ -1893,6 +1896,7 @@ double marg_ll_cmp_with_icov_delta_cpp (NumericMatrix data,
                                   double delta,
                                   NumericVector disps,
                                   NumericVector betas,
+                                  NumericVector item_offset,
                                   NumericMatrix i_cov_data,
                                   NumericVector nodes,
                                   NumericVector weights,
@@ -1917,7 +1921,7 @@ double marg_ll_cmp_with_icov_delta_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -1967,6 +1971,7 @@ double marg_ll_cmp_with_icov_alpha_cpp (NumericMatrix data,
                                         NumericVector deltas,
                                         NumericVector disps,
                                         NumericVector betas,
+                                        NumericVector item_offset,
                                         NumericMatrix i_cov_data,
                                         NumericVector nodes,
                                         NumericVector weights,
@@ -1991,7 +1996,7 @@ double marg_ll_cmp_with_icov_alpha_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j];
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas[c] * i_cov_data(j,c); // for item j
@@ -2041,6 +2046,7 @@ double marg_ll_cmp_with_icov_nu_cpp (NumericMatrix data,
                                         NumericVector deltas,
                                         double disp,
                                         NumericVector betas,
+                                        NumericVector item_offset,
                                         NumericMatrix i_cov_data,
                                         NumericVector nodes,
                                         NumericVector weights,
@@ -2067,7 +2073,7 @@ double marg_ll_cmp_with_icov_nu_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
       if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
@@ -2122,6 +2128,7 @@ double marg_ll_cmp_with_icov_all_cpp (NumericMatrix data,
                                      NumericVector betas_alpha,
                                      NumericVector betas_delta,
                                      NumericVector betas_logdisp,
+                                     NumericVector item_offset,
                                      NumericMatrix i_cov_data_alpha,
                                      NumericMatrix i_cov_data_delta,
                                      NumericMatrix i_cov_data_log_disp,
@@ -2153,7 +2160,7 @@ double marg_ll_cmp_with_icov_all_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       // use which_i_cov arguments to determine over which columns we have to sum for
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
@@ -2220,6 +2227,7 @@ double marg_ll_cmp_with_icov_alpha_nu_cpp (NumericMatrix data,
                                       double disp,
                                       NumericVector betas_alpha,
                                       NumericVector betas_logdisp,
+                                      NumericVector item_offset,
                                       NumericMatrix i_cov_data_alpha,
                                       NumericMatrix i_cov_data_log_disp,
                                       NumericVector nodes,
@@ -2248,7 +2256,7 @@ double marg_ll_cmp_with_icov_alpha_nu_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j];
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j];
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
         log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
@@ -2304,6 +2312,7 @@ double marg_ll_cmp_with_icov_delta_nu_cpp (NumericMatrix data,
                                       double disp,
                                       NumericVector betas_delta,
                                       NumericVector betas_logdisp,
+                                      NumericVector item_offset,
                                       NumericMatrix i_cov_data_delta,
                                       NumericMatrix i_cov_data_log_disp,
                                       NumericVector nodes,
@@ -2332,7 +2341,7 @@ double marg_ll_cmp_with_icov_delta_nu_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_delta; c++) { // add delta covariates
         log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
@@ -2389,6 +2398,7 @@ double marg_ll_cmp_with_icov_alpha_delta_cpp (NumericMatrix data,
                                       NumericVector disps,
                                       NumericVector betas_alpha,
                                       NumericVector betas_delta,
+                                      NumericVector item_offset,
                                       NumericMatrix i_cov_data_alpha,
                                       NumericMatrix i_cov_data_delta,
                                       NumericVector nodes,
@@ -2416,7 +2426,7 @@ double marg_ll_cmp_with_icov_alpha_delta_cpp (NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<K;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       // use which_i_cov arguments to determine over which columns we have to sum for
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
@@ -2627,6 +2637,7 @@ NumericVector grad_cmp_newem_cpp(NumericVector alphas,
 NumericVector grad_cmp_newem_cpp2(NumericVector alphas,
                                  NumericVector deltas,
                                  NumericVector disps,
+                                 NumericVector item_offset,
                                  NumericMatrix data,
                                  NumericMatrix PPs,
                                  NumericVector nodes, 
@@ -2659,7 +2670,7 @@ NumericVector grad_cmp_newem_cpp2(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over persons (rows)
-      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i]);
+      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i] + item_offset[i]);
       mu_interp(k,i) = mu(k,i);
       if (mu(k,i) > max_mu) { mu_interp(k,i) = max_mu; }
       if (mu(k,i) < min_mu) { mu_interp(k,i) = min_mu; }
@@ -2729,6 +2740,7 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
                                     NumericVector deltas,
                                     NumericVector disps,
                                     NumericVector betas,
+                                    NumericVector item_offset,
                                     NumericMatrix data,
                                     NumericMatrix p_cov_data,
                                     NumericMatrix PPs,
@@ -2770,7 +2782,7 @@ NumericVector grad_cmp_with_pcov_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0;k<n_nodes;k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
@@ -2883,6 +2895,7 @@ NumericVector grad_cmp_with_pcov_cat_cpp(NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix p_cov_data,
                                      NumericMatrix resp_pattern,
@@ -2922,7 +2935,7 @@ NumericVector grad_cmp_with_pcov_cat_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row
@@ -3059,6 +3072,7 @@ NumericVector grad_cmp_with_icov_delta_cpp(NumericVector alphas,
                                      double delta,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix i_cov_data,
                                      NumericMatrix PPs,
@@ -3096,7 +3110,7 @@ NumericVector grad_cmp_with_icov_delta_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta; // not
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j]; // not
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -3190,6 +3204,7 @@ NumericVector grad_cmp_with_icov_alpha_cpp(double alpha,
                                            NumericVector deltas,
                                            NumericVector disps,
                                            NumericVector betas,
+                                           NumericVector item_offset,
                                            NumericMatrix data,
                                            NumericMatrix i_cov_data,
                                            NumericMatrix PPs,
@@ -3227,7 +3242,7 @@ NumericVector grad_cmp_with_icov_alpha_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j]; // not
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j]; // not
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas[c] * i_cov_data(j,c); // for item j
@@ -3319,6 +3334,7 @@ NumericVector grad_cmp_with_icov_nu_cpp(NumericVector alphas,
                                            NumericVector deltas,
                                            double disp,
                                            NumericVector betas,
+                                           NumericVector item_offset,
                                            NumericMatrix data,
                                            NumericMatrix i_cov_data,
                                            NumericMatrix PPs,
@@ -3358,7 +3374,7 @@ NumericVector grad_cmp_with_icov_nu_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
       if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
@@ -3458,6 +3474,7 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
                                         NumericVector betas_alpha,
                                         NumericVector betas_delta,
                                         NumericVector betas_logdisp,
+                                        NumericVector item_offset,
                                         NumericMatrix data,
                                         NumericMatrix i_cov_data_alpha,
                                         NumericMatrix i_cov_data_delta,
@@ -3503,7 +3520,7 @@ NumericVector grad_cmp_with_icov_all_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       // use which_i_cov arguments to determine over which columns we have to sum for
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
@@ -3674,6 +3691,7 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
                                          double disp,
                                          NumericVector betas_alpha,
                                          NumericVector betas_logdisp,
+                                         NumericVector item_offset,
                                          NumericMatrix data,
                                          NumericMatrix i_cov_data_alpha,
                                          NumericMatrix i_cov_data_log_disp,
@@ -3716,7 +3734,7 @@ NumericVector grad_cmp_with_icov_alpha_nu_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j];
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j];
       for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
@@ -3838,6 +3856,7 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
                                          double disp,
                                          NumericVector betas_delta,
                                          NumericVector betas_logdisp,
+                                         NumericVector item_offset,
                                          NumericMatrix data,
                                          NumericMatrix i_cov_data_delta,
                                          NumericMatrix i_cov_data_log_disp,
@@ -3880,7 +3899,7 @@ NumericVector grad_cmp_with_icov_delta_nu_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_delta; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas_delta[c] * i_cov_data_delta(j,c);
@@ -4002,6 +4021,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
                                          NumericVector disps,
                                          NumericVector betas_alpha,
                                          NumericVector betas_delta,
+                                         NumericVector item_offset,
                                          NumericMatrix data,
                                          NumericMatrix i_cov_data_alpha,
                                          NumericMatrix i_cov_data_delta,
@@ -4042,7 +4062,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
@@ -4159,6 +4179,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_cpp(double alpha,
 NumericVector grad_cmp_fixdisps_newem_cpp(NumericVector alphas,
                                           NumericVector deltas,
                                           NumericVector disps,
+                                          NumericVector item_offset,
                                           NumericMatrix data,
                                           NumericMatrix PPs,
                                           NumericVector nodes, 
@@ -4190,7 +4211,7 @@ NumericVector grad_cmp_fixdisps_newem_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over persons (rows)
-      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i]);
+      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i] + item_offset[i]);
       mu_interp(k,i) = mu(k,i);
       if (mu(k,i) > max_mu) { mu_interp(k,i) = max_mu; }
       if (mu(k,i) < min_mu) { mu_interp(k,i) = min_mu; }
@@ -4251,6 +4272,7 @@ NumericVector grad_cmp_with_pcov_fixdisps_cpp(NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix p_cov_data,
                                      NumericMatrix PPs,
@@ -4291,7 +4313,7 @@ NumericVector grad_cmp_with_pcov_fixdisps_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0;k<n_nodes;k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
@@ -4384,6 +4406,7 @@ NumericVector grad_cmp_with_pcov_cat_fixdisps_cpp(NumericVector alphas,
                                               NumericVector deltas,
                                               NumericVector disps,
                                               NumericVector betas,
+                                              NumericVector item_offset,
                                               NumericMatrix data,
                                               NumericMatrix p_cov_data,
                                               NumericMatrix resp_pattern,
@@ -4422,7 +4445,7 @@ NumericVector grad_cmp_with_pcov_cat_fixdisps_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row
@@ -4542,6 +4565,7 @@ NumericVector grad_cmp_with_icov_delta_fixdisps_cpp(NumericVector alphas,
                                      double delta,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix i_cov_data,
                                      NumericMatrix PPs,
@@ -4578,7 +4602,7 @@ NumericVector grad_cmp_with_icov_delta_fixdisps_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -4664,6 +4688,7 @@ NumericVector grad_cmp_with_icov_alpha_fixdisps_cpp(double alpha,
                                                     NumericVector deltas,
                                                     NumericVector disps,
                                                     NumericVector betas,
+                                                    NumericVector item_offset,
                                                     NumericMatrix data,
                                                     NumericMatrix i_cov_data,
                                                     NumericMatrix PPs,
@@ -4700,7 +4725,7 @@ NumericVector grad_cmp_with_icov_alpha_fixdisps_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j];
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas[c] * i_cov_data(j,c); // for item j
@@ -4785,6 +4810,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
                                                            NumericVector disps,
                                                            NumericVector betas_alpha,
                                                            NumericVector betas_delta,
+                                                           NumericVector item_offset,
                                                            NumericMatrix data,
                                                            NumericMatrix i_cov_data_alpha,
                                                            NumericMatrix i_cov_data_delta,
@@ -4824,7 +4850,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
@@ -4925,6 +4951,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_fixdisps_cpp(double alpha,
 NumericVector grad_cmp_fixalphas_newem_cpp(NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
+                                  NumericVector item_offset,
                                   NumericMatrix data,
                                   NumericMatrix PPs,
                                   NumericVector nodes, 
@@ -4956,7 +4983,7 @@ NumericVector grad_cmp_fixalphas_newem_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over persons (rows)
-      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i]);
+      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i] + item_offset[i]);
       mu_interp(k,i) = mu(k,i);
       if (mu(k,i) > max_mu) { mu_interp(k,i) = max_mu; }
       if (mu(k,i) < min_mu) { mu_interp(k,i) = min_mu; }
@@ -5022,6 +5049,7 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix p_cov_data,
                                      NumericMatrix PPs,
@@ -5062,7 +5090,7 @@ NumericVector grad_cmp_with_pcov_fixalphas_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0;k<n_nodes;k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
@@ -5163,6 +5191,7 @@ NumericVector grad_cmp_with_pcov_cat_fixalphas_cpp(NumericVector alphas,
                                                NumericVector deltas,
                                                NumericVector disps,
                                                NumericVector betas,
+                                               NumericVector item_offset,
                                                NumericMatrix data,
                                                NumericMatrix p_cov_data,
                                                NumericMatrix resp_pattern,
@@ -5201,7 +5230,7 @@ NumericVector grad_cmp_with_pcov_cat_fixalphas_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row
@@ -5348,6 +5377,7 @@ NumericVector grad_cmp_with_icov_delta_fixalphas_cpp(NumericVector alphas,
                                      double delta,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix i_cov_data,
                                      NumericMatrix PPs,
@@ -5384,7 +5414,7 @@ NumericVector grad_cmp_with_icov_delta_fixalphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -5474,6 +5504,7 @@ NumericVector grad_cmp_with_icov_nu_fixalphas_cpp(NumericVector alphas,
                                                      NumericVector deltas,
                                                      double disp,
                                                      NumericVector betas,
+                                                     NumericVector item_offset,
                                                      NumericMatrix data,
                                                      NumericMatrix i_cov_data,
                                                      NumericMatrix PPs,
@@ -5512,7 +5543,7 @@ NumericVector grad_cmp_with_icov_nu_fixalphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
       if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
@@ -5608,6 +5639,7 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
                                                          double disp,
                                                          NumericVector betas_delta,
                                                          NumericVector betas_logdisp,
+                                                         NumericVector item_offset,
                                                          NumericMatrix data,
                                                          NumericMatrix i_cov_data_delta,
                                                          NumericMatrix i_cov_data_log_disp,
@@ -5649,7 +5681,7 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_delta; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas_delta[c] * i_cov_data_delta(j,c);
@@ -5764,6 +5796,7 @@ NumericVector grad_cmp_with_icov_delta_nu_fixalphas_cpp(NumericVector alphas,
 NumericVector grad_cmp_samedisps_newem_cpp(NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
+                                  NumericVector item_offset,
                                   NumericMatrix data,
                                   NumericMatrix PPs,
                                   NumericVector nodes, 
@@ -5796,7 +5829,7 @@ NumericVector grad_cmp_samedisps_newem_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over persons (rows)
-      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i]);
+      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i] + item_offset[i]);
       mu_interp(k,i) = mu(k,i);
       if (mu(k,i) > max_mu) { mu_interp(k,i) = max_mu; }
       if (mu(k,i) < min_mu) { mu_interp(k,i) = min_mu; }
@@ -5865,6 +5898,7 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix p_cov_data,
                                      NumericMatrix PPs,
@@ -5906,7 +5940,7 @@ NumericVector grad_cmp_with_pcov_samedisps_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0;k<n_nodes;k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
@@ -6019,6 +6053,7 @@ NumericVector grad_cmp_with_pcov_cat_samedisps_cpp(NumericVector alphas,
                                                NumericVector deltas,
                                                NumericVector disps,
                                                NumericVector betas,
+                                               NumericVector item_offset,
                                                NumericMatrix data,
                                                NumericMatrix p_cov_data,
                                                NumericMatrix resp_pattern,
@@ -6058,7 +6093,7 @@ NumericVector grad_cmp_with_pcov_cat_samedisps_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row
@@ -6195,6 +6230,7 @@ NumericVector grad_cmp_with_icov_delta_samedisps_cpp(NumericVector alphas,
                                      double delta,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix i_cov_data,
                                      NumericMatrix PPs,
@@ -6232,7 +6268,7 @@ NumericVector grad_cmp_with_icov_delta_samedisps_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -6325,6 +6361,7 @@ NumericVector grad_cmp_with_icov_alpha_samedisps_cpp(double alpha,
                                                      NumericVector deltas,
                                                      NumericVector disps,
                                                      NumericVector betas,
+                                                     NumericVector item_offset,
                                                      NumericMatrix data,
                                                      NumericMatrix i_cov_data,
                                                      NumericMatrix PPs,
@@ -6362,7 +6399,7 @@ NumericVector grad_cmp_with_icov_alpha_samedisps_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j];
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas[c] * i_cov_data(j,c); // for item j
@@ -6455,6 +6492,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
                                          NumericVector disps,
                                          NumericVector betas_alpha,
                                          NumericVector betas_delta,
+                                         NumericVector item_offset,
                                          NumericMatrix data,
                                          NumericMatrix i_cov_data_alpha,
                                          NumericMatrix i_cov_data_delta,
@@ -6495,7 +6533,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_alpha; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
@@ -6610,6 +6648,7 @@ NumericVector grad_cmp_with_icov_alpha_delta_samedisps_cpp(double alpha,
 NumericVector grad_cmp_samealphas_newem_cpp(NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
+                                  NumericVector item_offset,
                                   NumericMatrix data,
                                   NumericMatrix PPs,
                                   NumericVector nodes, 
@@ -6642,7 +6681,7 @@ NumericVector grad_cmp_samealphas_newem_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over persons (rows)
-      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i]);
+      mu(k,i) = exp(alphas[i] * nodes[k] + deltas[i] + item_offset[i]);
       mu_interp(k,i) = mu(k,i);
       if (mu(k,i) > max_mu) { mu_interp(k,i) = max_mu; }
       if (mu(k,i) < min_mu) { mu_interp(k,i) = min_mu; }
@@ -6711,6 +6750,7 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
                                      NumericVector deltas,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix p_cov_data,
                                      NumericMatrix PPs,
@@ -6752,7 +6792,7 @@ NumericVector grad_cmp_with_pcov_samealphas_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0;k<n_nodes;k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for all covariates for the item j
           // (for the specific person i we are currently looking at)
@@ -6865,6 +6905,7 @@ NumericVector grad_cmp_with_pcov_cat_samealphas_cpp(NumericVector alphas,
                                                 NumericVector deltas,
                                                 NumericVector disps,
                                                 NumericVector betas,
+                                                NumericVector item_offset,
                                                 NumericMatrix data,
                                                 NumericMatrix p_cov_data,
                                                 NumericMatrix resp_pattern,
@@ -6904,7 +6945,7 @@ NumericVector grad_cmp_with_pcov_cat_samealphas_cpp(NumericVector alphas,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row
@@ -7044,6 +7085,7 @@ NumericVector grad_cmp_with_icov_delta_samealphas_cpp(NumericVector alphas,
                                      double delta,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix data,
                                      NumericMatrix i_cov_data,
                                      NumericMatrix PPs,
@@ -7081,7 +7123,7 @@ NumericVector grad_cmp_with_icov_delta_samealphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas[c] * i_cov_data(j,c); // for item j
@@ -7174,6 +7216,7 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
                                                       NumericVector deltas,
                                                       double disp,
                                                       NumericVector betas,
+                                                      NumericVector item_offset,
                                                       NumericMatrix data,
                                                       NumericMatrix i_cov_data,
                                                       NumericMatrix PPs,
@@ -7213,7 +7256,7 @@ NumericVector grad_cmp_with_icov_nu_samealphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
       if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
@@ -7312,6 +7355,7 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
                                                          double disp,
                                                          NumericVector betas_delta,
                                                          NumericVector betas_logdisp,
+                                                         NumericVector item_offset,
                                                          NumericMatrix data,
                                                          NumericMatrix i_cov_data_delta,
                                                          NumericMatrix i_cov_data_log_disp,
@@ -7354,7 +7398,7 @@ NumericVector grad_cmp_with_icov_delta_nu_samealphas_cpp(NumericVector alphas,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_delta; c++) {
         // add all the (weighted) covariate values for all covariates
         log_mu += betas_delta[c] * i_cov_data_delta(j,c);
@@ -8480,6 +8524,7 @@ NumericMatrix e_values_newem_cpp2(NumericMatrix data,
                                   NumericVector alphas,
                                   NumericVector deltas,
                                   NumericVector disps,
+                                  NumericVector item_offset,
                                   NumericVector nodes,
                                   NumericVector weights,
                                   NumericVector grid_mus,
@@ -8500,7 +8545,7 @@ NumericMatrix e_values_newem_cpp2(NumericMatrix data,
     // loop over items (columns)
     for(int j=0;j<n_nodes;j++) {
       // loop over nodes (rows)
-      mu(j,i) = exp(alphas[i] * nodes[j] + deltas[i]);
+      mu(j,i) = exp(alphas[i] * nodes[j] + deltas[i] + item_offset[i]);
       mu_interp(j,i) = mu(j,i);
       if (mu(j,i) > max_mu) { mu_interp(j,i) = max_mu; }
       if (mu(j,i) < min_mu) { mu_interp(j,i) = min_mu; }
@@ -8559,6 +8604,7 @@ NumericMatrix estep_cmp_with_icov_delta_cpp(NumericMatrix data,
                                   double delta,
                                   NumericVector disps,
                                   NumericVector betas,
+                                  NumericVector item_offset,
                                   NumericMatrix i_cov_data,
                                   NumericVector nodes,
                                   NumericVector weights,
@@ -8583,7 +8629,7 @@ NumericMatrix estep_cmp_with_icov_delta_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta; // deltas is a scalar for item covariates
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j]; // deltas is a scalar for item covariates
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         // (for the specific item j we are currently looking at)
@@ -8645,6 +8691,7 @@ NumericMatrix estep_cmp_with_icov_alpha_cpp(NumericMatrix data,
                                             NumericVector deltas,
                                             NumericVector disps,
                                             NumericVector betas,
+                                            NumericVector item_offset,
                                             NumericMatrix i_cov_data,
                                             NumericVector nodes,
                                             NumericVector weights,
@@ -8669,7 +8716,7 @@ NumericMatrix estep_cmp_with_icov_alpha_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j]; 
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j]; 
       for(int c=0; c<I; c++) {
         // add all the (weighted) covariate values for all covariates
         // (for the specific item j we are currently looking at)
@@ -8731,6 +8778,7 @@ NumericMatrix estep_cmp_with_icov_nu_cpp(NumericMatrix data,
                                             NumericVector deltas,
                                             double disp,
                                             NumericVector betas,
+                                            NumericVector item_offset,
                                             NumericMatrix i_cov_data,
                                             NumericVector nodes,
                                             NumericVector weights,
@@ -8757,7 +8805,7 @@ NumericMatrix estep_cmp_with_icov_nu_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + deltas[j];
+      double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
       mu(k,j) = exp(log_mu);
       mu_interp(k,j) = mu(k,j);
       if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
@@ -8823,6 +8871,7 @@ NumericMatrix estep_cmp_with_icov_all_cpp(NumericMatrix data,
                                          NumericVector betas_alpha,
                                          NumericVector betas_delta,
                                          NumericVector betas_logdisp,
+                                         NumericVector item_offset,
                                          NumericMatrix i_cov_data_alpha,
                                          NumericMatrix i_cov_data_delta,
                                          NumericMatrix i_cov_data_log_disp,
@@ -8854,7 +8903,7 @@ NumericMatrix estep_cmp_with_icov_all_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       // use which_i_cov arguments to determine over which columns we have to sum for
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
@@ -8931,6 +8980,7 @@ NumericMatrix estep_cmp_with_icov_alpha_nu_cpp(NumericMatrix data,
                                           double disp,
                                           NumericVector betas_alpha,
                                           NumericVector betas_logdisp,
+                                          NumericVector item_offset,
                                           NumericMatrix i_cov_data_alpha,
                                           NumericMatrix i_cov_data_log_disp,
                                           NumericVector nodes,
@@ -8960,7 +9010,7 @@ NumericMatrix estep_cmp_with_icov_alpha_nu_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + deltas[j];
+      double log_mu = alpha * nodes[k] + deltas[j] + item_offset[j];
       for(int c=0; c<I_alpha; c++) { // add alpha covariates
         log_mu += nodes[k] * betas_alpha[c] * i_cov_data_alpha(j,c);
       }
@@ -9028,6 +9078,7 @@ NumericMatrix estep_cmp_with_icov_delta_nu_cpp(NumericMatrix data,
                                           double disp,
                                           NumericVector betas_delta,
                                           NumericVector betas_logdisp,
+                                          NumericVector item_offset,
                                           NumericMatrix i_cov_data_delta,
                                           NumericMatrix i_cov_data_log_disp,
                                           NumericVector nodes,
@@ -9057,7 +9108,7 @@ NumericMatrix estep_cmp_with_icov_delta_nu_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alphas[j] * nodes[k] + delta;
+      double log_mu = alphas[j] * nodes[k] + delta + item_offset[j];
       for(int c=0; c<I_delta; c++) { // add delta covariates
         log_mu += betas_delta[c] * i_cov_data_delta(j,c);
       }
@@ -9124,6 +9175,7 @@ NumericMatrix estep_cmp_with_icov_alpha_delta_cpp(NumericMatrix data,
                                           NumericVector disps,
                                           NumericVector betas_alpha,
                                           NumericVector betas_delta,
+                                          NumericVector item_offset,
                                           NumericMatrix i_cov_data_alpha,
                                           NumericMatrix i_cov_data_delta,
                                           NumericVector nodes,
@@ -9151,7 +9203,7 @@ NumericMatrix estep_cmp_with_icov_alpha_delta_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over nodes (rows)
-      double log_mu = alpha * nodes[k] + delta;
+      double log_mu = alpha * nodes[k] + delta + item_offset[j];
       // use which_i_cov arguments to determine over which columns we have to sum for
       // each item parameter
       // so we first add all the alpha covariates and then all the delta covariates
@@ -9217,6 +9269,7 @@ NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
                                      NumericVector deltas,
                                      NumericVector disps,
                                      NumericVector betas,
+                                     NumericVector item_offset,
                                      NumericMatrix p_cov_data,
                                      NumericVector nodes,
                                      NumericVector weights,
@@ -9250,7 +9303,7 @@ NumericMatrix estep_cmp_with_pcov_cpp(NumericMatrix data,
       // loop over items (columns)
       for(int k=0;k<n_nodes;k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         // my nodes are here my epsilon
         for(int p=0; p<P; p++) {
           // add all the (weighted) covariate values for that specific item j and person i
@@ -9316,6 +9369,7 @@ NumericMatrix estep_cmp_with_pcov_cat_cpp(NumericMatrix data,
                                       NumericVector deltas,
                                       NumericVector disps,
                                       NumericVector betas,
+                                      NumericVector item_offset,
                                       NumericMatrix p_cov_data,
                                       NumericMatrix resp_pattern,
                                       NumericVector nodes,
@@ -9348,7 +9402,7 @@ NumericMatrix estep_cmp_with_pcov_cat_cpp(NumericMatrix data,
       // loop over items (columns)
       for(int k=0; k<K; k++) {
         // loop over nodes (rows)
-        double log_mu = alphas[j] * nodes[k] + deltas[j];
+        double log_mu = alphas[j] * nodes[k] + deltas[j] + item_offset[j];
         for(int p=0; p<P; p++) {
           // this works because only includes columns for none-reference categories
           // for all covs in ref categories, resp_pattern will just always be zero in that row

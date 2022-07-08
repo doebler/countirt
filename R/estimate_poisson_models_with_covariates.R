@@ -5,7 +5,10 @@ estep_poisson_with_cov <- function(data, item_params,
                                    p_covariates, i_covariates, 
                                    weights_and_nodes,
                                    i_cov_on = c("alpha", "delta"),
-                                   which_i_cov = list(alpha = "all", delta = "all")) {
+                                   which_i_cov = list(alpha = "all", delta = "all"),
+                                   item_offset = NULL) {
+  
+  # i can expect item_offset to be a non-empty vector of length n_items
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params)) & 
@@ -29,7 +32,7 @@ estep_poisson_with_cov <- function(data, item_params,
     for (j in 1:ncol(data)) {
       lambdas <- exp(outer(
         alphas[j] * as.numeric(p_covariates %*% betas_p),
-        alphas[j] * weights_and_nodes$x + deltas[j],
+        alphas[j] * weights_and_nodes$x + deltas[j] + item_offset[j],
         "+"
       ))
       PPs <- PPs + apply(lambdas, 2, function(x){dpois(data[,j], x, log = TRUE)})
@@ -53,7 +56,7 @@ estep_poisson_with_cov <- function(data, item_params,
         
         sum_icov <- as.numeric(i_covariates %*% betas_i)
         for (j in 1:ncol(data)) {
-          lambdas <- exp(deltas + alphas[j] * weights_and_nodes$x + sum_icov[j])
+          lambdas <- exp(deltas + alphas[j] * weights_and_nodes$x + sum_icov[j] + item_offset[j])
           # note that deltas will be just one scalar value in the case of item covariates
           PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
         }
@@ -69,7 +72,7 @@ estep_poisson_with_cov <- function(data, item_params,
         
         sum_icov <- as.numeric(i_covariates %*% betas_i)
         for (j in 1:ncol(data)) {
-          lambdas <- exp(deltas[j] + alphas * weights_and_nodes$x + weights_and_nodes$x * sum_icov[j])
+          lambdas <- exp(deltas[j] + alphas * weights_and_nodes$x + weights_and_nodes$x * sum_icov[j] + item_offset[j])
           # note that deltas will be just one scalar value in the case of item covariates
           PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
         }
@@ -109,7 +112,7 @@ estep_poisson_with_cov <- function(data, item_params,
       for (j in 1:ncol(data)) {
         lambdas <- exp(deltas + alphas * weights_and_nodes$x +
                          weights_and_nodes$x * sum_icov_alpha[j] + 
-                         sum_icov_delta[j])
+                         sum_icov_delta[j] + item_offset[j])
         # note that deltas will be just one scalar value in the case of item covariates
         PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
       }
@@ -129,7 +132,10 @@ estep_poisson_with_cov <- function(data, item_params,
 grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
                                   p_covariates, i_covariates,
                                   i_cov_on = c("alpha", "delta"),
-                                  which_i_cov = list(alpha = "all", delta = "all")) {
+                                  which_i_cov = list(alpha = "all", delta = "all"),
+                                  item_offset = NULL) {
+  # i can expect item_offset to be a non-empty vector of length n_items
+  
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params)) & 
                           !grepl("beta", names(item_params))]
@@ -155,7 +161,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
       for (k in 1:K) {
         lambda <- exp(deltas[j] + alphas[j] * nodes[k] +
                         # alphas[j] * rowSums(t(apply(p_covariates, 1, function(x){x*betas_p}))))
-                        as.numeric(p_covariates%*%betas_p * alphas[j]))
+                        as.numeric(p_covariates%*%betas_p * alphas[j]) + item_offset[j])
         # 2nd line is going to yield a vector of length N which we want so that then
         # our lambda is person specific
         grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
@@ -169,7 +175,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         for (j in 1:M) {
           lambda <- exp(deltas[j] + alphas[j] * nodes[k] +
                           # alphas[j] * rowSums(t(apply(p_covariates, 1, function(x){x*betas_p}))))
-                           as.numeric(p_covariates%*%betas_p * alphas[j]))
+                           as.numeric(p_covariates%*%betas_p * alphas[j]) + item_offset[j])
           # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
           # our lambda is person specific
           grad_betas_p[p] <- grad_betas_p[p] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
@@ -191,7 +197,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         i_covariates <- as.matrix(i_covariates)
         for (j in 1:M) {
           for (k in 1:K) {
-            lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+            lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
             # note that for item covariates on delta, deltas is a scalar
             grad_alphas[j] <- grad_alphas[j] + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
             grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
@@ -200,7 +206,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         for (c in 1:I) {
           for (k in 1:K) {
             for (j in 1:M) {
-              lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+              lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
               # note that for item covariates on delta, deltas is a scalar
               grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
             }
@@ -214,7 +220,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         i_covariates <- as.matrix(i_covariates)
         for (j in 1:M) {
           for (k in 1:K) {
-            lambda <- exp(deltas[j] + alphas * nodes[k] + nodes[k] * sum(as.numeric(betas_i*i_covariates[j,])))
+            lambda <- exp(deltas[j] + alphas * nodes[k] + nodes[k] * sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
             # note that for item covariates on alpha, alphas is a scalar
             grad_alpha <- grad_alpha + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
             grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
@@ -223,7 +229,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         for (c in 1:I) {
           for (k in 1:K) {
             for (j in 1:M) {
-              lambda <- exp(deltas[j] + alphas * nodes[k] + nodes[k] * sum(as.numeric(betas_i*i_covariates[j,])))
+              lambda <- exp(deltas[j] + alphas * nodes[k] + nodes[k] * sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
               # note that for item covariates on alpha, alphas is a scalar
               grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*nodes[k]*(data[,j] - lambda)*PPs[,k])
             }
@@ -264,7 +270,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
         for (k in 1:K) {
           lambda <- exp(deltas + alphas * nodes[k] + 
                           nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates_alpha[j,])) +
-                          sum(as.numeric(betas_i_delta*i_covariates_delta[j,])))
+                          sum(as.numeric(betas_i_delta*i_covariates_delta[j,])) + item_offset[j])
           # alphas and deltas are covariates when we have covariates on both covariates
           grad_alpha <- grad_alpha + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
           grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
@@ -278,7 +284,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
             for (j in 1:M) {
               lambda <- exp(deltas + alphas * nodes[k] + 
                               nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates_alpha[j,])) +
-                              sum(as.numeric(betas_i_delta*i_covariates_delta[j,])))
+                              sum(as.numeric(betas_i_delta*i_covariates_delta[j,])) + item_offset[j])
               # alphas and deltas are covariates when we have covariates on both covariates
               grad_betas_i_alpha[c] <- grad_betas_i_alpha[c] + 
                 sum(i_covariates_alpha[j,c]*nodes[k]*(data[,j] - lambda)*PPs[,k])
@@ -297,7 +303,7 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
             for (j in 1:M) {
               lambda <- exp(deltas + alphas * nodes[k] + 
                               nodes[k] * sum(as.numeric(betas_i_alpha*i_covariates_alpha[j,])) +
-                              sum(as.numeric(betas_i_delta*i_covariates_delta[j,])))
+                              sum(as.numeric(betas_i_delta*i_covariates_delta[j,])) + item_offset[j])
               # alphas and deltas are covariates when we have covariates on both covariates
               if (colnames(i_covariates)[c] %in% which_i_cov$alpha) {
                 grad_betas_i_alpha[counter_alpha] <- grad_betas_i_alpha[counter_alpha] + 
@@ -325,9 +331,12 @@ grad_poisson_with_cov <- function(item_params, PPs, weights_and_nodes, data,
 
 grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes, 
                                    data, p_covariates, i_covariates,
-                                   fix_alphas, i_cov_on = "delta") {
+                                   fix_alphas, i_cov_on = "delta",
+                                   item_offset = NULL) {
   # we don't need which_i_cov argument here as we only have i covs on delta and thus
   # it's clear which covariates go on which item parameter
+  
+  # i can expect item_offset to be a non-empty vector of length n_items
   
   # note: if we fix alphas, then we can only implement item covariates on delta,
   # because we are not estimating alpha at all
@@ -352,7 +361,7 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
     p_covariates <- as.matrix(p_covariates)
     for (j in 1:M) {
       for (k in 1:K) {
-        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]) + item_offset[j])
         # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
         # our lambda is person specific
         grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
@@ -361,7 +370,7 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
     for (p in 1:P) {
       for (k in 1:K) {
         for (j in 1:M) {
-          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]) + item_offset[j])
           # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
           # our lambda is person specific
           grad_betas_p[p] <- grad_betas_i[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
@@ -376,7 +385,7 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
     i_covariates <- as.matrix(i_covariates)
     for (j in 1:M) {
       for (k in 1:K) {
-        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
         # note that for item covariates, deltas is a scalar
         grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
       }
@@ -384,7 +393,7 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
     for (c in 1:I) {
       for (k in 1:K) {
         for (j in 1:M) {
-          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
           # note that for item covariates, deltas is a scalar
           grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
         }
@@ -400,9 +409,12 @@ grad_poisson_with_cov_fixalphas <- function(item_params, PPs, weights_and_nodes,
 
 grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes, 
                                             data, p_covariates, i_covariates,
-                                            i_cov_on = "delta") {
+                                            i_cov_on = "delta",
+                                            item_offset = NULL) {
   # we don't need which_i_cov argument here as we only have i covs on delta and thus
   # it's clear which covariates go on which item parameter
+  
+  # i can expect item_offset to be a non-empty vector of length n_items
   
   # note: same as with fix_alphas, if we want the same alpha across items, it doesn't
   # make sense to include item covariates because they have different values for different
@@ -434,7 +446,7 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
     p_covariates <- as.matrix(p_covariates)
     for (j in 1:M) {
       for (k in 1:K) {
-        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+        lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]) + item_offset[j])
         # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
         # our lambda is person specific
         grad_deltas[j] <- grad_deltas[j] + sum((data[,j] - lambda)*PPs[,k])
@@ -444,7 +456,7 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
     for (p in 1:P) {
       for (k in 1:K) {
         for (j in 1:M) {
-          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]))
+          lambda <- exp(deltas[j] + alphas[j] * nodes[k] + as.numeric(p_covariates%*%betas_p * alphas[j]) + item_offset[j])
           # p_covariates%*%betas_p is going to yield a vector of length N which we want so that then
           # our lambda is person specific
           grad_betas_p[p] <- grad_betas_i[c] + sum(alphas[j]*p_covariates[,p]*(data[,j] - lambda)*PPs[,k])
@@ -459,7 +471,7 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
     i_covariates <- as.matrix(i_covariates)
     for (j in 1:M) {
       for (k in 1:K) {
-        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+        lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
         # note that for item covariates, deltas is a scalar
         grad_alpha <- grad_alpha + sum(nodes[k]*(data[,j] - lambda)*PPs[,k])
         grad_delta <- grad_delta + sum((data[,j] - lambda)*PPs[,k])
@@ -468,7 +480,7 @@ grad_poisson_with_cov_samealpha <- function(item_params, PPs, weights_and_nodes,
     for (c in 1:I) {
       for (k in 1:K) {
         for (j in 1:M) {
-          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])))
+          lambda <- exp(deltas + alphas[j] * nodes[k] + sum(as.numeric(betas_i*i_covariates[j,])) + item_offset[j])
           # note that for item covariates, deltas is a scalar
           grad_betas_i[c] <- grad_betas_i[c] + sum(i_covariates[j,c]*(data[,j] - lambda)*PPs[,k])
         }
@@ -577,13 +589,16 @@ ell_poisson_with_cov <- function(item_params, PPs, weights_and_nodes,
 }
 
 # em_cycle_poisson_with_cov -------------------------------------------------------------------
-
 em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
                              p_covariates, i_covariates,
                              i_cov_on = c("alpha", "delta"),
                              which_i_cov = list(alpha = "all", delta = "all"),
                              fix_alphas = NULL, same_alpha = FALSE,
+                             item_offset = NULL,
                              ctol_maxstep = 1e-8) {
+  # i can expect here that item_offset is a non-empty vector of length items 
+  # (for no item_offsets it has already been filled with zeroes)
+  
     if (!is.null(fix_alphas)) {
       # fix alphas to the provided values
       # e step
@@ -596,7 +611,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
-        which_i_cov = which_i_cov
+        which_i_cov = which_i_cov,
+        item_offset = item_offset
       )
       
       # m step
@@ -610,6 +626,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
       # we don't need which_i_cov argument here because we only have item covariates
@@ -628,7 +645,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
-        which_i_cov = which_i_cov
+        which_i_cov = which_i_cov,
+        item_offset = item_offset
       )
       
       # m step
@@ -641,6 +659,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
       # we don't need which_i_cov argument here because we only have item covariates
@@ -655,7 +674,8 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         p_covariates = p_covariates,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
-        which_i_cov = which_i_cov
+        which_i_cov = which_i_cov,
+        item_offset = item_offset
       )
       
       # m step
@@ -669,6 +689,7 @@ em_cycle_poisson_with_cov <- function(data, item_params, weights_and_nodes,
         i_covariates = i_covariates,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -682,7 +703,11 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
                                      p_covariates, i_covariates, 
                                      i_cov_on = c("alpha", "delta"),
                                      which_i_cov = list(alpha = "all", delta = "all"),
-                                     fix_alphas = NULL, same_alphas = FALSE) {
+                                     fix_alphas = NULL, same_alphas = FALSE,
+                                     item_offset = NULL) {
+  # expect that item_offset is not empty, that it is es vector of length items and 
+  # just has been filled up with zeroes (in run_em) if empty
+  
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params)) &
@@ -717,7 +742,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
       sum_p_cov <- as.numeric(p_cov_data%*%betas_p)
       out <- 0
       for (j in 1:n_items) {
-        lambda <- exp(alphas[j] * z + deltas[j] + alphas[j] * sum_p_cov)
+        lambda <- exp(alphas[j] * z + deltas[j] + alphas[j] * sum_p_cov + item_offset[j])
         out <- out + (dpois(data[,j], lambda, log = TRUE))
       }
       return(exp(out))
@@ -746,7 +771,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
           out <- 0
           for (j in 1:n_items) {
             sum_i_cov <- sum(betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE])))
-            lambda <- exp(deltas + alphas[j] * z + sum_i_cov)
+            lambda <- exp(deltas + alphas[j] * z + sum_i_cov + item_offset[j])
             # note that deltas is just a scalar in the case of item covariates on delta
             out <- out + (dpois(data[,j], lambda, log = TRUE))
           }
@@ -769,7 +794,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
           out <- 0
           for (j in 1:n_items) {
             sum_i_cov <- z * sum(betas_i * as.numeric(t(i_cov_data[j, , drop = FALSE])))
-            lambda <- exp(deltas[j] + alphas * z + sum_i_cov)
+            lambda <- exp(deltas[j] + alphas * z + sum_i_cov + item_offset[j])
             # note that alphas is just a scalar in the case of item covariates on alpha
             out <- out + (dpois(data[,j], lambda, log = TRUE))
           }
@@ -817,7 +842,7 @@ marg_ll_poisson_with_cov <- function(data, item_params, weights_and_nodes,
                     alphas, deltas, betas_i_alpha, betas_i_delta) {
         out <- 0
         for (j in 1:n_items) {
-          lambda <- exp(deltas + alphas * z + 
+          lambda <- exp(deltas + item_offset[j] + alphas * z + 
                           z * sum(as.numeric(betas_i_alpha*i_cov_data_alpha[j,,drop=FALSE])) +
                           sum(as.numeric(betas_i_delta*i_cov_data_delta[j,,drop=FALSE])))
           # both deltas and alphas is a scalar if we have covariates here on alpha and delta
@@ -851,9 +876,12 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
                            thres = Inf, prob = 0,
                            maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                            convcrit = "marglik",
-                           fix_alphas = NULL, same_alpha = FALSE) {
+                           fix_alphas = NULL, same_alpha = FALSE,
+                           item_offset = NULL) {
   # i_cov_on argument: the default here is item covariates on all model parameters,
   # however, one could also choose just one of the model parameters, just given das a string
+  
+  # I can expect item_offset (if not NULL) to be a vector of length n_items here
   
   # get nodes and weights for GH quadrature
   # weights_and_nodes <- gaussHermiteData(n_nodes)
@@ -864,6 +892,10 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
   new_params <- init_params
   conv <- FALSE
   iter <- 1
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, n_items)
+  }
   
   new_ll <- 0
   marg_lls <- c()
@@ -883,6 +915,7 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
       which_i_cov = which_i_cov,
       fix_alphas = fix_alphas, 
       same_alpha = same_alpha,
+      item_offset = item_offset,
       ctol_maxstep = ctol_maxstep
     )
     
@@ -898,7 +931,8 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
         i_cov_on = i_cov_on, 
         which_i_cov = which_i_cov,
         fix_alphas = fix_alphas, 
-        same_alphas = same_alpha)
+        same_alphas = same_alpha,
+        item_offset = item_offset)
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -915,7 +949,8 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
         i_cov_on = i_cov_on,
         which_i_cov = which_i_cov,
         fix_alphas = fix_alphas, 
-        same_alphas = same_alpha)
+        same_alphas = same_alpha,
+        item_offset = item_offset)
       marg_lls[iter] <- marg_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -926,20 +961,12 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
   
   print("Done!")
   
-  # model_vcov <- compute_vcov(
-  #   item_params = new_params,
-  #   weights_and_nodes = weights_and_nodes, 
-  #   data = data
-  # )
-  # 
-  # se_params <- se_from_vcov(model_vcov)
-  
   out <- list(
     params = new_params,
-    #    se_params = se_params,
+    item_offset = item_offset,
+    constraints = list(fix_alphas = fix_alphas, same_alpha = same_alpha),
     iter = iter,
     conv = conv,
-    #    vcov = model_vcov,
     marg_ll = marg_lls
   )
   return(out)
@@ -949,12 +976,18 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
 # get_start_values_poisson_with_cov -------------------------------------------------------------------
 get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates, 
                                               same_alpha = FALSE, i_cov_on = c("alpha", "delta"),
-                                              which_i_cov = list(alpha = "all", delta = "all")) { 
+                                              which_i_cov = list(alpha = "all", delta = "all"),
+                                              item_offset = NULL) {
+  # I can expect item_offset (if not NULL) to be a vector of length n_items here
   
   # we just start with covariate weights set at 0
   if(!is.null(p_covariates)) { # for person covariates
     init_betas_p <- rep(0, ncol(p_covariates))
     init_deltas <- log(apply(data, 2, mean))
+    
+    if (!is.null(item_offset)) {
+      init_deltas <- init_deltas - item_offset
+    }
     
     if (same_alpha) {
       # just one alpha for all items
@@ -987,6 +1020,10 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
         init_deltas <- log(mean(apply(data, 2, mean)))
         # note that for item covariates on delta, we will then have just one delta
         
+        if (!is.null(item_offset)) {
+          init_deltas <- init_deltas - item_offset
+        }
+        
         if (same_alpha) {
           # just one alpha for all items
           init_alphas <- c()
@@ -1003,6 +1040,10 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
         }
       } else if (i_cov_on == "alpha") {
         init_deltas <- log(apply(data, 2, mean))
+        
+        if (!is.null(item_offset)) {
+          init_deltas <- init_deltas - item_offset
+        }
         
         # note that if have item covariates on alpha, we can't have any of the
         # constraints (because with fixed alphas their values are known anyways)
@@ -1049,6 +1090,10 @@ get_start_values_poisson_with_cov <- function(data, p_covariates, i_covariates,
       # covaraite values)
       
       init_deltas <- mean(log(apply(data, 2, mean)))
+      
+      if (!is.null(item_offset)) {
+        init_deltas <- init_deltas - item_offset
+      }
       
       # for covaruates on alpha, we just have one alpha
       init_alphas <- c()

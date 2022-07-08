@@ -9,6 +9,7 @@
 #' Please note that the model specification expects you to use the name for the parameters as explained here. Your items must have the same name as in the data frame. If you just specify the factor formula, the full 2PCMPM with no covariates will be estimated. Each line of specification must start with the correct parameter name as explained above and must end with ; . Note that for the model specification to be successfully passed, the variable names in your data frame must not contain any '(' nor any '::'.
 #' @param data A data frame either in long or in wide format. For the 2PCMP and the CLRM, wide format is required (which is the default expected format). For the DRTM, long format is required (for which you have to specify `long_format = TRUE`).
 #' @param family A string indicating the count data family, can be either "cmp" or "poisson".
+#' @param item_offset Either a scalar (for same offset for all items) or a vector of the same length as the number of items with an offset to be added to the prediction term.
 #' @param data_long A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.
 #' @param person_id A character string. Name of the column with person id in long format data frame. Only necessary if data_long = TRUE.
 #' @param stand_errors A boolean. Indicates whether standard errors for model parameters should be estimated. Defaults to FALSE.
@@ -25,6 +26,7 @@
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 cirt <- function(model, data, family,
+                 item_offset = NULL,
                  data_long = FALSE,
                  person_id = NULL,
                  stand_errors = FALSE,
@@ -50,10 +52,37 @@ cirt <- function(model, data, family,
     )
   
   # model list checks ---------------------------------------------------
+  
+  if (!is.null(item_offset)) {
+    # if we have item_offsets, check that they make sense
+    if (length(item_offset) == 1) {
+      # if we just one scalar provided as item intercept, then we need to turn
+      # that into a vector of length n_items for all subsequent functions
+      item_offset <- rep(item_offset, ncol(model_list$item_data))
+    } else {
+      # if not just one scalar, make sure that we have as many entries in
+      # item_offset as we have items, otherwise throw an error
+      if (length(item_offset) != ncol(model_list$item_data)) {
+        stop("Argument item_offset must either be a scalar to be used as the offset for all items or must be the same length as the number of items used in the model. Currently, neither is the case. Please check and adjust the item_offset argument.")
+      }
+    }
+  }
+  
+  if (!is.null(model_list$p_covariates) & !is.null(model_list$i_covariates)) {
+    stop("Currently, countirt does not support person and item covariates at the same time. This might be implemented in the future, but for now, please specify a model with either only item or only person covariates.")
+  }
+  
+  if (!is.null(model_list$i_covariates)) {
+    if (family == "poisson" & ("log_disp" %in% i_cov_on)) {
+      # check that no item covariates on the dispersion were specified when a Poisson model is fitted 
+      # as we don't have dispersions in the poisson model
+      stop("You specified item covariates on the dispersion parameters, but specified family = \"poisson\". There are no dispersion parameters in a Poisson model. Please either remove the item covariates on the dispersion, or change the family to \"cmp\".")
+    }
+  }
+    
+  
 
   # TODO checks that we don't specify constraints on parameters with covariate
-  # und dass wir nicht gleichzeitig person und item covariates haben
-  # checks that if family is poisson log_nus don't appear in formula
   
   # TODO wenn ich hier das i_cov_on argument einbaue, so dass ich item kovariaten mit
   # einbauen kann, dann sollte ich checken, dass wenn fix_alphas = TRUE, nur
@@ -61,9 +90,6 @@ cirt <- function(model, data, family,
   # man bei fixierten alphas dann nur item kovaraiten auf den deltas haben kann
   # (im poisson fall); analog auch im cmp fall unter beruecksichtigung von nu
   # (same with same_alpha; and analgously fix_disps and same_disp)
-  
-  # TODO incorporate check that we only have item or person parameters as
-  # we can only do one or the other atm
   
   # TODO check for i_cov_on %in% c("alpha", "delta", "log_nu")
   # also dass wir keinen unsinn haben als angegebenes element
@@ -137,7 +163,8 @@ cirt <- function(model, data, family,
         fix_disps = fixed_disps, 
         fix_alphas = model_list$fixed_alphas,
         same_disps = model_list$equal_log_disps, 
-        same_alpha = model_list$equal_alphas
+        same_alpha = model_list$equal_alphas,
+        item_offset = item_offset
       )
       
       print("Start model fitting. This will take a little bit of time.")
@@ -149,6 +176,7 @@ cirt <- function(model, data, family,
         fix_alphas = model_list$fixed_alphas,
         same_disps = model_list$equal_log_disps, 
         same_alphas = model_list$equal_alphas,
+        item_offset = item_offset,
         thres = control$thres,
         prob = control$prob,
         maxiter = control$maxiter, 
@@ -162,7 +190,8 @@ cirt <- function(model, data, family,
       start_values <- get_start_values_pois(
         data = model_list$item_data,
         same_alpha = model_list$equal_alphas,
-        fix_alphas = model_list$fixed_alphas
+        fix_alphas = model_list$fixed_alphas,
+        item_offset = item_offset
       )
       
       print("Start model fitting.")
@@ -172,6 +201,7 @@ cirt <- function(model, data, family,
         n_nodes = control$n_nodes, 
         fix_alphas = model_list$fixed_alphas,
         same_alpha = model_list$equal_alphas,
+        item_offset = item_offset,
         thres = control$thres,
         prob = control$prob,
         maxiter = control$maxiter, 
@@ -185,6 +215,7 @@ cirt <- function(model, data, family,
     }
   } else {
     # 2pcmp model with covariates
+    # TODO add offset option here for covariate models
     if (family == "cmp") {
       print("Start determining start values.")
       # TODO think about whether I am dealing correctly here with all possible constraints,
@@ -197,7 +228,8 @@ cirt <- function(model, data, family,
         nodes = control$n_nodes,
         same_alpha = model_list$equal_alphas,
         i_cov_on = model_list$i_cov_on,
-        which_i_cov = model_list$which_i_cov
+        which_i_cov = model_list$which_i_cov, 
+        item_offset = item_offset
       )
       
       if (!is.null(model_list$fixed_log_disps)) {
@@ -221,6 +253,7 @@ cirt <- function(model, data, family,
         fix_alphas = model_list$fixed_alphas,
         same_disps = model_list$equal_log_disps, 
         same_alphas = model_list$equal_alphas,
+        item_offset = item_offset,
         thres = control$thres,
         prob = control$prob,
         maxiter = control$maxiter, 
@@ -238,7 +271,8 @@ cirt <- function(model, data, family,
         i_covariates = model_list$i_covariates,
         same_alpha = model_list$equal_alphas,
         i_cov_on = model_list$i_cov_on,
-        which_i_cov = model_list$which_i_cov
+        which_i_cov = model_list$which_i_cov,
+        item_offset = item_offset
       )
       
       print("Start model fitting.")
@@ -252,6 +286,7 @@ cirt <- function(model, data, family,
         which_i_cov = model_list$which_i_cov, 
         fix_alphas = model_list$fixed_alphas,
         same_alpha = model_list$equal_alphas,
+        item_offset = item_offset,
         thres = control$thres,
         prob = control$prob,
         maxiter = control$maxiter, 
@@ -306,14 +341,16 @@ add_inference <- function(model, prob = 0.95) {
       vcov <- compute_vcov(
         item_params = model$fit$params,
         weights_and_nodes = quad_rule(model$control$n_nodes),
-        data = model$model$item_data
+        data = model$model$item_data,
+        item_offset = model$fit$item_offset
       )
     } else if (model$family == "poisson") {
       vcov <- compute_vcov_poisson(
         item_params = model$fit$params,
         weights_and_nodes = quad_rule(model$control$n_nodes),
-        data = model$model$item_data
-      )
+        data = model$model$item_data,
+        item_offset = model$fit$item_offset
+      ) # TODO hier weitermachen und in standard_errors_poisson.R de item_offsets einfuegen
     }
   } else {
     # with covariates, so drtm or clrm
@@ -322,7 +359,8 @@ add_inference <- function(model, prob = 0.95) {
         resp_patterns_matrix <- make_resp_patterns_mat(
           lapply(model$model$p_cov_levels, get_resp_patterns_pcov_cat), 
           prod(model$model$p_cov_levels), 
-          model$model$p_cov_levels
+          model$model$p_cov_levels,
+          item_offset = model$fit$item_offset
         )
       } else {
         resp_patterns_matrix <- NULL
@@ -341,7 +379,8 @@ add_inference <- function(model, prob = 0.95) {
         same_alphas = model$model$equal_alphas, 
         same_disps = model$model$equal_log_disps,
         fix_alphas = model$model$fixed_alphas, 
-        fix_disps = fixed_disps
+        fix_disps = fixed_disps,
+        item_offset = model$fit$item_offset
       )
     } else if (model$family == "poisson") {
       # TODO noch implementieren
@@ -353,7 +392,8 @@ add_inference <- function(model, prob = 0.95) {
         i_covariates = model$model$i_covariates,
         i_cov_on = model$model$i_cov_on,
         same_alphas = model$model$equal_alphas, 
-        fix_alphas = model$model$fixed_alphas
+        fix_alphas = model$model$fixed_alphas,
+        item_offset = model$fit$item_offset
       )
     }
   }

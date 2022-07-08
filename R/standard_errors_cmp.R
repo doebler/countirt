@@ -1,29 +1,36 @@
 # gradients for full 2pcmp model standard errors -------------------------------------
-grad_for_se <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se <- function(y, item_params, weights_and_nodes, data, item_offset) {
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   post_probs <- newem_estep2(data = data, 
                              item_params = y, 
-                             weights_and_nodes = weights_and_nodes)
+                             weights_and_nodes = weights_and_nodes,
+                             item_offset = item_offset)
   g <- grad_cmp_newem2(item_params = item_params,
                        PPs = post_probs,
                        weights_and_nodes = weights_and_nodes,
-                       data = data)
+                       data = data,
+                       item_offset = item_offset)
   return(g)
 }
 
-wrap_grad_cmp_newem2 <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_cmp_newem2 <- function(y, PPs, weights_and_nodes, data, item_offset) {
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   grad <- grad_cmp_newem2(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    item_offset = item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp with constant alphas ----------------------------------------
-grad_for_se_same_alpha <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se_same_alpha <- function(y, item_params, weights_and_nodes, data, item_offset) {
   # item params and y here only have one alpha at the start and 
   # then the remaining item parameters
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   # prep the parameters for the e-step
   alpha <- y[grepl("alpha", names(y))]
@@ -39,29 +46,37 @@ grad_for_se_same_alpha <- function(y, item_params, weights_and_nodes, data) {
   
   post_probs <- newem_estep2(data = data, 
                              item_params = item_params_samealph, 
-                             weights_and_nodes = weights_and_nodes)
+                             weights_and_nodes = weights_and_nodes,
+                             item_offset = item_offset)
   g <- grad_cmp_samealphas_newem(item_params = item_params,
                                  PPs = post_probs,
                                  weights_and_nodes = weights_and_nodes,
-                                 data = data)
+                                 data = data,
+                                 item_offset = item_offset)
   return(g)
 }
 
-wrap_grad_cmp_samealphas_newem <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_cmp_samealphas_newem <- function(y, PPs, weights_and_nodes, data, item_offset) {
   # y just have one alpha and then the remaining item parameters
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
+  
   grad <- grad_cmp_samealphas_newem(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    item_offset = item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with constant dispersions standard errors ------------
-grad_for_se_same_disp <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se_same_disp <- function(y, item_params, weights_and_nodes, data, item_offset) {
   # y and item parameters have alphas and deltas for each item but just one
   # disp parameter
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   # prep the parameters for the e-step
   alphas <- y[grepl("alpha", names(y))]
@@ -77,89 +92,106 @@ grad_for_se_same_disp <- function(y, item_params, weights_and_nodes, data) {
   
   post_probs <- newem_estep2(data = data, 
                              item_params = item_params_samedisp, 
-                             weights_and_nodes = weights_and_nodes)
+                             weights_and_nodes = weights_and_nodes,
+                             item_offset = item_offset)
   g <- grad_cmp_samedisps_newem(item_params = item_params,
                                 PPs = post_probs,
                                 weights_and_nodes = weights_and_nodes,
-                                data = data)
+                                data = data,
+                                item_offset = item_offset)
   return(g)
 }
 
-wrap_grad_cmp_samedisps_newem <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_cmp_samedisps_newem <- function(y, PPs, weights_and_nodes, data, item_offset) {
   # y and item parameters have alphas and deltas for each item but just one
   # disp parameter
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   grad <- grad_cmp_samedisps_newem(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with fixed dispersions standard errors -----------------
-grad_for_se_fix_disps <- function(y, item_params, weights_and_nodes, data, fix_disps) {
+grad_for_se_fix_disps <- function(y, item_params, weights_and_nodes, data, fix_disps, item_offset) {
   # y and item parameters only have alphas and deltas, dispersions
   # are fixed an contained in fix_disps
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   # prep the parameters for the e-step
   item_params_fixdisps <- c(item_params, log(fix_disps))
   names(item_params_fixdisps) <- c(names(item_params), 
                                    paste0("log_disp", 1:length(fix_disps)))
-  post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes)
+  post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes, item_offset = item_offset)
   
   g <- grad_cmp_fixdisps_newem(item_params = item_params,
                                PPs = post_probs,
                                weights_and_nodes = weights_and_nodes,
                                data = data,
-                               fix_disps = fix_disps)
+                               fix_disps = fix_disps,
+                               item_offset = item_offset)
   return(g)
 }
 
-wrap_grad_cmp_fixdisps_newem <- function(y, PPs, weights_and_nodes, data, fix_disps) {
+wrap_grad_cmp_fixdisps_newem <- function(y, PPs, weights_and_nodes, data, fix_disps, item_offset) {
   # y and item parameters only have alphas and deltas, dispersions
   # are fixed an contained in fix_disps
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   grad <- grad_cmp_fixdisps_newem(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
     data = data,
-    fix_disps = fix_disps
+    fix_disps = fix_disps,
+    item_offset = item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with fixed alphas standard errors -------------------
-grad_for_se_fix_alphas <- function(y, item_params, weights_and_nodes, data, fix_alphas) {
+grad_for_se_fix_alphas <- function(y, item_params, weights_and_nodes, data, fix_alphas, item_offset) {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   # prep the parameters for the e-step
   item_params_fixalphas <- c(fix_alphas, item_params)
   names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), 
                                     names(item_params))
-  post_probs <- newem_estep2(data, item_params_fixalphas, weights_and_nodes)
+  post_probs <- newem_estep2(data, item_params_fixalphas, weights_and_nodes, item_offset = item_offset)
   
   g <- grad_cmp_fixalphas_newem(item_params = item_params,
                                 PPs = post_probs,
                                 weights_and_nodes = weights_and_nodes,
                                 data = data,
-                                fix_alphas = fix_alphas)
+                                fix_alphas = fix_alphas,
+                                item_offset = item_offset)
   return(g)
 }
 
-wrap_grad_cmp_fixalphas_newem <- function(y, PPs, weights_and_nodes, data, fix_alphas) {
+wrap_grad_cmp_fixalphas_newem <- function(y, PPs, weights_and_nodes, data, fix_alphas, item_offset) {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
   
   grad <- grad_cmp_fixalphas_newem(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
     data = data,
-    fix_alphas = fix_alphas
+    fix_alphas = fix_alphas,
+    item_offset = item_offset
   )
   return(grad)
 }
@@ -167,7 +199,12 @@ wrap_grad_cmp_fixalphas_newem <- function(y, PPs, weights_and_nodes, data, fix_a
 # compute_vcov -------------------------------------------------------------------
 compute_vcov <- function(item_params, weights_and_nodes, data,
                          same_alphas = FALSE, same_disps = FALSE,
-                         fix_alphas = NULL, fix_disps = NULL) {
+                         fix_alphas = NULL, fix_disps = NULL,
+                         item_offset = NULL) {
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
+  } 
   
   # computes vcov matrix with Oake's identity approximation (Chalmers, 2012)#
   
@@ -176,7 +213,7 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       # standard errors for full model
       
       # compute derivative of gradient with respect to new item params
-      post_probs <- newem_estep2(data, item_params, weights_and_nodes)
+      post_probs <- newem_estep2(data, item_params, weights_and_nodes, item_offset = item_offset)
       
       
       x <- numDeriv::jacobian(
@@ -184,7 +221,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -192,7 +230,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        item_offset = item_offset
       )
     } else if (same_alphas & !same_disps) {
       # standard errors for constant alphas across items
@@ -210,7 +249,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         names(item_params[grepl("delta", names(item_params))]),
         names(item_params[grepl("log_disp", names(item_params))])
       )
-      post_probs <- newem_estep2(data, item_params_samealph, weights_and_nodes)
+      
+      post_probs <- newem_estep2(data, item_params_samealph, weights_and_nodes, item_offset = item_offset)
       
       
       x <- numDeriv::jacobian(
@@ -218,7 +258,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -226,7 +267,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        item_offset = item_offset
       )
     } else if (!same_alphas & same_disps) {
       # standard errors for constant dispersions across items
@@ -244,7 +286,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         names(item_params[grepl("delta", names(item_params))]),
         paste0("log_disp", 1:n_items)
       )
-      post_probs <- newem_estep2(data, item_params_samedisp, weights_and_nodes)
+      
+      post_probs <- newem_estep2(data, item_params_samedisp, weights_and_nodes, item_offset = item_offset)
       
       
       x <- numDeriv::jacobian(
@@ -252,7 +295,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -260,7 +304,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params, 
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
-        data = data
+        data = data,
+        item_offset = item_offset
       )
     }
   } else {
@@ -273,7 +318,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       item_params_fixdisps <- c(item_params, log(fix_disps))
       names(item_params_fixdisps) <- c(names(item_params), 
                                        paste0("log_disp", 1:length(fix_disps)))
-      post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes)
+      
+      post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes, item_offset = item_offset)
       
       x <- numDeriv::jacobian(
         wrap_grad_cmp_fixdisps_newem,
@@ -281,7 +327,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
         data = data,
-        fix_disps = fix_disps
+        fix_disps = fix_disps,
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -290,7 +337,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
         data = data,
-        fix_disps = fix_disps
+        fix_disps = fix_disps,
+        item_offset = item_offset
       )
     } else if (!is.null(fix_alphas)) {
       # we only have deltas and disps, but we fix slopes to the values provided
@@ -300,7 +348,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
       item_params_fixalphas <- c(fix_alphas, item_params)
       names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), 
                                         names(item_params))
-      post_probs <- newem_estep2(data, item_params_fixalphas, weights_and_nodes)
+      
+      post_probs <- newem_estep2(data, item_params_fixalphas, weights_and_nodes, item_offset = item_offset)
       
       x <- numDeriv::jacobian(
         wrap_grad_cmp_fixalphas_newem,
@@ -308,7 +357,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         PPs = post_probs, 
         weights_and_nodes = weights_and_nodes,
         data = data,
-        fix_alphas = fix_alphas
+        fix_alphas = fix_alphas,
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -317,7 +367,8 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         item_params = item_params,
         weights_and_nodes = weights_and_nodes,
         data = data,
-        fix_alphas = fix_alphas
+        fix_alphas = fix_alphas,
+        item_offset = item_offset
       )
     }
   }

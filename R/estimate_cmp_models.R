@@ -1,6 +1,6 @@
 
 # newem_estep2 ---------------------------------------------------------------------
-newem_estep2 <- function(data, item_params, weights_and_nodes) {
+newem_estep2 <- function(data, item_params, weights_and_nodes, item_offset = NULL) {
   
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -13,6 +13,7 @@ newem_estep2 <- function(data, item_params, weights_and_nodes) {
     alphas = alphas,
     deltas = deltas,
     disps = disps,
+    item_offset = item_offset,
     nodes = weights_and_nodes$x,
     weights = weights_and_nodes$w,
     grid_mus = grid_mus,
@@ -27,7 +28,7 @@ newem_estep2 <- function(data, item_params, weights_and_nodes) {
 }
 
 # grad_cmp_newem2 ------------------------------------------------------------------
-grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data) {
+grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data, item_offset = NULL) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -38,6 +39,7 @@ grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data) {
     alphas = alphas,
     deltas = deltas,
     disps = disps,
+    item_offset = item_offset, 
     data = as.matrix(data),
     PPs = PPs,
     nodes = weights_and_nodes$x,
@@ -61,7 +63,7 @@ grad_cmp_newem2 <- function(item_params, PPs, weights_and_nodes, data) {
 # grad_cmp_fixdisps_newem ----------------------------------------------------------
 grad_cmp_fixdisps_newem <- function(item_params, PPs, 
                                      weights_and_nodes, data,
-                                     fix_disps) {
+                                     fix_disps, item_offset = NULL) {
 
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -72,6 +74,7 @@ grad_cmp_fixdisps_newem <- function(item_params, PPs,
     alphas = alphas, 
     deltas = deltas, 
     disps = disps, 
+    item_offset = item_offset,
     data = as.matrix(data),
     PPs = PPs,
     nodes = weights_and_nodes$x,
@@ -94,7 +97,7 @@ grad_cmp_fixdisps_newem <- function(item_params, PPs,
 # grad_cmp_fixalphas_newem -------------------------------------------------------
 grad_cmp_fixalphas_newem <- function(item_params, PPs, 
                                     weights_and_nodes, data,
-                                    fix_alphas) {
+                                    fix_alphas, item_offset = NULL) {
   
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -106,6 +109,7 @@ grad_cmp_fixalphas_newem <- function(item_params, PPs,
     alphas = alphas, 
     deltas = deltas, 
     disps = disps, 
+    item_offset = item_offset,
     data = as.matrix(data),
     PPs = PPs,
     nodes = weights_and_nodes$x,
@@ -127,7 +131,8 @@ grad_cmp_fixalphas_newem <- function(item_params, PPs,
 
 # grad_cmp_samedisps_newem ---------------------------------------------------------
 grad_cmp_samedisps_newem <- function(item_params, PPs, 
-                                     weights_and_nodes, data) {
+                                     weights_and_nodes, data, 
+                                     item_offset = NULL) {
   
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -139,6 +144,7 @@ grad_cmp_samedisps_newem <- function(item_params, PPs,
     alphas = alphas, 
     deltas = deltas, 
     disps = disps, 
+    item_offset = item_offset,
     data = as.matrix(data),
     PPs = PPs,
     nodes = weights_and_nodes$x,
@@ -160,7 +166,7 @@ grad_cmp_samedisps_newem <- function(item_params, PPs,
 
 # grad_cmp_samealphas_newem -----------------------------------------------------
 grad_cmp_samealphas_newem <- function(item_params, PPs, 
-                                     weights_and_nodes, data) {
+                                     weights_and_nodes, data, item_offset = NULL) {
   
   deltas <- item_params[grepl("delta", names(item_params))]
   n_items <- length(deltas)
@@ -173,6 +179,7 @@ grad_cmp_samealphas_newem <- function(item_params, PPs,
     alphas = alphas, 
     deltas = deltas, 
     disps = disps, 
+    item_offset = item_offset,
     data = as.matrix(data),
     PPs = PPs,
     nodes = weights_and_nodes$x,
@@ -192,6 +199,7 @@ grad_cmp_samealphas_newem <- function(item_params, PPs,
   return(grads)
 }
 
+# TODO remove because i don't need it
 # ell_cmp_newem -------------------------------------------------------------------
 ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
   # prep item parameters
@@ -221,7 +229,11 @@ ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
 newem_em_cycle <- function(data, item_params, weights_and_nodes,
                            ctol_maxstep = 1e-8, m_method = "nleqslv",
                            fix_disps = NULL, fix_alphas = NULL,
-                           same_disps = FALSE, same_alphas = FALSE) {
+                           same_disps = FALSE, same_alphas = FALSE,
+                           item_offset = NULL) {
+  # I handled empty item_offset arguments in run_newem, so that I can expect a vector
+  # of the same length as number of items here; if i don't have any item_offsets,
+  # that vector will just contain 0's (as many as we have items)
 
   # e_values <- newem_estep(data, item_params, weights_and_nodes)
   # 
@@ -237,7 +249,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
   if (is.null(fix_disps) & is.null(fix_alphas)) {
     if (!same_disps & !same_alphas) {
       # e step
-      PPs <- newem_estep2(data, item_params, weights_and_nodes)
+      PPs <- newem_estep2(data, item_params, weights_and_nodes, item_offset = item_offset)
       # m step
       new_item_params <- nleqslv(
         x = item_params,
@@ -245,6 +257,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!same_disps & same_alphas) {
@@ -261,7 +274,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
       )
       
       # e step
-      PPs <- newem_estep2(data, item_params_samealph, weights_and_nodes)
+      PPs <- newem_estep2(data, item_params_samealph, weights_and_nodes, item_offset = item_offset)
       # m step
       new_item_params <- nleqslv(
         x = item_params,
@@ -269,6 +282,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_disps & !same_alphas) {
@@ -285,7 +299,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
       )
       
       # e step
-      PPs <- newem_estep2(data, item_params_samedisp, weights_and_nodes)
+      PPs <- newem_estep2(data, item_params_samedisp, weights_and_nodes, item_offset = item_offset)
       # m step
       new_item_params <- nleqslv(
         x = item_params,
@@ -293,6 +307,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -301,7 +316,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
       # e step
       params_estep <- c(item_params, log(fix_disps))
       names(params_estep) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
-      PPs <- newem_estep2(data, params_estep, weights_and_nodes)
+      PPs <- newem_estep2(data, params_estep, weights_and_nodes, item_offset = item_offset)
       # m step
       new_item_params <- nleqslv(
         x = item_params,
@@ -310,13 +325,14 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         data = data,
         fix_disps = fix_disps,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (!is.null(fix_alphas)) {
       # e step
       params_estep <- c(fix_alphas, item_params)
       names(params_estep) <- c(paste0("alpha", 1:length(fix_alphas)), names(item_params))
-      PPs <- newem_estep2(data, params_estep, weights_and_nodes)
+      PPs <- newem_estep2(data, params_estep, weights_and_nodes, item_offset = item_offset)
       # m step
       new_item_params <- nleqslv(
         x = item_params,
@@ -325,6 +341,7 @@ newem_em_cycle <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         data = data,
         fix_alphas = fix_alphas,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -338,7 +355,8 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
                       maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
                       m_method = "nleqslv", convcrit = "marglik",
                       fix_disps = NULL, fix_alphas = NULL,
-                      same_disps = FALSE, same_alphas = FALSE) {
+                      same_disps = FALSE, same_alphas = FALSE,
+                      item_offset = NULL) {
 
   # get nodes and weights for GH quadrature
   # weights_and_nodes <- gaussHermiteData(n_nodes)
@@ -352,6 +370,10 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 
   new_ll <- 0
   marg_lls <- c()
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
+  }
 
   print("Start estimation...")
 
@@ -359,10 +381,16 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
     print(paste0("Iteration: ", iter))
     old_params <- new_params
     new_params <- newem_em_cycle(
-      data, old_params, weights_and_nodes,
-      ctol_maxstep = ctol_maxstep, m_method = m_method,
-      fix_disps = fix_disps, fix_alphas = fix_alphas,
-      same_disps = same_disps, same_alphas = same_alphas
+      data = data, 
+      item_params = old_params, 
+      weights_and_nodes = weights_and_nodes,
+      ctol_maxstep = ctol_maxstep, 
+      m_method = m_method,
+      fix_disps = fix_disps, 
+      fix_alphas = fix_alphas,
+      same_disps = same_disps, 
+      same_alphas = same_alphas, 
+      item_offset = item_offset
     )
     #print(new_params)
 
@@ -370,10 +398,16 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
     if (convcrit == "marglik") {
       old_ll <- new_ll
       new_ll <- marg_ll2(
-        data, new_params,
-        weights_and_nodes, family = "cmp",
-        fix_disps = fix_disps, fix_alphas = fix_alphas,
-        same_disps = same_disps, same_alphas = same_alphas)
+        data = data, 
+        item_params = new_params,
+        weights_and_nodes = weights_and_nodes, 
+        family = "cmp",
+        fix_disps = fix_disps, 
+        fix_alphas = fix_alphas,
+        same_disps = same_disps, 
+        same_alphas = same_alphas,
+        item_offset = item_offset
+        )
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -382,10 +416,15 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
       marg_ll <- marg_ll2(
-        data, new_params,
-        weights_and_nodes, family = "cmp",
-        fix_disps = fix_disps, fix_alphas = fix_alphas,
-        same_disps = same_disps, same_alphas = same_alphas)
+        data = data, 
+        item_params = new_params,
+        weights_and_nodes = weights_and_nodes, 
+        family = "cmp",
+        fix_disps = fix_disps, 
+        fix_alphas = fix_alphas,
+        same_disps = same_disps, 
+        same_alphas = same_alphas, 
+        item_offset = item_offset)
       marg_lls[iter] <- marg_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -398,6 +437,9 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 
   out <- list(
     params = new_params,
+    item_offset = item_offset,
+    constraints = list(fix_alphas = fix_alphas, same_alphas = same_alphas,
+                       fix_disps = fix_disps, same_disps = same_disps),
     iter = iter,
     conv = conv,
     marg_ll = marg_lls
@@ -412,27 +454,32 @@ run_newem <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 get_start_values <- function(data, nodes = 121, nsim = 1000,
                              init_disp_one = TRUE, 
                              fix_disps = NULL, fix_alphas = NULL,
-                             same_disps = FALSE, same_alpha = FALSE) {
+                             same_disps = FALSE, same_alpha = FALSE,
+                             item_offset = NULL) {
   # for CMP start values, we fit a Poisson model and get deltas and alphas from there
   if (same_alpha) {
     # just one alpha for all items
-    init_values_pois <- get_start_values_pois(data, same_alpha = TRUE)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE)
+    init_values_pois <- get_start_values_pois(data, same_alpha = TRUE, item_offset = item_offset)
+    fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE, item_offset = item_offset)
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else if (!is.null(fix_alphas)) {
     # we fix alphas to certain values so we don't need start values for them as
     # run_newem won't need them in the parameter vector, it will take them via
     # the fix_alphas argument
-    init_values_pois <- get_start_values_pois(data, fix_alphas = fix_alphas)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes, fix_alphas = fix_alphas)
+    init_values_pois <- get_start_values_pois(data, fix_alphas = fix_alphas, item_offset = item_offset)
+    fit_pois <- run_em_poisson(data, init_values_pois, nodes, fix_alphas = fix_alphas, item_offset = item_offset)
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
     # different alpha for each item
-    init_values_pois <- get_start_values_pois(data)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes)
+    init_values_pois <- get_start_values_pois(data, item_offset = item_offset)
+    fit_pois <- run_em_poisson(data, init_values_pois, nodes, item_offset = item_offset)
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
+  }
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
   }
   
   if (!is.null(fix_disps)) {
@@ -451,9 +498,9 @@ get_start_values <- function(data, nodes = 121, nsim = 1000,
     sim_abilities=rnorm(nsim)
     for (i in 1:ncol(data)) {
       if (same_alpha) {
-        mu <- exp(init_deltas[i] + init_alphas*sim_abilities)
+        mu <- exp(init_deltas[i] + init_alphas*sim_abilities + item_offset[i])
       } else {
-        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities)
+        mu <- exp(init_deltas[i] + init_alphas[i]*sim_abilities + item_offset[i])
       }
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))

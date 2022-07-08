@@ -84,10 +84,10 @@ quad_rule <- function(n_nodes, thres = Inf, prob = 0) {
 }
 
 # marg_ll2 --------------------------------------------------------------------------
-
 marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = NULL,
                      fix_alphas = NULL, interp_method = "bicubic",
-                     same_disps = FALSE, same_alphas = FALSE) {
+                     same_disps = FALSE, same_alphas = FALSE,
+                     item_offset = NULL) {
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -126,13 +126,17 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
     }
   }
   
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, n_items)
+  }
+  
   
   if (family == "poisson") {
     # function to compute integral with quadrature over
     f <- function(z, data, alphas, deltas) {
       out <- 0
       for (j in 1:n_items) {
-        lambda <- exp(alphas[j] * z + deltas[j])
+        lambda <- exp(alphas[j] * z + deltas[j] + item_offset[j])
         out <- out + (dpois(data[,j], lambda, log = TRUE))
       }
       return(exp(out))
@@ -151,6 +155,7 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
                         alphas = alphas,
                         deltas = deltas, 
                         disps = disps, 
+                        item_offset = item_offset,
                         nodes = weights_and_nodes$x,
                         weights = weights_and_nodes$w,
                         grid_mus = grid_mus,  
@@ -160,6 +165,7 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
                         max_mu = 150,
                         min_mu = 0.001)
     } else {
+      # TODO remove this option
       # then interpolation method is linear
       # here we don't cap mu, so we extrapolate beyond grid values
       ll <- marg_ll_cpp_lininterp(data = as.matrix(data),

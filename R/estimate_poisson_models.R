@@ -1,10 +1,15 @@
 
 # e_step_poisson --------------------------------------------------------------------
 
-e_step_poisson <- function(data, item_params, weights_and_nodes) {
+e_step_poisson <- function(data, item_params, weights_and_nodes, item_offset = NULL) {
   data <- as.matrix(data)
+  n_items <- ncol(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, n_items)
+  }
   
   PPs <- matrix(
     log(weights_and_nodes$w),
@@ -14,7 +19,7 @@ e_step_poisson <- function(data, item_params, weights_and_nodes) {
     )
   
   for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
+    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + item_offset[j])
     PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
   }
   
@@ -28,15 +33,20 @@ e_step_poisson <- function(data, item_params, weights_and_nodes) {
 
 # grad_poisson -----------------------------------------------------------------------
 
-grad_poisson <- function(item_params, PPs, weights_and_nodes, data) {
+grad_poisson <- function(item_params, PPs, weights_and_nodes, data, item_offset = NULL) {
   data <- as.matrix(data)
+  n_items <- ncol(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
   deltas <- item_params[grepl("delta", names(item_params))]
   grad_alphas <- numeric(length(alphas))
   grad_deltas <- numeric(length(deltas))
   
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, n_items)
+  }
+  
   for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
+    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + item_offset[j])
     x_minus_lambda <- outer(data[,j], lambdas, "-")
     matrix_nodes <- matrix(
       weights_and_nodes$x,
@@ -56,14 +66,19 @@ grad_poisson <- function(item_params, PPs, weights_and_nodes, data) {
 # grad_poisson_fixalphas --------------------------------------------------------------
 
 grad_poisson_fixalphas <- function(item_params, PPs, weights_and_nodes, 
-                                   data, fix_alphas) {
+                                   data, fix_alphas, item_offset = NULL) {
   data <- as.matrix(data)
+  n_items <- ncol(data)
   alphas <- fix_alphas
   deltas <- item_params[grepl("delta", names(item_params))]
   grad_deltas <- numeric(length(deltas))
   
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, n_items)
+  }
+  
   for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
+    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + item_offset[j])
     x_minus_lambda <- outer(data[,j], lambdas, "-")
     matrix_nodes <- matrix(
       weights_and_nodes$x,
@@ -81,15 +96,20 @@ grad_poisson_fixalphas <- function(item_params, PPs, weights_and_nodes,
 # grad_poisson_samealpha --------------------------------------------------------------
 
 grad_poisson_samealpha <- function(item_params, PPs, weights_and_nodes, 
-                                   data) {
+                                   data, item_offset = NULL) {
   data <- as.matrix(data)
+  n_items <- ncol(data)
   alphas <- rep(item_params[grepl("alpha", names(item_params))], ncol(data))
   deltas <- item_params[grepl("delta", names(item_params))]
   grad_deltas <- numeric(length(deltas))
   grad_alpha <- 0
   
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, n_items)
+  }
+  
   for (j in 1:ncol(data)) {
-    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j])
+    lambdas <- exp(alphas[j] * weights_and_nodes$x + deltas[j] + item_offset[j])
     x_minus_lambda <- outer(data[,j], lambdas, "-")
     matrix_nodes <- matrix(
       weights_and_nodes$x,
@@ -110,13 +130,14 @@ grad_poisson_samealpha <- function(item_params, PPs, weights_and_nodes,
 
 em_cycle_poisson <- function(data, item_params, weights_and_nodes,
                      fix_alphas = NULL, same_alpha = FALSE,
+                     item_offset = NULL,
                      ctol_maxstep = 1e-8) {
     if (!is.null(fix_alphas)) {
       # fix alphas to the provided values
       # e step
       item_params_fixa <- c(fix_alphas, item_params)
       names(item_params_fixa) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
-      PPs <- e_step_poisson(data, item_params_fixa, weights_and_nodes)
+      PPs <- e_step_poisson(data, item_params_fixa, weights_and_nodes, item_offset = item_offset)
       
       # m step
       new_item_params <- nleqslv(
@@ -126,6 +147,7 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
         weights_and_nodes = weights_and_nodes,
         data = data,
         fix_alphas = fix_alphas,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else if (same_alpha) {
@@ -135,7 +157,7 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
       item_params_samea <- c(rep(alpha, ncol(data)), item_params[-alpha])
       names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
                                    names(item_params[-alpha]))
-      PPs <- e_step_poisson(data, item_params_samea, weights_and_nodes)
+      PPs <- e_step_poisson(data, item_params_samea, weights_and_nodes, item_offset = item_offset)
       
       # m step
       new_item_params <- nleqslv(
@@ -144,12 +166,13 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     } else {
       # fit a full two parameter model
       # e step
-      PPs <- e_step_poisson(data, item_params, weights_and_nodes)
+      PPs <- e_step_poisson(data, item_params, weights_and_nodes, item_offset = item_offset)
       
       # m step
       new_item_params <- nleqslv(
@@ -158,6 +181,7 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
         PPs = PPs,
         weights_and_nodes = weights_and_nodes,
         data = data,
+        item_offset = item_offset,
         control = list(xtol = ctol_maxstep)
       )$x
     }
@@ -169,12 +193,14 @@ em_cycle_poisson <- function(data, item_params, weights_and_nodes,
 
 
 run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
-                              maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
-                              convcrit = "marglik",
-                              fix_alphas = NULL, same_alpha = FALSE) {
+                           maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8,
+                           convcrit = "marglik",
+                           fix_alphas = NULL, same_alpha = FALSE,
+                           item_offset = NULL) {
+  # item_offset should be a vector at this point of length M
   
   # get nodes and weights for GH quadrature
-  weights_and_nodes<- quad_rule(n_nodes, thres = thres,prob = prob)
+  weights_and_nodes <- quad_rule(n_nodes, thres = thres,prob = prob)
   
   new_params <- init_params
   conv <- FALSE
@@ -192,16 +218,22 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
       data, old_params, weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
       fix_alphas = fix_alphas, 
-      same_alpha = same_alpha
+      same_alpha = same_alpha,
+      item_offset = item_offset
     )
     
     # check for convergence
     if (convcrit == "marglik") {
       old_ll <- new_ll
       new_ll <- marg_ll2(
-        as.matrix(data), new_params,
-        weights_and_nodes, family = "poisson",
-        fix_alphas = fix_alphas, same_alphas = same_alpha)
+        as.matrix(data), 
+        new_params,
+        weights_and_nodes, 
+        family = "poisson",
+        fix_alphas = fix_alphas, 
+        same_alphas = same_alpha,
+        item_offset = item_offset
+        )
       marg_lls[iter] <- new_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -210,9 +242,14 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
       # convergence is to be assessed on parameter values, argument convcrit = "params"
       conv <- !any(abs(old_params - new_params) > convtol)
       marg_ll <- marg_ll2(
-        as.matrix(data), new_params,
-        weights_and_nodes, family = "poisson",
-        fix_alphas = fix_alphas, same_alphas = same_alpha)
+        as.matrix(data), 
+        new_params,
+        weights_and_nodes, 
+        family = "poisson",
+        fix_alphas = fix_alphas, 
+        same_alphas = same_alpha,
+        item_offset = item_offset
+        )
       marg_lls[iter] <- marg_ll
       #plot(marg_lls)
       #print(marg_lls)
@@ -225,6 +262,8 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
   
   out <- list(
     params = new_params,
+    item_offset = item_offset,
+    constraints = list(fix_alphas = fix_alphas, same_alpha = same_alpha),
     iter = iter,
     conv = conv,
     marg_ll = marg_lls
@@ -235,8 +274,14 @@ run_em_poisson <- function(data, init_params, n_nodes, thres = Inf, prob = 0,
 
 # get_start_values_pois -----------------------------------------------------------------
 
-get_start_values_pois <- function(data, same_alpha = FALSE, fix_alphas = NULL) {
+get_start_values_pois <- function(data, same_alpha = FALSE, fix_alphas = NULL, item_offset = NULL) {
+  # item_offset should be a vector at this point of length M
+  
   init_deltas <- log(apply(data, 2, mean))
+  
+  if (!is.null(item_offset)) {
+    init_deltas <- init_deltas - item_offset
+  }
   
   if (same_alpha) {
     # just one alpha for all items

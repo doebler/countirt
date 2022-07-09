@@ -1,29 +1,32 @@
 library(rootSolve)
 
 # gradients for full 2p poisson model standard errors -------------------------------------
-grad_for_se_poisson <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se_poisson <- function(y, item_params, weights_and_nodes, data, offset) {
   post_probs <- e_step_poisson(data = data, 
                                item_params = y, 
-                               weights_and_nodes = weights_and_nodes)
+                               weights_and_nodes = weights_and_nodes,
+                               offset = offset)
   g <- grad_poisson(item_params = item_params,
                     PPs = post_probs,
                     weights_and_nodes = weights_and_nodes,
-                    data = data)
+                    data = data,
+                    offset = offset)
   return(g)
 }
 
-wrap_grad_poisson <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_poisson <- function(y, PPs, weights_and_nodes, data, offset) {
   grad <- grad_poisson(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    offset = offset
   )
   return(grad)
 }
 
 # gradients for 2p poisson with constant alphas ----------------------------------------
-grad_for_se_poisson_same_alpha <- function(y, item_params, weights_and_nodes, data) {
+grad_for_se_poisson_same_alpha <- function(y, item_params, weights_and_nodes, data, offset) {
   # item params and y here only have one alpha at the start and 
   # then the remaining item parameters
   
@@ -35,29 +38,32 @@ grad_for_se_poisson_same_alpha <- function(y, item_params, weights_and_nodes, da
   
   post_probs <- e_step_poisson(data = data, 
                                item_params = item_params_samea, 
-                               weights_and_nodes = weights_and_nodes)
+                               weights_and_nodes = weights_and_nodes,
+                               offset = offset)
   
   g <- grad_poisson_samealpha(item_params = item_params,
                               PPs = post_probs,
                               weights_and_nodes = weights_and_nodes,
-                              data = data)
+                              data = data,
+                              offset = offset)
   return(g)
 }
 
-wrap_grad_poisson_samealpha <- function(y, PPs, weights_and_nodes, data) {
+wrap_grad_poisson_samealpha <- function(y, PPs, weights_and_nodes, data, offset) {
   # y just have one alpha and then the remaining item parameters
   grad <- grad_poisson_samealpha(
     item_params = y,
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
-    data = data
+    data = data,
+    offset = offset
   )
   return(grad)
 }
 
 # gradients for 2p poisson model with fixed alphas standard errors ----------------------
 grad_for_se_poisson_fix_alphas <- function(y, item_params, weights_and_nodes, 
-                                           data, fix_alphas) {
+                                           data, fix_alphas, offset) {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
   
@@ -65,17 +71,20 @@ grad_for_se_poisson_fix_alphas <- function(y, item_params, weights_and_nodes,
   item_params_fixalphas <- c(fix_alphas, item_params)
   names(item_params_fixalphas) <- c(paste0("alpha", 1:length(fix_alphas)), 
                                     names(item_params))
-  post_probs <- e_step_poisson(data, item_params_fixalphas, weights_and_nodes)
+  
+  post_probs <- e_step_poisson(data, item_params_fixalphas, weights_and_nodes,
+                               offset = offset)
   
   g <- grad_poisson_fixalphas(item_params = item_params,
-                               PPs = post_probs,
-                               weights_and_nodes = weights_and_nodes,
-                               data = data,
-                               fix_alphas = fix_alphas)
+                              PPs = post_probs,
+                              weights_and_nodes = weights_and_nodes,
+                              data = data,
+                              fix_alphas = fix_alphas,
+                              offset = offset)
   return(g)
 }
 
-wrap_grad_poisson_fixalphas <- function(y, PPs, weights_and_nodes, data, fix_alphas) {
+wrap_grad_poisson_fixalphas <- function(y, PPs, weights_and_nodes, data, fix_alphas, offset) {
   # y and item parameters only have deltas and disps, slopes
   # are fixed and contained in fix_alphas
   
@@ -84,23 +93,30 @@ wrap_grad_poisson_fixalphas <- function(y, PPs, weights_and_nodes, data, fix_alp
     PPs = PPs,
     weights_and_nodes = weights_and_nodes,
     data = data,
-    fix_alphas = fix_alphas
+    fix_alphas = fix_alphas,
+    offset = offset
   )
   return(grad)
 }
 
 # compute_vcov_poisson -------------------------------------------------------------------
 compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
-                                 same_alphas = FALSE, fix_alphas = NULL) {
+                                 same_alphas = FALSE, fix_alphas = NULL, offset = NULL) {
   
   # computes vcov matrix with Oake's identity approximation (Chalmers, 2012)#
+  
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
+  } 
   
   if (!is.null(fix_alphas)) {
     # fix alphas to the provided values
     # e step
     item_params_fixa <- c(fix_alphas, item_params)
     names(item_params_fixa) <- c(paste0("alpha", 1:ncol(data)), names(item_params))
-    post_probs <- e_step_poisson(data, item_params_fixa, weights_and_nodes)
+    
+    post_probs <- e_step_poisson(data, item_params_fixa, weights_and_nodes,
+                                 offset = offset)
     
     x <- numDeriv::jacobian(
       wrap_grad_poisson_fixalphas,
@@ -108,7 +124,8 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
       PPs = post_probs, 
       weights_and_nodes = weights_and_nodes,
       data = data,
-      fix_alphas = fix_alphas
+      fix_alphas = fix_alphas,
+      offset = offset
     )
     
     x2 <- numDeriv::jacobian(
@@ -117,7 +134,8 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
       item_params = item_params,
       weights_and_nodes = weights_and_nodes,
       data = data,
-      fix_alphas = fix_alphas
+      fix_alphas = fix_alphas,
+      offset = offset
     )
   } else if (same_alphas) {
     # fit the model with estimating one same alpha for all item
@@ -127,14 +145,17 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
                            item_params[!grepl("alpha", names(item_params))])
     names(item_params_samea) <- c(paste0("alpha", 1:ncol(data)), 
                                   names(item_params)[!grepl("alpha", names(item_params))])
-    post_probs <- e_step_poisson(data, item_params_samea, weights_and_nodes)
+    
+    post_probs <- e_step_poisson(data, item_params_samea, weights_and_nodes,
+                                 offset = offset)
     
     x <- numDeriv::jacobian(
       wrap_grad_poisson_samealpha,
       item_params,
       PPs = post_probs, 
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      offset = offset
     )
     
     x2 <- numDeriv::jacobian(
@@ -142,20 +163,23 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
       item_params, 
       item_params = item_params,
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      offset = offset
     )
     
   } else {
     # fit a full two parameter model
     # e step
-    post_probs <- e_step_poisson(data, item_params, weights_and_nodes)
+    post_probs <- e_step_poisson(data, item_params, weights_and_nodes,
+                                 offset = offset)
     
     x <- numDeriv::jacobian(
       wrap_grad_poisson,
       item_params,
       PPs = post_probs, 
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      offset = offset
     )
     
     x2 <- numDeriv::jacobian(
@@ -163,7 +187,8 @@ compute_vcov_poisson <- function(item_params, weights_and_nodes, data,
       item_params, 
       item_params = item_params,
       weights_and_nodes = weights_and_nodes,
-      data = data
+      data = data,
+      offset = offset
     )
   }
   

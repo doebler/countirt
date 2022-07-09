@@ -22,13 +22,29 @@ summary.cirtfit <- function(x) {
     cov_type <- "none"
   }
   
+  if (is.null(x$fit_ses)) {
+    
+  }
+  # TODO make a data frame of the results so i can print that as the summary
+  
   cat(paste0("Family: ", x$family, "\n"))
   cat(paste0("Constraints: ", con, "\n"))
   cat(paste0("Covariates: ", cov_type, "\n"))
   cat(paste0("Items: ", ncol(x$model$item_data), "\n"))
   cat(paste0("Observations: ", nrow(x$model$item_data), "\n"))
   cat("\n")
+  cat("----------------------------------------------------------")
   cat("Model Parameters: \n")
+  cat("----------------------------------------------------------")
+  cat("Slopes: \n")
+  
+  cat("----------------------------------------------------------")
+  cat("Intercepts: \n")
+  
+  if (x$family == "cmp") {
+    cat("----------------------------------------------------------")
+    cat("Log Dispersions: \n")
+  }
   
 }
 

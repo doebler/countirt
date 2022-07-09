@@ -313,6 +313,9 @@ cirt <- function(model, data, family,
   return(out)
 }
 
+# TODO check that all possible constraints are implemented and are also
+# implemented all throughout, i.e., so that we can have standard errors for all
+# possible models we can fit, including which_i_cov and poisson variants etc.
 
 #' Function that computes standard errors, z- and p-values for Wald tests, and CI.
 #' 
@@ -350,7 +353,7 @@ add_inference <- function(model, prob = 0.95) {
         weights_and_nodes = quad_rule(model$control$n_nodes),
         data = model$model$item_data,
         item_offset = model$fit$item_offset
-      ) # TODO hier weitermachen und in standard_errors_poisson.R de item_offsets einfuegen
+      ) 
     }
   } else {
     # with covariates, so drtm or clrm
@@ -383,7 +386,6 @@ add_inference <- function(model, prob = 0.95) {
         item_offset = model$fit$item_offset
       )
     } else if (model$family == "poisson") {
-      # TODO noch implementieren
       vcov <- compute_vcov_poisson_with_cov(
         item_params = model$fit$params,
         weights_and_nodes = quad_rule(model$control$n_nodes),

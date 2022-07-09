@@ -133,7 +133,7 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
   
   if (family == "poisson") {
     # function to compute integral with quadrature over
-    f <- function(z, data, alphas, deltas) {
+    f <- function(z, data, alphas, deltas, item_offset) {
       out <- 0
       for (j in 1:n_items) {
         lambda <- exp(alphas[j] * z + deltas[j] + item_offset[j])
@@ -146,7 +146,8 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
     for (i in 1:n_persons) {
       marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
                              data = data[i, , drop = FALSE], 
-                             alphas = alphas, deltas = deltas)
+                             alphas = alphas, deltas = deltas,
+                             item_offset = item_offset)
     }
     ll <- sum(log(marg_prob))
   } else if (family == "cmp") {

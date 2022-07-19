@@ -72,9 +72,8 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
                                em_type = c("gh", "mc"),
                                weights_and_nodes = NULL, 
                                theta_samples = NULL, 
-                               penalize = c("none", "ridge"), # only makes sense for exploratory models
+                               penalize = c("none", "ridge", "lasso"), 
                                penalize_lambda = NULL,
-                               estimate_lambda = FALSE, # if TRUE, use penalize_lambda as start value
                                alpha_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
   # each dimension combination and each person, so they actually have the same
@@ -115,11 +114,6 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
     )
   }
   deltas <- item_params[grepl("delta", names(item_params))]
-  if (estimate_lambda) {
-    lambda <- item_params[grepl("lambda", names(item_params))]
-  } else {
-    lambda <- penalize_lambda
-  }
   
   # set-up gradient storage
   grad_deltas <- numeric(length(deltas))
@@ -133,14 +127,6 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
   # otherwise and then filter them out with alpha_constraints_m later (can't just
   # filter for NAs caus gradient might break and produce NA's for estimated parameters
   # and then input and output lengths of the functions won't work anymore)
-  
-  # if we need a lambda gradient, we can just directly get that here
-  if (estimate_lambda) {
-    if (penalize == "ridge") {
-      # this should also work in conjunction with alpha constraints
-      grad_lambda <- sum(alphas^2)
-    } # TODO implement lasso
-  }
   
   # set-up a way to check for which alphas we need gradients
   if (!is.null(alpha_constraints)) {
@@ -211,9 +197,12 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
         }
       )
       if (penalize == "ridge") {
-        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] +
-          2*lambda*full_alphas_matrix[,j,drop=FALSE]
-      } # TODO lasso penalty implementieren
+        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
+          2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
+      } else if (penalize == "lasso") {
+        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
+          penalize_lambda*(full_alphas_matrix[,j,drop=FALSE]/abs(full_alphas_matrix[,j,drop=FALSE]))
+      }
     } else if (em_type == "mc") {  
       #  this is the same code as in GH case, just swap nodes for theta samples
       # so for details on code, compare comments in GH case
@@ -231,9 +220,12 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
         }
       )
       if (penalize == "ridge") {
-        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] +
-          2*lambda*full_alphas_matrix[,j,drop=FALSE]
-      } # TODO lasso penalty implementieren
+        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
+          2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
+      } else if (penalize == "lasso") {
+        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
+          penalize_lambda*(full_alphas_matrix[,j,drop=FALSE]/abs(full_alphas_matrix[,j,drop=FALSE]))
+      }
     }
   }
   
@@ -249,9 +241,6 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
   
   grad_alphas <- as.numeric(t(grad_alphas_matrix))[compute_grad_alphas]
   out <- c(grad_alphas, grad_deltas)
-  if (estimate_lambda) {
-    out <- c(out, grad_lambda)
-  }
   return(out)
 }
 
@@ -260,9 +249,8 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
                                    em_type = c("gh", "mc"), 
                                    weights_and_nodes = NULL, 
                                    theta_samples = NULL,
-                                   penalize = c("none", "ridge"), # only makes sense for exploratory models
+                                   penalize = c("none", "ridge", "lasso"), 
                                    penalize_lambda = NULL, 
-                                   estimate_lambda = FALSE, # if TRUE, use penalize_lambda as start value
                                    alpha_constraints = NULL, 
                                    ctol_maxstep = 1e-8) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
@@ -315,19 +303,15 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     alpha_constraints = alpha_constraints,
     penalize = penalize,
     penalize_lambda = penalize_lambda,
-    estimate_lambda = estimate_lambda,
     control = list(xtol = ctol_maxstep)
   )$x
   
-  # TODO check that this works when i have alpha constraints + want to estimate lambda
+  # TODO check that this works when i have alpha constraints 
   if (!is.null(alpha_constraints)) {
     # if we have constraints, then new_item_params as returned by new_item_params
     # is not yet the full set of item parameters but needs to be filled up
     alphas <- new_item_params[grepl("alpha", names(new_item_params))]
     deltas <- new_item_params[grepl("delta", names(new_item_params))]
-    if (estimate_lambda) {
-      lambda <- new_item_params[grepl("lambda", names(new_item_params))]
-    }
     new_alphas_m <- matrix(
       alpha_constraints,
       nrow = n_traits,
@@ -350,11 +334,6 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
       full_alpha_names,
       paste0("delta", 1:ncol(data))
     )
-    if (estimate_lambda) {
-      param_names <- names(new_item_params)
-      new_item_params <- c(new_item_params, lambda)
-      names(new_item_params) <- c(param_names, "lambda")
-    }
   }
   
   return(new_item_params)
@@ -364,7 +343,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
 marg_ll_poisson_multi <- function(data, item_params, n_traits,
                                   weights_and_nodes = NULL,
                                   theta_samples = NULL,
-                                  penalize = c("none", "ridge"), # only makes sense for exploratory models
+                                  penalize = c("none", "ridge", "lasso"),
                                   penalize_lambda = NULL, 
                                   em_type = c("gh", "mc")) {
   # as we still set start values for the full alpha matrix, including for those
@@ -433,24 +412,25 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
   ll <- sum(log(marg_prob)) # sum over persons
   
   if (penalize == "ridge") {
-    if (!is.null(penalize_lambda)) { # TODO implement option to estimate lambda
-      ll <- ll + ridge_penalty(alphas = alphas, lambda = penalize_lambda)
+    if (!is.null(penalize_lambda)) {
+      ll <- ll - ridge_penalty(alphas = alphas, lambda = penalize_lambda)
     }
-  } # TODO iher mit else dann auch lasso implementieren
+  } else if (penalize == "lasso") {
+    if (!is.null(penalize_lambda)) {
+      ll <- ll - lasso_penalty(alphas = alphas, lambda = penalize_lambda)
+    }
+  }
   
   return(ll)
 }
 
 # run_em_poisson_multi ---------------------------------------------------------------
-# TODO maybe remove estimate_lambda again because i don't think it works
-# (take a look at regularization chapter in hastie book first)
 run_em_poisson_multi <- function(data, init_params, n_traits, 
                                  n_nodes = NULL, n_samples = NULL, 
                                  em_type = c("gh", "mc"), fcov_prior = NULL,
                                  truncate_grid = TRUE,
-                                 penalize = c("none", "ridge"), # only makes sense for exploratory models
-                                 penalize_lambda = NULL, # TODO implement estimation option for lambda
-                                 estimate_lambda = FALSE, # if TRUE, use penalize_lambda as start value
+                                 penalize = c("none", "ridge", "lasso"), 
+                                 penalize_lambda = NULL,
                                  maxiter = 2000, convtol = 1e-5, ctol_maxstep = 1e-8,
                                  n_samples_conv = 10, final_n_samples = 8000,
                                  convcrit = "marglik", # can also be "params"
@@ -503,17 +483,11 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   }
   
   new_params <- init_params
-  if (estimate_lambda) {
-    new_params <- c(new_params, penalize_lambda)
-    names(new_params) <- c(names(init_params), "lambda")
-  }
   conv <- FALSE
   iter <- 1
   
   new_ll <- 0
   marg_lls <- c()
-  
-  current_lambda <- penalize_lambda
   
   print("Start estimation...")
   
@@ -539,15 +513,9 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       em_type = em_type,
       theta_samples = theta_samples,
       penalize = penalize,
-      penalize_lambda = current_lambda,
-      estimate_lambda = estimate_lambda
+      penalize_lambda = penalize_lambda
     )
     print(new_params)
-    
-    if (estimate_lambda) {
-      # if TRUE, then new_params has a lambda in its vector which we need to update current lambda
-      current_lambda <- new_params[grepl("lambda", names(new_params))]
-    }
     
     # check for convergence
     if (convcrit == "marglik") {
@@ -560,7 +528,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         em_type = em_type,
         theta_samples = theta_samples,
         penalize = penalize,
-        penalize_lambda = current_lambda
+        penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- new_ll
       plot(marg_lls)
@@ -587,7 +555,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         em_type = em_type,
         theta_samples = theta_samples,
         penalize = penalize,
-        penalize_lambda = current_lambda
+        penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- marg_ll
       plot(marg_lls)
@@ -609,7 +577,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       em_type = em_type,
       theta_samples = theta_samples,
       penalize = penalize,
-      penalize_lambda = current_lambda
+      penalize_lambda =  penalize_lambda
     )
   }
   

@@ -101,7 +101,8 @@ get_ability_params <- function(data, item_params, init_values = 0, ctol = 1e-8) 
 get_ability_params_pp <- function(data, item_params, n_nodes,
                                   fix_disps = NULL, fix_alphas = NULL,
                                   same_disps = FALSE, same_alphas = FALSE,
-                                  thres = Inf, prob = 0) {
+                                  thres = Inf, prob = 0,
+                                  item_offset = NULL) {
   # get weights and nodes
   weights_and_nodes <- quad_rule(n_nodes, thres = thres,prob = prob)
   
@@ -129,11 +130,16 @@ get_ability_params_pp <- function(data, item_params, n_nodes,
     names(item_params_estep) <- names(item_params)
   }
   
+  if (is.null(item_offset)) {
+    item_offset <- rep(0, ncol(data))
+  }
+  
   # compute post probs of the thetas with the final version of the item parameters
   post_probs <- newem_estep2(
     data = data,
     item_params = item_params_estep,
-    weights_and_nodes = weights_and_nodes
+    weights_and_nodes = weights_and_nodes,
+    item_offset = item_offset
   )
   # output: a matrix with N rows (= no. of persons) and K columns (= no. of nodes)
   theta_hat <- apply(post_probs, 1, function(y) {sum(y*weights_and_nodes$x)})

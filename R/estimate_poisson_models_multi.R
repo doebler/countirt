@@ -72,7 +72,8 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
                                em_type = c("gh", "mc"),
                                weights_and_nodes = NULL, 
                                theta_samples = NULL, 
-                               penalize = c("none", "ridge", "lasso"), 
+                               penalize = c("none", "ridge"), # we do lasso penalty outside of
+                               # this gradient because it needs its own algorithm
                                penalize_lambda = NULL,
                                alpha_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
@@ -199,10 +200,7 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
       if (penalize == "ridge") {
         grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
           2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
-      } else if (penalize == "lasso") {
-        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
-          penalize_lambda*(full_alphas_matrix[,j,drop=FALSE]/abs(full_alphas_matrix[,j,drop=FALSE]))
-      }
+      } 
     } else if (em_type == "mc") {  
       #  this is the same code as in GH case, just swap nodes for theta samples
       # so for details on code, compare comments in GH case
@@ -222,10 +220,7 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
       if (penalize == "ridge") {
         grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
           2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
-      } else if (penalize == "lasso") {
-        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
-          penalize_lambda*(full_alphas_matrix[,j,drop=FALSE]/abs(full_alphas_matrix[,j,drop=FALSE]))
-      }
+      } 
     }
   }
   
@@ -244,6 +239,157 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
   return(out)
 }
 
+# lasso_alpha_update_poisson ---------------------------------------------------------
+# TODO hier weitermachen
+lasso_alpha_update_poisson <- function(alphas_j, delta_j,
+                                       penalize_lambda, PPs,
+                                       data_j, # a vector of responses just to item j
+                                       weights_and_nodes = NULL,
+                                       theta_samples = NULL, 
+                                       em_type = c("gh", "mc")) {
+  
+  if (em_type == "gh") {
+    n_traits <- ncol(weights_and_nodes$X)
+  } else if (em_type == "mc") {
+    n_traits <- ncol(theta_samples)
+  }
+   
+  # TODO figure out whether i can do the whole coordinate cycling in here, i think that would probably
+  # be best and the most convenient
+  # then i need to make sure i update alphas_j throughout the cycle and cycle within this
+  # function over the L traits and end up with new_alphas_j which i then output
+  # then i can check if this gives me the results i want and if not, i can try not using most up to date
+  # values right away - but i think it should be right-away updates
+  # FIXME another question is probably whether i update just once or i update in coordinate descent
+  # a couple of times or until convergence -> i think it's best that i handle that in the lasso_update
+  # function, like how many coordinate cycles i wanna do
+  
+  # coordinate cycle
+  new_alphas_j <- alphas_j
+  
+  for (l in 1:n_traits) {
+    
+    # first derivative (same as in grad_poisson_multi)
+
+    if (em_type == "gh") { 
+      lambdas <- as.numeric(exp(weights_and_nodes$X %*% new_alphas_j[,j,drop= FALSE] + delta_j))
+      # i need to compute sum over all traits for the lambda, new_alphas_j always has the most up-to-date
+      # vector of alphas for item j
+      # lambdas is a vector of length K (= no. of quadrature points)
+    } else if (em_type == "mc") {
+      lambdas <- as.numeric(exp(theta_samples %*% new_alphas_j[,j,drop= FALSE] + delta_j))
+      # lambdas is a vector of length n_samples
+    }
+    
+    # TODO hier weiter machen und das implementieren
+    
+    # TODO think about how i should be doing this because i need to just get the derivative for
+    # the specific alpha_jl (not across all l's, because of the cyclic updates)
+    
+    x_minus_lambda <- outer(data_j, lambdas, "-") # N x K or N x n_samples matrix 
+    x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
+    
+    # for explanation of following code, see grad_poisson_multi
+    # we get the first derivatives for all L traits for the item j we are looking at in this update
+    if (em_type == "gh") {  
+      first_derivs_j <- apply(
+        weights_and_nodes$X, 
+        2,
+        function(x) {
+          sum(matrix(
+            x,
+            nrow = nrow(data), # length N
+            ncol = length(x), # length K
+            byrow = TRUE)*x_minus_lambda_times_pp # N x K matrix
+          )
+        }
+      )
+    } else if (em_type == "mc") {  
+      # this is the same code as in GH case, just swap nodes for theta samples
+      first_derivs_j <- apply(
+        theta_samples, # matrix with n_traits columns for each of which we need a gradient
+        2,
+        function(x) {
+          sum(matrix(
+            x,
+            nrow = nrow(data), 
+            ncol = length(x), 
+            byrow = TRUE)*x_minus_lambda_times_pp
+          )
+        }
+      )
+    }
+    
+  }
+  
+ 
+  
+  
+}
+
+# lasso_delta_update_poisson ---------------------------------------------------------
+
+lasso_delta_update_poisson <- function(delta_j, penalize_lambda, PPs,
+                                       data,
+                                       weights_and_nodes = NULL,
+                                       theta_samples = NULL,
+                                       em_type = c("gh", "mc")) {
+  
+  # for lambdas, we multiply each trait dimension with respective
+  # alpha and sum across those, so that we have a vector of the length
+  # of weights_and_nodes$W (number of quadrature points)
+  if (em_type == "gh") { 
+    lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
+                                deltas[j]))
+    # lambdas is a vector of length K (= no. of quadrature points)
+  } else if (em_type == "mc") {
+    lambdas <- as.numeric(exp(theta_samples %*% full_alphas_matrix[,j,drop= FALSE] +
+                                deltas[j]))
+    # lambdas is a vector of length n_samples
+  }
+  
+  x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K or N x n_samples matrix 
+  x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
+  
+  grad_deltas[j] <- sum(x_minus_lambda_times_pp) 
+  # because we sum over the whole matrix here, we sum over all persons and 
+  # all quadrature nodes for GH and all persons and all theta samples for MC
+  
+}
+
+# lasso_update_poisson ---------------------------------------------------------------
+
+lasso_update_poisson <- function(item_params,
+                                 PPs,
+                                 data,
+                                 n_traits,
+                                 em_type = c("gh", "mc"), 
+                                 weights_and_nodes = NULL, 
+                                 theta_samples = NULL,
+                                 penalize_lambda = NULL) {
+  # TODO implement alpha constraints for lassp penalry
+  
+  data <- as.matrix(data)
+  alphas <- item_params[grepl("alpha", names(item_params))]
+  alphas_matrix <- matrix(
+      alphas,
+      ncol = ncol(data),
+      nrow = n_traits,
+      byrow = TRUE
+  )
+  deltas <- item_params[grepl("delta", names(item_params))]
+  
+  # blockwise coordinate descent
+  for (j in 1:ncol(data)) {
+    # TODO wenn ich alpha und delta updates habe die hier einfuegen
+  }
+  # TODO ueberlegen ob ich cyclic coordinate descent nur fuer ein update laufen lasse
+  # oder ob ich das in jedem m schritt bis konvergenz laufen lasse oder sagen wir mal so
+  # fuer 10 cycles?
+  
+}
+
+
 # em_cycle_poisson -------------------------------------------------------------------
 em_cycle_poisson_multi <- function(data, item_params, n_traits,
                                    em_type = c("gh", "mc"), 
@@ -251,7 +397,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
                                    theta_samples = NULL,
                                    penalize = c("none", "ridge", "lasso"), 
                                    penalize_lambda = NULL, 
-                                   alpha_constraints = NULL, 
+                                   alpha_constraints = NULL, # so far only work without penalty or with ridge
                                    ctol_maxstep = 1e-8) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
@@ -277,63 +423,80 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   )
   
   # m step
-  if (!is.null(alpha_constraints)) {
-    # we estimate a confirmatory 2pcmpm
-    # we need to only input those item parameters here which need estimation
-    # otherwise estimation won't work
-    deltas <- item_params[grepl("delta", names(item_params))]
-    alphas <- item_params[grepl("alpha", names(item_params))]
-    alphas_m_step <- alphas[is.na(alpha_constraints)]
-    names(alphas_m_step) <- names(alphas[is.na(alpha_constraints)])
-    item_params_m_step <- c(alphas_m_step, deltas)
-    names(item_params_m_step) <- c(names(alphas_m_step), names(deltas))
+  if (penalize == "lasso") {
+    # TODO implement alpha constraints in conjunction with lasso penalty
+    
+    new_item_params <- lasso_update_poisson(
+      item_params = item_params,
+      PPs = PPs,
+      data = data,
+      n_traits = n_traits,
+      em_type = em_type, 
+      weights_and_nodes = weights_and_nodes, 
+      theta_samples = theta_samples,
+      penalize_lambda = penalize_lambda
+    )
+    
   } else {
-    # we estimate an explanatory 2pcmpm, so all items load onto all factors
-    item_params_m_step <- item_params
-  }
-  new_item_params <- nleqslv(
-    x = item_params_m_step,
-    fn = grad_poisson_multi,
-    PPs = PPs,
-    data = data,
-    n_traits = n_traits,
-    em_type = em_type,
-    weights_and_nodes = weights_and_nodes,
-    theta_samples = theta_samples,
-    alpha_constraints = alpha_constraints,
-    penalize = penalize,
-    penalize_lambda = penalize_lambda,
-    control = list(xtol = ctol_maxstep)
-  )$x
-  
-  # TODO check that this works when i have alpha constraints 
-  if (!is.null(alpha_constraints)) {
-    # if we have constraints, then new_item_params as returned by new_item_params
-    # is not yet the full set of item parameters but needs to be filled up
-    alphas <- new_item_params[grepl("alpha", names(new_item_params))]
-    deltas <- new_item_params[grepl("delta", names(new_item_params))]
-    new_alphas_m <- matrix(
-      alpha_constraints,
-      nrow = n_traits,
-      ncol = ncol(data),
-      byrow = TRUE
-    )
-    rownames(new_alphas_m) <- paste0("theta", 1:nrow(new_alphas_m))
-    colnames(new_alphas_m) <- paste0("alpha", 1:ncol(new_alphas_m))
-    estimated_alphas <- names(new_item_params)[grepl("alpha", names(new_item_params))]
-    estimated_alphas_l <- strsplit(estimated_alphas, "_")
-    # for each of the estimated alpha, find the correct spot in the new_alphas_m matrix
-    for (a in 1:length(estimated_alphas_l)) {
-      new_alphas_m[estimated_alphas_l[[a]][2], estimated_alphas_l[[a]][1]] <- alphas[a]
+    if (!is.null(alpha_constraints)) {
+      # we estimate a confirmatory 2pcmpm
+      # we need to only input those item parameters here which need estimation
+      # otherwise estimation won't work
+      deltas <- item_params[grepl("delta", names(item_params))]
+      alphas <- item_params[grepl("alpha", names(item_params))]
+      alphas_m_step <- alphas[is.na(alpha_constraints)]
+      names(alphas_m_step) <- names(alphas[is.na(alpha_constraints)])
+      item_params_m_step <- c(alphas_m_step, deltas)
+      names(item_params_m_step) <- c(names(alphas_m_step), names(deltas))
+    } else {
+      # we estimate an explanatory 2pcmpm, so all items load onto all factors
+      item_params_m_step <- item_params
     }
-    new_item_params <- c(as.numeric(t(new_alphas_m)), deltas)
-    theta_names <- paste0("_theta", 1:n_traits)
-    alpha_names <- paste0("alpha", 1:ncol(data))
-    full_alpha_names <- c(outer(alpha_names, theta_names, "paste0"))
-    names(new_item_params) <- c(
-      full_alpha_names,
-      paste0("delta", 1:ncol(data))
-    )
+    
+    new_item_params <- nleqslv(
+      x = item_params_m_step,
+      fn = grad_poisson_multi,
+      PPs = PPs,
+      data = data,
+      n_traits = n_traits,
+      em_type = em_type,
+      weights_and_nodes = weights_and_nodes,
+      theta_samples = theta_samples,
+      alpha_constraints = alpha_constraints,
+      penalize = penalize,
+      penalize_lambda = penalize_lambda,
+      control = list(xtol = ctol_maxstep)
+    )$x
+    
+    # TODO check that this works when i have alpha constraints 
+    if (!is.null(alpha_constraints)) {
+      # if we have constraints, then new_item_params as returned by new_item_params
+      # is not yet the full set of item parameters but needs to be filled up
+      alphas <- new_item_params[grepl("alpha", names(new_item_params))]
+      deltas <- new_item_params[grepl("delta", names(new_item_params))]
+      new_alphas_m <- matrix(
+        alpha_constraints,
+        nrow = n_traits,
+        ncol = ncol(data),
+        byrow = TRUE
+      )
+      rownames(new_alphas_m) <- paste0("theta", 1:nrow(new_alphas_m))
+      colnames(new_alphas_m) <- paste0("alpha", 1:ncol(new_alphas_m))
+      estimated_alphas <- names(new_item_params)[grepl("alpha", names(new_item_params))]
+      estimated_alphas_l <- strsplit(estimated_alphas, "_")
+      # for each of the estimated alpha, find the correct spot in the new_alphas_m matrix
+      for (a in 1:length(estimated_alphas_l)) {
+        new_alphas_m[estimated_alphas_l[[a]][2], estimated_alphas_l[[a]][1]] <- alphas[a]
+      }
+      new_item_params <- c(as.numeric(t(new_alphas_m)), deltas)
+      theta_names <- paste0("_theta", 1:n_traits)
+      alpha_names <- paste0("alpha", 1:ncol(data))
+      full_alpha_names <- c(outer(alpha_names, theta_names, "paste0"))
+      names(new_item_params) <- c(
+        full_alpha_names,
+        paste0("delta", 1:ncol(data))
+      )
+    }
   }
   
   return(new_item_params)
@@ -424,6 +587,7 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
   return(ll)
 }
 
+# TODO hier lasso richtig implementieren
 # run_em_poisson_multi ---------------------------------------------------------------
 run_em_poisson_multi <- function(data, init_params, n_traits, 
                                  n_nodes = NULL, n_samples = NULL, 

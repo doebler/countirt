@@ -1,3 +1,14 @@
+# soft_thresh --------------------------------------------------------------------------
+
+soft_thresh <- function(x, eta) {
+  if (eta < abs(x)) {
+    out <- ifelse(x > 0, x - eta, x + eta)
+  } else {
+    out <- 0
+  }
+  return(out)
+}
+
 # ridge_penalty ------------------------------------------------------------------------
 
 ridge_penalty <- function(alphas, lambda) {

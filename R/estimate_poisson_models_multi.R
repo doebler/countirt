@@ -240,13 +240,15 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
 }
 
 # lasso_alpha_update_poisson ---------------------------------------------------------
-# TODO hier weitermachen
 lasso_alpha_update_poisson <- function(alphas_j, delta_j,
                                        penalize_lambda, PPs,
                                        data_j, # a vector of responses just to item j
                                        weights_and_nodes = NULL,
                                        theta_samples = NULL, 
                                        em_type = c("gh", "mc")) {
+  
+  # alpha_j has all L alphas for item j, data_j is a scalar with the item intercept for item j
+  # and data_j are the responses to item j for all N participants
   
   if (em_type == "gh") {
     n_traits <- ncol(weights_and_nodes$X)
@@ -272,102 +274,123 @@ lasso_alpha_update_poisson <- function(alphas_j, delta_j,
     # first derivative (same as in grad_poisson_multi)
 
     if (em_type == "gh") { 
-      lambdas <- as.numeric(exp(weights_and_nodes$X %*% new_alphas_j[,j,drop= FALSE] + delta_j))
+      lambdas <- as.numeric(exp(weights_and_nodes$X %*% new_alphas_j + delta_j))
       # i need to compute sum over all traits for the lambda, new_alphas_j always has the most up-to-date
       # vector of alphas for item j
       # lambdas is a vector of length K (= no. of quadrature points)
     } else if (em_type == "mc") {
-      lambdas <- as.numeric(exp(theta_samples %*% new_alphas_j[,j,drop= FALSE] + delta_j))
+      lambdas <- as.numeric(exp(theta_samples %*% new_alphas_j + delta_j))
       # lambdas is a vector of length n_samples
     }
-    
-    # TODO hier weiter machen und das implementieren
-    
-    # TODO think about how i should be doing this because i need to just get the derivative for
-    # the specific alpha_jl (not across all l's, because of the cyclic updates)
     
     x_minus_lambda <- outer(data_j, lambdas, "-") # N x K or N x n_samples matrix 
     x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
     
     # for explanation of following code, see grad_poisson_multi
-    # we get the first derivatives for all L traits for the item j we are looking at in this update
     if (em_type == "gh") {  
-      first_derivs_j <- apply(
-        weights_and_nodes$X, 
-        2,
-        function(x) {
-          sum(matrix(
-            x,
+      first_deriv_j <- sum(
+        matrix(
+            weights_and_nodes$X[,l],
             nrow = nrow(data), # length N
             ncol = length(x), # length K
-            byrow = TRUE)*x_minus_lambda_times_pp # N x K matrix
-          )
-        }
+            byrow = TRUE)*
+          x_minus_lambda_times_pp # N x K matrix
       )
     } else if (em_type == "mc") {  
       # this is the same code as in GH case, just swap nodes for theta samples
-      first_derivs_j <- apply(
-        theta_samples, # matrix with n_traits columns for each of which we need a gradient
-        2,
-        function(x) {
-          sum(matrix(
-            x,
+      first_deriv_j <-sum(
+        matrix(
+            theta_samples[,l],
             nrow = nrow(data), 
             ncol = length(x), 
-            byrow = TRUE)*x_minus_lambda_times_pp
-          )
-        }
+            byrow = TRUE)*
+          x_minus_lambda_times_pp
       )
     }
     
+    # second derivative
+    
+    if (em_type == "gh") {  
+      scnd_deriv_j <- sum(
+        matrix(
+          lambdas*weights_and_nodes$X[,l]^2,
+          nrow = nrow(data), # length N
+          ncol = length(x), # length K
+          byrow = TRUE)* 
+          PPs # N x K matrix
+      )
+    } else if (em_type == "mc") {  
+      # this is the same code as in GH case, just swap nodes for theta samples
+      scnd_deriv_j <- sum(
+        matrix(
+          lambdas*theta_samples[,l]^2,
+          nrow = nrow(data), # length N
+          ncol = length(x), # length K
+          byrow = TRUE)* 
+          PPs # N x K matrix
+      )
+    }
+    
+    # update 
+    
+    new_alphas_j[l] <- - soft_thresh(-scnd_deriv_j*new_alphas_j[l] + first_deriv_j, penalize_lambda) /
+      scnd_deriv_j
   }
   
- 
-  
-  
+  return(new_alphas_j)
 }
 
 # lasso_delta_update_poisson ---------------------------------------------------------
 
-lasso_delta_update_poisson <- function(delta_j, penalize_lambda, PPs,
-                                       data,
+lasso_delta_update_poisson <- function(delta_j, alphas_j,
+                                       PPs,
+                                       data_j,
                                        weights_and_nodes = NULL,
                                        theta_samples = NULL,
                                        em_type = c("gh", "mc")) {
+  # alpha_j has all L alphas for item j, data_j is a scalar with the item intercept for item j
+  # and data_j are the responses to item j for all N participants
   
-  # for lambdas, we multiply each trait dimension with respective
-  # alpha and sum across those, so that we have a vector of the length
-  # of weights_and_nodes$W (number of quadrature points)
   if (em_type == "gh") { 
-    lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
-                                deltas[j]))
-    # lambdas is a vector of length K (= no. of quadrature points)
+    lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_j + delta_j))
   } else if (em_type == "mc") {
-    lambdas <- as.numeric(exp(theta_samples %*% full_alphas_matrix[,j,drop= FALSE] +
-                                deltas[j]))
-    # lambdas is a vector of length n_samples
+    lambdas <- as.numeric(exp(theta_samples %*% alphas_j + delta_j))
   }
   
-  x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K or N x n_samples matrix 
+  x_minus_lambda <- outer(data_j, lambdas, "-") # N x K or N x n_samples matrix 
   x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
   
-  grad_deltas[j] <- sum(x_minus_lambda_times_pp) 
+  first_deriv_j <- sum(x_minus_lambda_times_pp) 
   # because we sum over the whole matrix here, we sum over all persons and 
   # all quadrature nodes for GH and all persons and all theta samples for MC
   
+  scnd_deriv_j <- sum(
+    matrix(
+      lambdas,
+      nrow = nrow(data), # length N
+      ncol = length(x), # length K
+      byrow = TRUE)* 
+      PPs # N x K matrix
+  )
+  
+  new_delta_j <- delta_j - (first_deriv_j / scnd_deriv_j)
+  
+  return(new_delta_j)
 }
 
 # lasso_update_poisson ---------------------------------------------------------------
 
-lasso_update_poisson <- function(item_params,
+lasso_coord_descent_poisson <- function(item_params,
                                  PPs,
                                  data,
                                  n_traits,
                                  em_type = c("gh", "mc"), 
                                  weights_and_nodes = NULL, 
                                  theta_samples = NULL,
-                                 penalize_lambda = NULL) {
-  # TODO implement alpha constraints for lassp penalry
+                                 penalize_lambda = NULL,
+                                 max_iter = 10,
+                                 ctol = 1e-3) {
+  # TODO implement alpha constraints for lasso penalty
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -381,12 +404,43 @@ lasso_update_poisson <- function(item_params,
   
   # blockwise coordinate descent
   for (j in 1:ncol(data)) {
-    # TODO wenn ich alpha und delta updates habe die hier einfuegen
+    conv <- FALSE
+    iter <- 1
+    new_params <- c(alphas_matrix[,j], deltas[j])
+    while (!isTRUE(conv) && iter <= max_iter) {
+      old_params <- new_params
+      deltas[j] <- lasso_delta_update_poisson(
+        delta_j = deltas[j], 
+        alphas_j = alphas_matrix[,j], 
+        PPs = PPs,
+        data_j = data[,j], 
+        weights_and_nodes = weights_and_nodes, 
+        theta_samples = theta_samples, 
+        em_type = em_type
+        )
+      # FIXME die frage ist hier, ob ich hier das freshe delta haben sollte oder noch das alte
+      # das muss ich ausprobieren
+      alphas_matrix[,j] <- lasso_alpha_update_poisson(
+        alphas_j = alphas_matrix[,j], 
+        delta_j = deltas[j], 
+        penalize_lambda = penalize_lambda,
+        PPs = PPs, 
+        data_j = data[,j], 
+        weights_and_nodes = weights_and_nodes, 
+        theta_samples = theta_samples,
+        em_type = em_type
+      )
+      
+      new_params <- c(alphas_matrix[,j], deltas[j])
+      conv <- !any(abs(old_params - new_params) > ctol)
+      iter <- iter + 1
+    }
   }
-  # TODO ueberlegen ob ich cyclic coordinate descent nur fuer ein update laufen lasse
-  # oder ob ich das in jedem m schritt bis konvergenz laufen lasse oder sagen wir mal so
-  # fuer 10 cycles?
   
+  new_item_params <- c(as.numeric(t(alphas_matrix)), deltas)
+  names(new_item_params) <- names(item_params)
+  
+  out(new_item_params)
 }
 
 
@@ -426,7 +480,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   if (penalize == "lasso") {
     # TODO implement alpha constraints in conjunction with lasso penalty
     
-    new_item_params <- lasso_update_poisson(
+    new_item_params <- lasso_coord_descent_poisson(
       item_params = item_params,
       PPs = PPs,
       data = data,
@@ -434,7 +488,9 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
       em_type = em_type, 
       weights_and_nodes = weights_and_nodes, 
       theta_samples = theta_samples,
-      penalize_lambda = penalize_lambda
+      penalize_lambda = penalize_lambda,
+      max_iter = 10, # TODO das hier oben als richtige argumente uebergeben
+      ctol = 1e-3
     )
     
   } else {
@@ -587,7 +643,6 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
   return(ll)
 }
 
-# TODO hier lasso richtig implementieren
 # run_em_poisson_multi ---------------------------------------------------------------
 run_em_poisson_multi <- function(data, init_params, n_traits, 
                                  n_nodes = NULL, n_samples = NULL, 

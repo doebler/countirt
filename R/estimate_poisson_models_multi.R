@@ -653,7 +653,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
                                  penalize = c("none", "ridge", "lasso"), 
                                  penalize_lambda = NULL,
                                  maxiter = 2000, convtol = 1e-5, ctol_maxstep = 1e-8,
-                                 n_samples_conv = 10, final_n_samples = 8000,
+                                 n_samples_conv = 20, final_n_samples = 8000,
                                  convcrit = "marglik", # can also be "params"
                                  alpha_constraints = NULL) {
   # note that we now have n_nodes with nodes per dimension, so that total

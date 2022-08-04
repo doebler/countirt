@@ -383,4 +383,11 @@ add_inference <- function(model, prob = 0.95) {
 # @importFrom MASS mvrnorm
 # TODO diese imports dann ruhig bei cirt rausnehmen weil es ja reicht, wenn ich die
 # dann hier importiere
+# fuer explorativ: mcirt_explore
+# fuer confirmatory: mcirt_confirm
+# dann ist es einfacher erstmal dafuer interfaces zu bauen und dann kann ich nachher immer
+# noch ein einheitliches mcirt schreiben wenn ich will wo ich beide auf einmal drin habe
+# also wo ich mir ein gutes allg. interface ueberlege (mit guter syntax) und dann einfach von da
+# aus entsprechend dann mcirt_explore und mcirt_confirm calle
+
 

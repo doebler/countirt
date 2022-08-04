@@ -291,8 +291,8 @@ lasso_alpha_update_poisson <- function(alphas_j, delta_j,
       first_deriv_j <- sum(
         matrix(
             weights_and_nodes$X[,l],
-            nrow = nrow(data), # length N
-            ncol = length(x), # length K
+            nrow = length(data_j), # length N
+            ncol = length(weights_and_nodes$X[,l]), # length K
             byrow = TRUE)*
           x_minus_lambda_times_pp # N x K matrix
       )
@@ -301,8 +301,8 @@ lasso_alpha_update_poisson <- function(alphas_j, delta_j,
       first_deriv_j <-sum(
         matrix(
             theta_samples[,l],
-            nrow = nrow(data), 
-            ncol = length(x), 
+            nrow = length(data_j), 
+            ncol = length(theta_samples[,l]), 
             byrow = TRUE)*
           x_minus_lambda_times_pp
       )
@@ -311,21 +311,21 @@ lasso_alpha_update_poisson <- function(alphas_j, delta_j,
     # second derivative
     
     if (em_type == "gh") {  
-      scnd_deriv_j <- sum(
+      scnd_deriv_j <- -sum(
         matrix(
           lambdas*weights_and_nodes$X[,l]^2,
-          nrow = nrow(data), # length N
-          ncol = length(x), # length K
+          nrow = length(data_j), # length N
+          ncol = length(lambdas), # length K
           byrow = TRUE)* 
           PPs # N x K matrix
       )
     } else if (em_type == "mc") {  
       # this is the same code as in GH case, just swap nodes for theta samples
-      scnd_deriv_j <- sum(
+      scnd_deriv_j <- -sum(
         matrix(
           lambdas*theta_samples[,l]^2,
-          nrow = nrow(data), # length N
-          ncol = length(x), # length K
+          nrow = length(data_j), # length N
+          ncol = length(lambdas), # length K
           byrow = TRUE)* 
           PPs # N x K matrix
       )
@@ -364,11 +364,11 @@ lasso_delta_update_poisson <- function(delta_j, alphas_j,
   # because we sum over the whole matrix here, we sum over all persons and 
   # all quadrature nodes for GH and all persons and all theta samples for MC
   
-  scnd_deriv_j <- sum(
+  scnd_deriv_j <- -sum(
     matrix(
       lambdas,
-      nrow = nrow(data), # length N
-      ncol = length(x), # length K
+      nrow = length(data_j), # length N
+      ncol = length(lambdas), # length K
       byrow = TRUE)* 
       PPs # N x K matrix
   )
@@ -409,7 +409,7 @@ lasso_coord_descent_poisson <- function(item_params,
     new_params <- c(alphas_matrix[,j], deltas[j])
     while (!isTRUE(conv) && iter <= max_iter) {
       old_params <- new_params
-      deltas[j] <- lasso_delta_update_poisson(
+      new_delta_j <- lasso_delta_update_poisson(
         delta_j = deltas[j], 
         alphas_j = alphas_matrix[,j], 
         PPs = PPs,
@@ -418,11 +418,12 @@ lasso_coord_descent_poisson <- function(item_params,
         theta_samples = theta_samples, 
         em_type = em_type
         )
-      # FIXME die frage ist hier, ob ich hier das freshe delta haben sollte oder noch das alte
-      # das muss ich ausprobieren
+      # use the previous delta_j like in sun et al.
+      # TODO i don't know if it's not maybe better to use the most up to date delta in
+      # the idea of cyclic coordinate descent
       alphas_matrix[,j] <- lasso_alpha_update_poisson(
         alphas_j = alphas_matrix[,j], 
-        delta_j = deltas[j], 
+        delta_j = deltas[j],
         penalize_lambda = penalize_lambda,
         PPs = PPs, 
         data_j = data[,j], 
@@ -431,6 +432,7 @@ lasso_coord_descent_poisson <- function(item_params,
         em_type = em_type
       )
       
+      deltas[j] <- new_delta_j
       new_params <- c(alphas_matrix[,j], deltas[j])
       conv <- !any(abs(old_params - new_params) > ctol)
       iter <- iter + 1
@@ -440,7 +442,7 @@ lasso_coord_descent_poisson <- function(item_params,
   new_item_params <- c(as.numeric(t(alphas_matrix)), deltas)
   names(new_item_params) <- names(item_params)
   
-  out(new_item_params)
+  return(new_item_params)
 }
 
 
@@ -489,8 +491,8 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
       weights_and_nodes = weights_and_nodes, 
       theta_samples = theta_samples,
       penalize_lambda = penalize_lambda,
-      max_iter = 10, # TODO das hier oben als richtige argumente uebergeben
-      ctol = 1e-3
+      max_iter = 1000, # TODO das hier oben als richtige argumente uebergeben
+      ctol = 1e-4
     )
     
   } else {

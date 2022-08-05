@@ -529,6 +529,49 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// marg_ll_multi_gh_cpp
+double marg_ll_multi_gh_cpp(NumericMatrix data, NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix nodes, NumericVector log_weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_marg_ll_multi_gh_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP nodesSEXP, SEXP log_weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type alphas(alphasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type deltas(deltasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type disps(dispsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type log_weights(log_weightsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_logZ_long(grid_logZ_longSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_log_lambda_long(grid_log_lambda_longSEXP);
+    Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
+    Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
+    rcpp_result_gen = Rcpp::wrap(marg_ll_multi_gh_cpp(data, alphas, deltas, disps, nodes, log_weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
+    return rcpp_result_gen;
+END_RCPP
+}
+// marg_ll_multi_mc_cpp
+double marg_ll_multi_mc_cpp(NumericMatrix data, NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix theta_samples, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_marg_ll_multi_mc_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP theta_samplesSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type alphas(alphasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type deltas(deltasSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type disps(dispsSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type theta_samples(theta_samplesSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_logZ_long(grid_logZ_longSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type grid_log_lambda_long(grid_log_lambda_longSEXP);
+    Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
+    Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
+    rcpp_result_gen = Rcpp::wrap(marg_ll_multi_mc_cpp(data, alphas, deltas, disps, theta_samples, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu));
+    return rcpp_result_gen;
+END_RCPP
+}
 // marg_ll_cmp_with_pcov_cpp
 double marg_ll_cmp_with_pcov_cpp(NumericMatrix data, NumericVector alphas, NumericVector deltas, NumericVector disps, NumericVector betas, NumericMatrix p_cov_data, NumericVector nodes, NumericVector weights, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_logZ_long, NumericVector grid_log_lambda_long, double max_mu, double min_mu);
 RcppExport SEXP _countirt_marg_ll_cmp_with_pcov_cpp(SEXP dataSEXP, SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP betasSEXP, SEXP p_cov_dataSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_logZ_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
@@ -2268,6 +2311,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_countirt_e_values_cpp", (DL_FUNC) &_countirt_e_values_cpp, 12},
     {"_countirt_e_values_cpp_lininterp", (DL_FUNC) &_countirt_e_values_cpp_lininterp, 11},
     {"_countirt_marg_ll_cpp", (DL_FUNC) &_countirt_marg_ll_cpp, 12},
+    {"_countirt_marg_ll_multi_gh_cpp", (DL_FUNC) &_countirt_marg_ll_multi_gh_cpp, 12},
+    {"_countirt_marg_ll_multi_mc_cpp", (DL_FUNC) &_countirt_marg_ll_multi_mc_cpp, 11},
     {"_countirt_marg_ll_cmp_with_pcov_cpp", (DL_FUNC) &_countirt_marg_ll_cmp_with_pcov_cpp, 14},
     {"_countirt_marg_ll_cmp_with_pcov_cat_cpp", (DL_FUNC) &_countirt_marg_ll_cmp_with_pcov_cat_cpp, 15},
     {"_countirt_marg_ll_cmp_with_icov_delta_cpp", (DL_FUNC) &_countirt_marg_ll_cmp_with_icov_delta_cpp, 14},

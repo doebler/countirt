@@ -193,6 +193,7 @@ grad_cmp_samealphas_newem <- function(item_params, PPs,
 }
 
 # ell_cmp_newem -------------------------------------------------------------------
+# TODO rausnehmen
 ell_cmp_newem <- function(item_params, e_values, weights_and_nodes, data) {
   # prep item parameters
   alphas <- item_params[grepl("alpha", names(item_params))]

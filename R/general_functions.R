@@ -160,6 +160,7 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
                         max_mu = 150,
                         min_mu = 0.001)
     } else {
+      # TODO remove
       # then interpolation method is linear
       # here we don't cap mu, so we extrapolate beyond grid values
       ll <- marg_ll_cpp_lininterp(data = as.matrix(data),

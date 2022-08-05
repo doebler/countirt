@@ -571,8 +571,6 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
   # alphas which we fix to certain values and don't estimate, we don't need the 
   # alpha_constraints argument here; everything will automatically work
   # TODO check that this still holds once i implement equality constraints for alpha
-  # we don't need to consider here whether lambda is fixed or estimated, it is just provided
-  # here via penalize_lambda and used here in computation of MLL
   
   n_items <- ncol(data)
   n_persons <- nrow(data)
@@ -790,7 +788,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
     theta_samples <- mvrnorm(final_n_samples, fcov_prior$mu, fcov_prior$sigma)
     new_params <- em_cycle_poisson_multi(
       data = data,
-      item_params = old_params, 
+      item_params = new_params, 
       n_traits = n_traits,
       weights_and_nodes = weights_and_nodes,
       ctol_maxstep = ctol_maxstep,

@@ -1706,6 +1706,148 @@ double marg_ll_cpp (NumericMatrix data,
 }
 
 // [[Rcpp::export]]
+double marg_ll_multi_gh_cpp (NumericMatrix data,
+                             NumericMatrix alphas,
+                             NumericVector deltas,
+                             NumericVector disps,
+                             NumericMatrix nodes,
+                             NumericVector log_weights,
+                             NumericVector grid_mus,
+                             NumericVector grid_nus,
+                             NumericVector grid_logZ_long,
+                             NumericVector grid_log_lambda_long,
+                             double max_mu,
+                             double min_mu) {
+  
+  int N = data.nrow();
+  int M = data.ncol();
+  int K = nodes.nrow();
+  int L = nodes.ncol();
+  
+  NumericMatrix mu(K, M);
+  NumericMatrix mu_interp(K, M);
+  NumericMatrix disp_interp(K, M);
+  for(int i=0;i<M;i++){
+    // loop over items (columns)
+    for(int j=0;j<K;j++) {
+      // loop over nodes (rows)
+      double log_mu = deltas[i];
+      for (int l=0;l<L;l++) {
+        // add alpha * node for each trait
+        // exp(alphas[i] * nodes[j] + 
+        mu(j,i) += alphas(l,i) * nodes(j,l);
+      }
+      mu(j,i) = exp(log_mu);
+      mu_interp(j,i) = mu(j,i);
+      if (mu(j,i) > max_mu) { mu_interp(j,i) = max_mu; }
+      if (mu(j,i) < min_mu) { mu_interp(j,i) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(j,i) = disps[i];
+    }
+  }
+  
+  NumericMatrix log_Z(K, M);
+  NumericMatrix log_lambda(K, M);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many columns as we have nodes and
+  // as many columns as we have items
+  
+  double log_marg_prob = 0;
+  
+  for(int i=0;i<N;i++){
+    double integral = 0;
+    for(int k=0;k<K;k++) {
+      // qudrature over nodes
+      double f = 0;
+      for(int j=0;j<M;j++) {
+        f = f + data(i,j)*log_lambda(k,j) - log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      integral = integral + exp(f + log_weights[k]);
+    }
+    log_marg_prob = log_marg_prob + log(integral);
+  }
+  
+  return(log_marg_prob);
+}
+
+// [[Rcpp::export]]
+double marg_ll_multi_mc_cpp (NumericMatrix data,
+                             NumericMatrix alphas,
+                             NumericVector deltas,
+                             NumericVector disps,
+                             NumericMatrix theta_samples,
+                             NumericVector grid_mus,
+                             NumericVector grid_nus,
+                             NumericVector grid_logZ_long,
+                             NumericVector grid_log_lambda_long,
+                             double max_mu,
+                             double min_mu) {
+  
+  int N = data.nrow();
+  int M = data.ncol();
+  int K = theta_samples.nrow();
+  int L = theta_samples.ncol();
+  
+  NumericMatrix mu(K, M);
+  NumericMatrix mu_interp(K, M);
+  NumericMatrix disp_interp(K, M);
+  for(int i=0;i<M;i++){
+    // loop over items (columns)
+    for(int j=0;j<K;j++) {
+      // loop over nodes (rows)
+      double log_mu = deltas[i];
+      for (int l=0;l<L;l++) {
+        // add alpha * node for each trait
+        // exp(alphas[i] * nodes[j] + 
+        mu(j,i) += alphas(l,i) * theta_samples(j,l);
+      }
+      mu(j,i) = exp(log_mu);
+      mu_interp(j,i) = mu(j,i);
+      if (mu(j,i) > max_mu) { mu_interp(j,i) = max_mu; }
+      if (mu(j,i) < min_mu) { mu_interp(j,i) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(j,i) = disps[i];
+    }
+  }
+  
+  NumericMatrix log_Z(K, M);
+  NumericMatrix log_lambda(K, M);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many columns as we have nodes and
+  // as many columns as we have items
+  
+  double log_marg_prob = 0;
+  
+  for(int i=0;i<N;i++){
+    double integral = 0;
+    for(int k=0;k<K;k++) {
+      // qudrature over nodes
+      double f = 0;
+      for(int j=0;j<M;j++) {
+        f = f + data(i,j)*log_lambda(k,j) - log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      integral += exp(f);
+    }
+    integral = integral / K;
+    log_marg_prob = log_marg_prob + log(integral);
+  }
+  
+  return(log_marg_prob);
+}
+
+// [[Rcpp::export]]
 double marg_ll_cmp_with_pcov_cpp (NumericMatrix data,
                                   NumericVector alphas,
                                   NumericVector deltas,

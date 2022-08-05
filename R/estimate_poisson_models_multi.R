@@ -446,7 +446,7 @@ lasso_coord_descent_poisson <- function(item_params,
 }
 
 
-# em_cycle_poisson -------------------------------------------------------------------
+# em_cycle_poisson_multi -------------------------------------------------------------------
 em_cycle_poisson_multi <- function(data, item_params, n_traits,
                                    em_type = c("gh", "mc"), 
                                    weights_and_nodes = NULL, 
@@ -497,7 +497,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     
   } else {
     if (!is.null(alpha_constraints)) {
-      # we estimate a confirmatory 2pcmpm
+      # we estimate a confirmatory model
       # we need to only input those item parameters here which need estimation
       # otherwise estimation won't work
       deltas <- item_params[grepl("delta", names(item_params))]

@@ -1,18 +1,29 @@
 
+# e_step_multi --------------------------------------------------------------------
 
+# TODO 
 
+# lasso_coord_descent --------------------------------------------------------------
 
-# em_cycle_poisson -------------------------------------------------------------------
+# TODO
+
+# grad_multi -----------------------------------------------------------------------
+
+# TODO
 
 # TODO hier weitermachen und auf cmp anpassen
-em_cycle_poisson_multi <- function(data, item_params, n_traits,
-                                   em_type = c("gh", "mc"), 
-                                   weights_and_nodes = NULL, 
-                                   theta_samples = NULL,
-                                   penalize = c("none", "ridge", "lasso"), 
-                                   penalize_lambda = NULL, 
-                                   alpha_constraints = NULL, # so far only work without penalty or with ridge
-                                   ctol_maxstep = 1e-8) {
+
+# em_cycle_multi -------------------------------------------------------------------
+# TODO implement equality constraints for alpha and generally constraints for disps
+em_cycle_multi <- function(data, 
+                           item_params, 
+                           n_traits,
+                           alpha_constraints = NULL, # so far only work without penalty or with ridge
+                           em_type = c("gh", "mc"), 
+                           weights_and_nodes = NULL, theta_samples = NULL,
+                           penalize = c("none", "ridge", "lasso"), 
+                           penalize_lambda = NULL, 
+                           ctol_maxstep = 1e-8) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
   # we start off by just assuming that we only have 0-constraints where we don't 
@@ -20,14 +31,9 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   # if there is no constraint on the parameter, expect it to have an entry of NA
   # if the value should be fixed to a certain value, then that value should be
   # given in the appropriate place in alpha_constraints
-  # TODO in the future, implement also equality constraints via alpha_constraints
-  # and maybe even allow delta_constraints
   
-  # constraints on alpha don't need distinction here because item_params includes
-  # the full set of alphas, including constraints, so alphas that aren't
-  # estimated are just 0 in there and that works
-  # regularization option doesn't need disctinction here (PPs are always calculated the same) 
-  PPs <- e_step_poisson_multi(
+  # neither constraints nor regularization need consideration in E step (always the same)
+  PPs <- e_step_multi(
     data = data, 
     item_params = item_params, 
     n_traits = n_traits,
@@ -40,7 +46,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   if (penalize == "lasso") {
     # TODO implement alpha constraints in conjunction with lasso penalty
     
-    new_item_params <- lasso_coord_descent_poisson(
+    new_item_params <- lasso_coord_descent(
       item_params = item_params,
       PPs = PPs,
       data = data,
@@ -55,7 +61,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     
   } else {
     if (!is.null(alpha_constraints)) {
-      # we estimate a confirmatory 2pcmpm
+      # we estimate a confirmatory model
       # we need to only input those item parameters here which need estimation
       # otherwise estimation won't work
       deltas <- item_params[grepl("delta", names(item_params))]
@@ -71,7 +77,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
     
     new_item_params <- nleqslv(
       x = item_params_m_step,
-      fn = grad_poisson_multi,
+      fn = grad_multi,
       PPs = PPs,
       data = data,
       n_traits = n_traits,
@@ -84,7 +90,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
       control = list(xtol = ctol_maxstep)
     )$x
     
-    # TODO check that this works when i have alpha constraints 
+    # TODO hier weitermachen und output von dispersion parametern hinzufuegen
     if (!is.null(alpha_constraints)) {
       # if we have constraints, then new_item_params as returned by new_item_params
       # is not yet the full set of item parameters but needs to be filled up

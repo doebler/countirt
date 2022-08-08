@@ -13,6 +13,14 @@ computeB <- function(lambda, mu, nu, log_Z, min_iter) {
     .Call(`_countirt_computeB`, lambda, mu, nu, log_Z, min_iter)
 }
 
+computeC <- function(lambda, mu, nu, log_Z, min_iter) {
+    .Call(`_countirt_computeC`, lambda, mu, nu, log_Z, min_iter)
+}
+
+computeEY2 <- function(lambda, mu, nu, log_Z, min_iter) {
+    .Call(`_countirt_computeEY2`, lambda, mu, nu, log_Z, min_iter)
+}
+
 computeQ <- function(lambda, mu, nu, min_iter) {
     .Call(`_countirt_computeQ`, lambda, mu, nu, min_iter)
 }
@@ -175,6 +183,34 @@ grad_cmp_newem_cpp <- function(alphas, deltas, disps, data, exp_abilities, grid_
 
 grad_cmp_newem_cpp2 <- function(alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_newem_cpp2`, alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_multi_gh_cpp <- function(alphas, deltas, disps, data, PPs, nodes, comp_alpha_grad, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_multi_gh_cpp`, alphas, deltas, disps, data, PPs, nodes, comp_alpha_grad, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_multi_gh_ridge_cpp <- function(alphas, deltas, disps, data, PPs, nodes, comp_alpha_grad, penalize_lambda, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_multi_gh_ridge_cpp`, alphas, deltas, disps, data, PPs, nodes, comp_alpha_grad, penalize_lambda, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_multi_mc_cpp <- function(alphas, deltas, disps, data, PPs, theta_samples, comp_alpha_grad, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_multi_mc_cpp`, alphas, deltas, disps, data, PPs, theta_samples, comp_alpha_grad, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_multi_mc_ridge_cpp <- function(alphas, deltas, disps, data, PPs, theta_samples, comp_alpha_grad, penalize_lambda, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_multi_mc_ridge_cpp`, alphas, deltas, disps, data, PPs, theta_samples, comp_alpha_grad, penalize_lambda, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+lasso_delta_update_cpp <- function(alphas_j, delta_j, disp_j, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_lasso_delta_update_cpp`, alphas_j, delta_j, disp_j, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+soft_thresh_cpp <- function(x, eta) {
+    .Call(`_countirt_soft_thresh_cpp`, x, eta)
+}
+
+lasso_alpha_update_cpp <- function(alphas_j, delta_j, disp_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_lasso_alpha_update_cpp`, alphas_j, delta_j, disp_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
 grad_cmp_with_pcov_cpp <- function(alphas, deltas, disps, betas, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {

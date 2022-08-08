@@ -255,20 +255,11 @@ lasso_alpha_update_poisson <- function(alphas_j, delta_j,
   } else if (em_type == "mc") {
     n_traits <- ncol(theta_samples)
   }
-   
-  # TODO figure out whether i can do the whole coordinate cycling in here, i think that would probably
-  # be best and the most convenient
-  # then i need to make sure i update alphas_j throughout the cycle and cycle within this
-  # function over the L traits and end up with new_alphas_j which i then output
-  # then i can check if this gives me the results i want and if not, i can try not using most up to date
-  # values right away - but i think it should be right-away updates
-  # FIXME another question is probably whether i update just once or i update in coordinate descent
-  # a couple of times or until convergence -> i think it's best that i handle that in the lasso_update
-  # function, like how many coordinate cycles i wanna do
   
   # coordinate cycle
   new_alphas_j <- alphas_j
   
+  # cycle over traits
   for (l in 1:n_traits) {
     
     # first derivative (same as in grad_poisson_multi)
@@ -379,7 +370,6 @@ lasso_delta_update_poisson <- function(delta_j, alphas_j,
 }
 
 # lasso_update_poisson ---------------------------------------------------------------
-
 lasso_coord_descent_poisson <- function(item_params,
                                  PPs,
                                  data,
@@ -388,7 +378,7 @@ lasso_coord_descent_poisson <- function(item_params,
                                  weights_and_nodes = NULL, 
                                  theta_samples = NULL,
                                  penalize_lambda = NULL,
-                                 max_iter = 10,
+                                 max_iter = 1000,
                                  ctol = 1e-3) {
   # TODO implement alpha constraints for lasso penalty
   

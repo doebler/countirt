@@ -3,15 +3,270 @@
 
 # TODO 
 
-# lasso_coord_descent --------------------------------------------------------------
+# here it does make a difference whether we have MC or GH, PP compute slightly differently for the two
 
-# TODO
+
+
+# lasso_coord_descent --------------------------------------------------------------
+# TODO alpha constraints implementieren (selbst einfach erstmal fuer fixations)
+# TODO disp contraints implementieren
+lasso_coord_descent <- function(item_params,
+                                PPs,
+                                data,
+                                n_traits,
+                                em_type = c("gh", "mc"), 
+                                weights_and_nodes = NULL, 
+                                theta_samples = NULL,
+                                penalize_lambda = 0,
+                                max_iter = 1000,
+                                ctol = 1e-3) {
+  
+  data <- as.matrix(data)
+  alphas <- item_params[grepl("alpha", names(item_params))]
+  alphas_matrix <- matrix(
+    alphas,
+    ncol = ncol(data),
+    nrow = n_traits,
+    byrow = TRUE
+  )
+  deltas <- item_params[grepl("delta", names(item_params))]
+  disps <- exp(item_params[grepl("log_disp", names(item_params))])
+  
+  # TODO hier weitermachen und ueberlegen, ob ich erstmal nur die update funktionen in c++ implementiere
+  # oder direkt den ganzen coordinate descent alg.; ich glaube aber, dass es das schon bringt den
+  # ganzen naechsten abschnitt komplett in c++ zu haben
+  
+  # ich kann ja erstmal anfangen damit, die 2 updates in c++ zu implementieren, weil das brauche ich ja eh
+  # ich kann dann hier im uebrigen ausnutzen, dass ich eig. gar nicht zwischen GH und MC bei diesen implementierungen
+  # unterscheiden muss weil ich immer eine K bzw. S x L Matrix einfach reingebe; d.h. ich kann die updates gleich lassen
+  # und einfach ein coordinate descent fuer mc und eins fuer GH haben und die unterscheidung was ich inputte einfach hier in
+  # R machen (selbst wenn ich den coordinate descent algorithmus dann in c++ laufen lasse)
+  
+  # only check here in r whether we have GH or MC EM, we can use the same c++ functions as they just expect
+  # a matrix of L columns for argument nodes and we have that for both GH and MC
+  if (em_type == "gh") {
+    # blockwise coordinate descent
+    for (j in 1:ncol(data)) {
+      conv <- FALSE
+      iter <- 1
+      new_params <- c(alphas_matrix[,j], deltas[j])
+      while (!isTRUE(conv) && iter <= max_iter) {
+        old_params <- new_params
+        new_delta_j <- lasso_delta_update_cpp(
+          alphas_j = alphas_matrix[,j], 
+          delta_j = deltas[j],
+          disp_j = disps[j],
+          data_j = data[,j], 
+          PPs = PPs,
+          nodes = weights_and_nodes$X, 
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001
+        )
+        # use the previous delta_j like in sun et al.
+        # TODO i don't know if it's not maybe better to use the most up to date delta in
+        # the idea of cyclic coordinate descent
+        alphas_matrix[,j] <- lasso_alpha_update_cpp(
+          alphas_j = alphas_matrix[,j], 
+          delta_j = deltas[j],
+          disp_j = disps[j],
+          penalize_lambda = penalize_lambda,
+          data_j = data[,j], 
+          PPs = PPs,
+          nodes = weights_and_nodes$X, 
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001
+        )
+        
+        deltas[j] <- new_delta_j
+        new_params <- c(alphas_matrix[,j], deltas[j])
+        conv <- !any(abs(old_params - new_params) > ctol)
+        iter <- iter + 1
+      }
+    }
+    
+    # optimize numerically for nu_j
+    # TODO mit nleqslv
+  } else if (em_type == "mc") {
+    # blockwise coordinate descent
+    # TODO with same code as in gh, just pass theta_samples instead of nodes to nodes argument
+    # (will work with the same c++ function)
+    
+    # optimize numerically for nu_j
+    # TODO mit nleqslv
+  }
+  
+  
+  
+  new_item_params <- c(as.numeric(t(alphas_matrix)), deltas, log_disps)
+  names(new_item_params) <- names(item_params)
+  
+  return(new_item_params)
+}
 
 # grad_multi -----------------------------------------------------------------------
 
-# TODO
-
-# TODO hier weitermachen und auf cmp anpassen
+grad_multi <- function(item_params, 
+                       PPs, 
+                       data, 
+                       n_traits,
+                       em_type = c("gh", "mc"),
+                       weights_and_nodes = NULL, theta_samples = NULL, 
+                       penalize = c("none", "ridge"), 
+                       # we do lasso penalty outside of
+                       # this gradient because it needs its own algorithm
+                       penalize_lambda = NULL,
+                       alpha_constraints = NULL) {
+  # the PPs are the joint posterior probabilities here; we get them for
+  # each dimension combination and each person, so they actually have the same
+  # dimensionality as in the unidimensional case N x K, just that now, 
+  # K = length(weights_and_nodes$W), so the no. of quadrature points depending
+  # on number of trait dimensions and number of nodes per dimension
+  
+  # alpha_constraints should be a vector of the length of all the alpha parameters
+  # with the same parameter names and provide the constraints for alphas
+  # we start off by just assuming that we only have 0-constraints where we don't 
+  # want certain items to load on certain factors
+  # if there is no constraint on the parameter, expect it to have an entry of NA
+  # if the value should be fixed to a certain value, then that value should be
+  # given in the appropriate place in alpha_constraints
+  
+  # we input the alphas for the m step here through item_params so that optimization
+  # method works, we then need to "supplement" the fixed values from alpha_constraints
+  
+  data <- as.matrix(data)
+  alphas <- item_params[grepl("alpha", names(item_params))]
+  if (!is.null(alpha_constraints)) {
+    full_alphas <- alpha_constraints
+    full_alphas[is.na(full_alphas)] <- alphas
+    full_alphas_matrix <- matrix(
+      full_alphas,
+      ncol = ncol(data),
+      nrow = n_traits,
+      byrow = TRUE
+    )
+  } else {
+    full_alphas_matrix <- matrix(
+      alphas,
+      ncol = ncol(data),
+      nrow = n_traits,
+      byrow = TRUE
+    )
+  }
+  deltas <- item_params[grepl("delta", names(item_params))]
+  disps <- exp(item_params[grepl("log_disp", names(item_params))])
+  
+  # set-up a way to check for which alphas we need gradients
+  if (!is.null(alpha_constraints)) {
+    compute_alpha_gradient <- matrix(
+      is.na(alpha_constraints),
+      nrow = n_traits,
+      ncol = ncol(data),
+      byrow = TRUE
+    )
+  } else {
+    compute_alpha_gradient <- matrix(
+      TRUE,
+      nrow = n_traits,
+      ncol = ncol(data),
+      byrow = TRUE
+    )
+  }
+  # thia can be passed to the C++ function and that can then check whether to compute
+  # gradient or not; the C++ function can then directly output only gradients for those alphas
+  # for which we want to have gradients
+  
+  # make distinction between no or ridge regularization
+  if (penalize == "none") {
+    # make distinction between GH and MC
+    if (em_type == "gh") {
+      grads <- grad_multi_gh_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        disps = disps,
+        data = as.matrix(data),
+        PPs = PPs,
+        nodes = weights_and_nodes$X,
+        comp_alpha_grad = compute_alpha_gradient,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    } else if (em_type == "mc") {
+      grads <- grad_multi_mc_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        disps = disps,
+        data = as.matrix(data),
+        PPs = PPs,
+        theta_samples = theta_samples,
+        comp_alpha_grad = compute_alpha_gradient,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    }
+  } else if (penalize == "ridge") {
+    # make distinction between GH and MC
+    if (em_type == "gh") {
+      grads <- grad_multi_gh_ridge_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        disps = disps,
+        data = as.matrix(data),
+        PPs = PPs,
+        nodes = weights_and_nodes$X,
+        comp_alpha_grad = compute_alpha_gradient,
+        penalize_lambda = penalize_lambda,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    } else if (em_type == "mc") {
+      grads <- grad_multi_mc_ridge_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        disps = disps,
+        data = as.matrix(data),
+        PPs = PPs,
+        theta_samples = theta_samples,
+        comp_alpha_grad = compute_alpha_gradient,
+        penalize_lambda = penalize_lambda,
+        grid_mus = grid_mus,
+        grid_nus = grid_nus,
+        grid_cmp_var_long = grid_cmp_var_long,
+        grid_log_lambda_long = grid_log_lambda_long,
+        grid_logZ_long = grid_logZ_long,
+        max_mu = 200,
+        min_mu = 0.001)
+    }
+  }
+  
+  if (any(is.na(grads))) {
+    stop("Gradient contained NA", paste0(grads, collapse = ","),
+         paste0(item_params, collapse = ","))
+  }
+  
+  return(out)
+}
 
 # em_cycle_multi -------------------------------------------------------------------
 # TODO implement equality constraints for alpha and generally constraints for disps
@@ -90,12 +345,12 @@ em_cycle_multi <- function(data,
       control = list(xtol = ctol_maxstep)
     )$x
     
-    # TODO hier weitermachen und output von dispersion parametern hinzufuegen
     if (!is.null(alpha_constraints)) {
       # if we have constraints, then new_item_params as returned by new_item_params
       # is not yet the full set of item parameters but needs to be filled up
       alphas <- new_item_params[grepl("alpha", names(new_item_params))]
       deltas <- new_item_params[grepl("delta", names(new_item_params))]
+      log_disps <- new_item_params[grepl("log_disp", names(new_item_params))]
       new_alphas_m <- matrix(
         alpha_constraints,
         nrow = n_traits,
@@ -110,13 +365,14 @@ em_cycle_multi <- function(data,
       for (a in 1:length(estimated_alphas_l)) {
         new_alphas_m[estimated_alphas_l[[a]][2], estimated_alphas_l[[a]][1]] <- alphas[a]
       }
-      new_item_params <- c(as.numeric(t(new_alphas_m)), deltas)
+      new_item_params <- c(as.numeric(t(new_alphas_m)), deltas, log_disps)
       theta_names <- paste0("_theta", 1:n_traits)
       alpha_names <- paste0("alpha", 1:ncol(data))
       full_alpha_names <- c(outer(alpha_names, theta_names, "paste0"))
       names(new_item_params) <- c(
         full_alpha_names,
-        paste0("delta", 1:ncol(data))
+        paste0("delta", 1:ncol(data)),
+        paste0("log_disp", 1:ncol(data))
       )
     }
   }
@@ -169,7 +425,7 @@ marg_ll_multi <- function(data,
                                grid_nus = grid_nus, 
                                grid_logZ_long = grid_logZ_long,
                                grid_log_lambda_long = grid_log_lambda_long,
-                               max_mu = 150,
+                               max_mu = 200,
                                min_mu = 0.001)
   } else if (em_type == "mc") {
     # i can compute the unpenalized marginal likelihood and then just substract penalty here in R
@@ -183,7 +439,7 @@ marg_ll_multi <- function(data,
                                grid_nus = grid_nus, 
                                grid_logZ_long = grid_logZ_long,
                                grid_log_lambda_long = grid_log_lambda_long,
-                               max_mu = 150,
+                               max_mu = 200,
                                min_mu = 0.001)
   }
   

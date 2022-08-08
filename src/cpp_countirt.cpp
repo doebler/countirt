@@ -3596,6 +3596,8 @@ double soft_thresh_cpp(double x, double eta) {
 }
 
 
+
+
 // [[Rcpp::export]]
 NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L traits
                                      double delta_j,
@@ -3687,6 +3689,90 @@ NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L
   }
   
   return(new_alphas_j);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_nu_lasso_cpp(NumericMatrix alphas,
+                                NumericVector deltas,
+                                NumericVector disps,
+                                NumericMatrix data,
+                                NumericMatrix PPs,
+                                NumericMatrix nodes,// can be either nodes or theta_samples
+                                NumericVector grid_mus,
+                                NumericVector grid_nus,
+                                NumericVector grid_cmp_var_long,
+                                NumericVector grid_log_lambda_long,
+                                NumericVector grid_logZ_long,
+                                double max_mu,
+                                double min_mu) {
+  
+  int m = data.ncol();
+  int n = data.nrow();
+  int n_nodes = nodes.nrow();
+  int L = nodes.ncol();
+  
+  NumericVector grad_disps(m);
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int i=0;i<m;i++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over persons (rows)
+      double log_mu = deltas[i];
+      // add alpha * node for each latent trait
+      for (int l=0;l<L;l++) {
+        log_mu += alphas(l,i) * nodes(k,l);
+      }
+      mu(k,i) = exp(log_mu);
+      mu_interp(k,i) = mu(k,i);
+      if (mu(k,i) > max_mu) { mu_interp(k,i) = max_mu; }
+      if (mu(k,i) < min_mu) { mu_interp(k,i) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,i) = disps[i];
+    }
+  }
+  
+  NumericMatrix V(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  NumericMatrix log_Z(n_nodes, m);
+  V = interp_from_grid_m(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have persons and
+  // as many columns as we have items
+  
+  for(int i=0;i<m;i++){ // over items (columns in my matrices)
+    // initialize gradients at 0 
+    grad_disps[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      // over persons (rows in my matrices)
+      
+      // compute A and B for dispersion gradient
+      double lambda = exp(log_lambda(k,i));
+      double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+      
+      for(int j=0;j<n;j++) { // loop over persons
+        
+        // compute the gradients (summing over persons and nodes)
+        grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
+      }
+    }
+  }
+  
+  return(grad_disps);
 }
 
 // [[Rcpp::export]]

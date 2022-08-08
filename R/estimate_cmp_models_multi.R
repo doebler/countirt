@@ -32,16 +32,6 @@ lasso_coord_descent <- function(item_params,
   deltas <- item_params[grepl("delta", names(item_params))]
   disps <- exp(item_params[grepl("log_disp", names(item_params))])
   
-  # TODO hier weitermachen und ueberlegen, ob ich erstmal nur die update funktionen in c++ implementiere
-  # oder direkt den ganzen coordinate descent alg.; ich glaube aber, dass es das schon bringt den
-  # ganzen naechsten abschnitt komplett in c++ zu haben
-  
-  # ich kann ja erstmal anfangen damit, die 2 updates in c++ zu implementieren, weil das brauche ich ja eh
-  # ich kann dann hier im uebrigen ausnutzen, dass ich eig. gar nicht zwischen GH und MC bei diesen implementierungen
-  # unterscheiden muss weil ich immer eine K bzw. S x L Matrix einfach reingebe; d.h. ich kann die updates gleich lassen
-  # und einfach ein coordinate descent fuer mc und eins fuer GH haben und die unterscheidung was ich inputte einfach hier in
-  # R machen (selbst wenn ich den coordinate descent algorithmus dann in c++ laufen lasse)
-  
   # only check here in r whether we have GH or MC EM, we can use the same c++ functions as they just expect
   # a matrix of L columns for argument nodes and we have that for both GH and MC
   if (em_type == "gh") {
@@ -93,24 +83,123 @@ lasso_coord_descent <- function(item_params,
         iter <- iter + 1
       }
     }
-    
-    # optimize numerically for nu_j
-    # TODO mit nleqslv
   } else if (em_type == "mc") {
     # blockwise coordinate descent
-    # TODO with same code as in gh, just pass theta_samples instead of nodes to nodes argument
-    # (will work with the same c++ function)
-    
-    # optimize numerically for nu_j
-    # TODO mit nleqslv
+    for (j in 1:ncol(data)) {
+      conv <- FALSE
+      iter <- 1
+      new_params <- c(alphas_matrix[,j], deltas[j])
+      while (!isTRUE(conv) && iter <= max_iter) {
+        old_params <- new_params
+        new_delta_j <- lasso_delta_update_cpp(
+          alphas_j = alphas_matrix[,j], 
+          delta_j = deltas[j],
+          disp_j = disps[j],
+          data_j = data[,j], 
+          PPs = PPs,
+          nodes = theta_samples, 
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001
+        )
+        # use the previous delta_j like in sun et al.
+        # TODO i don't know if it's not maybe better to use the most up to date delta in
+        # the idea of cyclic coordinate descent
+        alphas_matrix[,j] <- lasso_alpha_update_cpp(
+          alphas_j = alphas_matrix[,j], 
+          delta_j = deltas[j],
+          disp_j = disps[j],
+          penalize_lambda = penalize_lambda,
+          data_j = data[,j], 
+          PPs = PPs,
+          nodes = theta_samples, 
+          grid_mus = grid_mus,
+          grid_nus = grid_nus,
+          grid_cmp_var_long = grid_cmp_var_long,
+          grid_log_lambda_long = grid_log_lambda_long,
+          grid_logZ_long = grid_logZ_long,
+          max_mu = 200,
+          min_mu = 0.001
+        )
+        
+        deltas[j] <- new_delta_j
+        new_params <- c(alphas_matrix[,j], deltas[j])
+        conv <- !any(abs(old_params - new_params) > ctol)
+        iter <- iter + 1
+      }
+    }
   }
   
+  # output updated alphas and deltas
+  new_alphas_deltas <- c(as.numeric(t(alphas_matrix)), deltas)
+  names(new_alphas_deltas) <- names(item_params[!grepl("log_disp", names(item_params))])
   
+  return(new_alphas_deltas)
+}
+
+# grad_nu_lasso --------------------------------------------------------------------
+
+grad_nu_lasso <- function(log_disps,
+                          other_params, 
+                          PPs, 
+                          data, 
+                          em_type = c("gh", "mc"),
+                          weights_and_nodes = NULL,
+                          theta_samples = NULL) {
+  # set up variable
+  data <- as.matrix(data)
+  alphas <- other_params[grepl("alpha", names(other_params))]
+  alphas_matrix <- matrix(
+    alphas,
+    ncol = ncol(data),
+    nrow = n_traits,
+    byrow = TRUE
+  )
+  deltas <- other_params[grepl("delta", names(other_params))]
+  disps <- exp(log_disps)
   
-  new_item_params <- c(as.numeric(t(alphas_matrix)), deltas, log_disps)
-  names(new_item_params) <- names(item_params)
+  if (em_type == "gh") {
+    grads <- grad_nu_lasso_cpp(
+      alphas = alphas_matrix, 
+      deltas = deltas,
+      disps = disps,
+      data = data, 
+      PPs = PPs,
+      nodes = weights_and_nodes$X, 
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001)
+  } else if (em_type == "mc") {
+    grads <- grad_nu_lasso_cpp(
+      alphas = alphas_matrix, 
+      deltas = deltas,
+      disps = disps,
+      data = data, 
+      PPs = PPs,
+      nodes = theta_samples, 
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001)
+  }
   
-  return(new_item_params)
+  if (any(is.na(grads))) {
+    stop("Gradient contained NA", paste0(grads, collapse = ","),
+         paste0(item_params, collapse = ","))
+  }
+  
+  return(grads)
 }
 
 # grad_multi -----------------------------------------------------------------------
@@ -265,7 +354,7 @@ grad_multi <- function(item_params,
          paste0(item_params, collapse = ","))
   }
   
-  return(out)
+  return(grads)
 }
 
 # em_cycle_multi -------------------------------------------------------------------
@@ -301,7 +390,8 @@ em_cycle_multi <- function(data,
   if (penalize == "lasso") {
     # TODO implement alpha constraints in conjunction with lasso penalty
     
-    new_item_params <- lasso_coord_descent(
+    # blockwise cyclic coordinate descent for updating alpha and delta
+    new_alphas_deltas <- lasso_coord_descent(
       item_params = item_params,
       PPs = PPs,
       data = data,
@@ -314,6 +404,22 @@ em_cycle_multi <- function(data,
       ctol = 1e-4
     )
     
+    # numerical optimization for updating disps
+    log_disps <- item_params[grepl("log_disp", names(item_params))]
+    new_log_disps <- nleqslv(
+      x = log_disps,
+      fn = grad_nu_lasso,
+      other_params = new_alphas_deltas,
+      PPs = PPs,
+      data = data,
+      em_type = em_type,
+      weights_and_nodes = weights_and_nodes,
+      theta_samples = theta_samples,
+      control = list(xtol = ctol_maxstep)
+    )$x
+    
+    new_item_params <- c(new_alphas_deltas, new_log_disps)
+    names(new_item_params) <- names(item_params)
   } else {
     if (!is.null(alpha_constraints)) {
       # we estimate a confirmatory model

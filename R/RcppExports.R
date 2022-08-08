@@ -401,6 +401,14 @@ e_values_newem_cpp2 <- function(data, alphas, deltas, disps, nodes, weights, gri
     .Call(`_countirt_e_values_newem_cpp2`, data, alphas, deltas, disps, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
+estep_multi_gh_cpp <- function(data, alphas, deltas, disps, nodes, log_weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_multi_gh_cpp`, data, alphas, deltas, disps, nodes, log_weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
+estep_multi_mc_cpp <- function(data, alphas, deltas, disps, theta_samples, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_estep_multi_mc_cpp`, data, alphas, deltas, disps, theta_samples, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
 estep_cmp_with_icov_delta_cpp <- function(data, alphas, delta, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_estep_cmp_with_icov_delta_cpp`, data, alphas, delta, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }

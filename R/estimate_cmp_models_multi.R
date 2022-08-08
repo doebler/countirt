@@ -1,11 +1,67 @@
 
 # e_step_multi --------------------------------------------------------------------
 
-# TODO 
+e_step_multi <- function(data, item_params, n_traits,
+                         em_type = c("gh", "mc"),
+                         weights_and_nodes = NULL, 
+                         theta_samples = NULL) {
+  # we don't need the alpha_constraints argument here; everything will automatically work
+  # we don't need to consider regualrization here, posterior probs will be the same regardless
+  
+  data <- as.matrix(data)
+  alphas <- item_params[grepl("alpha", names(item_params))]
+  # alphas will now have a number and a theta, so alpha1_theta1, alpha1_theta2, etc.
+  # expect first all alphas (across all thetas) for item 1, and then all for item 2, etc.
+  # restructure alphas into a matrix for easier combinatio with the
+  # quadrature nodes, we have a column for each item and a row for each theta
+  alphas_matrix <- matrix(
+    alphas,
+    ncol = ncol(data),
+    nrow = n_traits,
+    byrow = TRUE
+  )
+  deltas <- item_params[grepl("delta", names(item_params))]
+  disps <- item_params[grepl("log_disp", names(item_params))]
+  
+  if (em_type == "gh") {
+    
+    PPs <- estep_multi_gh_cpp(
+      data = as.matrix(data),
+      alphas = alphas_matrix,
+      deltas = deltas,
+      disps = disps,
+      nodes = weights_and_nodes$X,
+      log_weights = weights_and_nodes$W,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_logZ_long = grid_logZ_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+    
+  } else if (em_type == "mc") {
+    
+    PPs <- estep_multi_mc_cpp(
+      data = as.matrix(data),
+      alphas = alphas_matrix,
+      deltas = deltas,
+      disps = disps,
+      theta_samples = theta_samples,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_logZ_long = grid_logZ_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+    
+  }
 
-# here it does make a difference whether we have MC or GH, PP compute slightly differently for the two
-
-
+  # output should be a matrix with N rows and K cols for GH 
+  # and a matrix with N rows and n_sample cols for MC
+  return(PPs)
+}
 
 # lasso_coord_descent --------------------------------------------------------------
 # TODO alpha constraints implementieren (selbst einfach erstmal fuer fixations)

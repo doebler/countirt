@@ -9412,6 +9412,165 @@ NumericMatrix e_values_newem_cpp2(NumericMatrix data,
 }
 
 // [[Rcpp::export]]
+NumericMatrix estep_multi_gh_cpp(NumericMatrix data,
+                                 NumericMatrix alphas,
+                                 NumericVector deltas,
+                                 NumericVector disps,
+                                 NumericMatrix nodes,
+                                 NumericVector log_weights,
+                                 NumericVector grid_mus,
+                                 NumericVector grid_nus,
+                                 NumericVector grid_logZ_long,
+                                 NumericVector grid_log_lambda_long,
+                                 double max_mu,
+                                 double min_mu) {
+  
+  int m = data.ncol();
+  int n_nodes = nodes.nrow();
+  int N = data.nrow();
+  int L = nodes.ncol();
+  
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over persons (rows)
+      double log_mu = deltas[j];
+      // add alpha * node for each latent trait
+      for (int l=0;l<L;l++) {
+        log_mu += alphas(l,j) * nodes(k,l);
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }
+  
+  NumericMatrix log_Z(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many columns as we have nodes and
+  // as many columns as we have items
+  
+  // NumericVector exp_abilities(N);
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // compute the marginal probability for each person 
+    // (which we need for the denominator of the posterior probabilities)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes);
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        log_resp_vector_prob(k) += data(i,j)*log_lambda(k,j) -
+          log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k) + log_weights[k]);
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = (exp(log_resp_vector_prob(k) + log_weights[k])) / marg_prob(i);
+    }
+  }
+  
+  return(PPs);
+}
+
+// [[Rcpp::export]]
+NumericMatrix estep_multi_mc_cpp(NumericMatrix data,
+                                 NumericMatrix alphas,
+                                 NumericVector deltas,
+                                 NumericVector disps,
+                                 NumericMatrix theta_samples,
+                                 NumericVector grid_mus,
+                                 NumericVector grid_nus,
+                                 NumericVector grid_logZ_long,
+                                 NumericVector grid_log_lambda_long,
+                                 double max_mu,
+                                 double min_mu) {
+  
+  int m = data.ncol();
+  int n_nodes = theta_samples.nrow();
+  int N = data.nrow();
+  int L = theta_samples.ncol();
+  
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over persons (rows)
+      double log_mu = deltas[j];
+      // add alpha * node for each latent trait
+      for (int l=0;l<L;l++) {
+        log_mu += alphas(l,j) * theta_samples(k,l);
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }
+  
+  NumericMatrix log_Z(n_nodes, m);
+  NumericMatrix log_lambda(n_nodes, m);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many columns as we have nodes and
+  // as many columns as we have items
+  
+  // NumericVector exp_abilities(N);
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // compute the marginal probability for each person 
+    // (which we need for the denominator of the posterior probabilities)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes);
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        log_resp_vector_prob(k) += data(i,j)*log_lambda(k,j) -
+          log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k));
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = exp(log_resp_vector_prob(k)) / marg_prob(i);
+    }
+  }
+  
+  return(PPs);
+}
+
+// [[Rcpp::export]]
 NumericMatrix estep_cmp_with_icov_delta_cpp(NumericMatrix data,
                                   NumericVector alphas,
                                   double delta,

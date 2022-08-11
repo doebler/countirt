@@ -1822,15 +1822,12 @@ double marg_ll_multi_gh_cpp (NumericMatrix data,
   NumericMatrix mu(K, M);
   NumericMatrix mu_interp(K, M);
   NumericMatrix disp_interp(K, M);
-  for(int i=0;i<M;i++){
-    // loop over items (columns)
-    for(int j=0;j<K;j++) {
-      // loop over nodes (rows)
+  for(int i=0;i<M;i++){ // loop over items (columns)
+    for(int j=0;j<K;j++) { // loop over nodes (rows)
       double log_mu = deltas[i];
       for (int l=0;l<L;l++) {
         // add alpha * node for each trait
-        // exp(alphas[i] * nodes[j] 
-        mu(j,i) += alphas(l,i) * nodes(j,l);
+        log_mu += alphas(l,i) * nodes(j,l);
       }
       mu(j,i) = exp(log_mu);
       mu_interp(j,i) = mu(j,i);
@@ -1900,7 +1897,7 @@ double marg_ll_multi_mc_cpp (NumericMatrix data,
       for (int l=0;l<L;l++) {
         // add alpha * node for each trait
         // exp(alphas[i] * nodes[j] + 
-        mu(j,i) += alphas(l,i) * theta_samples(j,l);
+        log_mu += alphas(l,i) * theta_samples(j,l);
       }
       mu(j,i) = exp(log_mu);
       mu_interp(j,i) = mu(j,i);
@@ -1932,6 +1929,76 @@ double marg_ll_multi_mc_cpp (NumericMatrix data,
       double f = 0;
       for(int j=0;j<M;j++) {
         f = f + data(i,j)*log_lambda(k,j) - log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      integral += exp(f);
+    }
+    integral = integral / K;
+    log_marg_prob = log_marg_prob + log(integral);
+  }
+  
+  return(log_marg_prob);
+}
+
+// [[Rcpp::export]]
+double marg_ll_multi_pois_gh_cpp (NumericMatrix data,
+                             NumericMatrix alphas,
+                             NumericVector deltas,
+                             NumericMatrix nodes,
+                             NumericVector log_weights) {
+  
+  int N = data.nrow();
+  int M = data.ncol();
+  int K = nodes.nrow();
+  int L = nodes.ncol();
+  
+  double log_marg_prob = 0;
+  
+  for(int i=0;i<N;i++){
+    double integral = 0;
+    for(int k=0;k<K;k++) { // qudrature over nodes
+      double f = 0;
+      for(int j=0;j<M;j++) { // over items
+        double log_mu = deltas[j];
+        for (int l=0;l<L;l++) {
+          // add alpha * node for each trait
+          // exp(alphas[i] * nodes[j] 
+          log_mu += alphas(l,j) * nodes(k,l);
+        }
+        f = f + data(i,j)*log_mu - exp(log_mu) - lgamma(data(i,j)+1);
+      }
+      integral = integral + exp(f + log_weights[k]);
+    }
+    log_marg_prob = log_marg_prob + log(integral);
+  }
+  
+  return(log_marg_prob);
+}
+
+// [[Rcpp::export]]
+double marg_ll_multi_pois_mc_cpp (NumericMatrix data,
+                             NumericMatrix alphas,
+                             NumericVector deltas,
+                             NumericMatrix theta_samples) {
+  
+  int N = data.nrow();
+  int M = data.ncol();
+  int K = theta_samples.nrow();
+  int L = theta_samples.ncol();
+  
+  double log_marg_prob = 0;
+  
+  for(int i=0;i<N;i++){
+    double integral = 0;
+    for(int k=0;k<K;k++) { // qudrature over nodes
+      double f = 0;
+      for(int j=0;j<M;j++) {
+        double log_mu = deltas[j];
+        for (int l=0;l<L;l++) {
+          // add alpha * node for each trait
+          // exp(alphas[i] * nodes[j] + 
+          log_mu += alphas(l,j) * theta_samples(k,l);
+        }
+        f = f + data(i,j)*log_mu - exp(log_mu) - lgamma(data(i,j)+1);
       }
       integral += exp(f);
     }
@@ -3046,10 +3113,10 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
         for (int l=0;l<L;l++) {
           // for alphas, gradients also further need to be trait specific
           if (comp_alpha_grad(l,i) == true) {
-            grad_alphas(l,i) += PPs(j,k) * (nodes(k,l)*mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+            grad_alphas(l,i) += PPs(j,k) * (nodes(k,l)*mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i));
           }
         }
-        grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
+        grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i));
         grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
       }
     }
@@ -3058,7 +3125,6 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
   // fill up output vector
   
   // start by outputting alpha gradients
-  NumericVector output_grad_alphas(m_alphas);
   int i = 0;
   // the order of the loops needs to be correct so that alphas are sorted from matrix into vector
   // correctly, that is, as expected by 
@@ -3186,8 +3252,7 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
         for (int l=0;l<L;l++) {
           // for alphas, gradients also further need to be trait specific
           if (comp_alpha_grad(l,i) == true) {
-            grad_alphas(l,i) += PPs(j,k) * (nodes(k,l)*mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i)) -
-              2*penalize_lambda*alphas(l,i);
+            grad_alphas(l,i) += PPs(j,k) * (nodes(k,l)*mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i));
           }
         }
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
@@ -3207,7 +3272,7 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
     // so first output all alphas for one theta, then move on to next theta and output all alphas for that
     for (int j=0;j<m;j++) {
       if (comp_alpha_grad(l,j) == true) {
-        out[i] = grad_alphas(l,j);
+        out[i] = grad_alphas(l,j) - 2*penalize_lambda*alphas(l,j);
         i += 1;
       }
     }
@@ -3216,6 +3281,184 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
   for(int i=0;i<m;i++){
     out[i + m_alphas] = grad_deltas[i];
     out[i + m_alphas + m] = grad_disps[i];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_multi_pois_cpp(NumericMatrix alphas,
+                                NumericVector deltas,
+                                NumericMatrix data,
+                                NumericMatrix PPs,
+                                NumericMatrix nodes, 
+                                LogicalMatrix comp_alpha_grad) {
+  
+  int m = data.ncol();
+  int n = data.nrow();
+  int n_nodes = nodes.nrow();
+  int L = nodes.ncol();
+  
+  // How many alpha gradients do we want to compute?
+  int m_alphas = 0;
+  for (int l=0;l<L;l++) { // loop over rows in alpha matrix
+    for (int j=0;j<m;j++) { // loop over
+      if (comp_alpha_grad(l,j) == true) {
+        m_alphas += 1;
+      }
+    }
+  }
+  // in a model with no alpha constraints, m_alphas is going to be MxL as we then
+  // estimate an alpha for each trait X item combination
+  
+  // set up gradient matrix for all alphas because it's easier and just fill them up
+  // later for those alphas we want gradients for and then also ouput gradients just for
+  // those alphas we want gradients for
+  NumericMatrix grad_alphas(L,m);
+  NumericVector grad_deltas(m);
+  NumericVector out(m_alphas + m);
+  
+  for(int i=0;i<m;i++){ // over items (columns in my matrices)
+    // initialize gradients at 0 (if we don't compute gradient for specific alphas
+    // because they are fixed at 0, then they'll just stay 0 which is okay because we won't
+    // output them anyways)
+    for (int l=0;l<L;l++) {
+      grad_alphas(l,i) = 0;
+    }
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      
+      for(int j=0;j<n;j++) { // loop over persons
+        
+        // compute mu's
+        double log_mu = deltas[i];
+        // add alpha * node for each latent trait
+        for (int l=0;l<L;l++) {
+          log_mu += alphas(l,i) * nodes(k,l);
+        }
+        double mu = exp(log_mu);
+        
+        // compute the gradients (summing over persons and nodes)
+        for (int l=0;l<L;l++) {
+          // for alphas, gradients also further need to be trait specific
+          if (comp_alpha_grad(l,i) == true) {
+            grad_alphas(l,i) += PPs(j,k) * nodes(k,l)*(data(j,i) - mu);
+          }
+        }
+        grad_deltas[i] += PPs(j,k) * (data(j,i) - mu);
+      }
+    }
+  }
+  
+  // fill up output vector
+  
+  // start by outputting alpha gradients
+  int i = 0;
+  // the order of the loops needs to be correct so that alphas are sorted from matrix into vector
+  // correctly, that is, as expected by 
+  for (int l=0;l<L;l++) {
+    // so first output all alphas for one theta, then move on to next theta and output all alphas for that
+    for (int j=0;j<m;j++) {
+      if (comp_alpha_grad(l,j) == true) {
+        out[i] = grad_alphas(l,j);
+        i += 1;
+      }
+    }
+  }
+  // then fill in all the other gradients
+  for(int i=0;i<m;i++){
+    out[i + m_alphas] = grad_deltas[i];
+  }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector grad_multi_pois_ridge_cpp(NumericMatrix alphas,
+                                      NumericVector deltas,
+                                      NumericMatrix data,
+                                      NumericMatrix PPs,
+                                      NumericMatrix nodes, 
+                                      LogicalMatrix comp_alpha_grad,
+                                      double penalize_lambda) {
+  
+  int m = data.ncol();
+  int n = data.nrow();
+  int n_nodes = nodes.nrow();
+  int L = nodes.ncol();
+  
+  // How many alpha gradients do we want to compute?
+  int m_alphas = 0;
+  for (int l=0;l<L;l++) { // loop over rows in alpha matrix
+    for (int j=0;j<m;j++) { // loop over
+      if (comp_alpha_grad(l,j) == true) {
+        m_alphas += 1;
+      }
+    }
+  }
+  // in a model with no alpha constraints, m_alphas is going to be MxL as we then
+  // estimate an alpha for each trait X item combination
+  
+  // set up gradient matrix for all alphas because it's easier and just fill them up
+  // later for those alphas we want gradients for and then also ouput gradients just for
+  // those alphas we want gradients for
+  NumericMatrix grad_alphas(L,m);
+  NumericVector grad_deltas(m);
+  NumericVector out(m_alphas + m);
+  
+  for(int i=0;i<m;i++){ // over items (columns in my matrices)
+    // initialize gradients at 0 (if we don't compute gradient for specific alphas
+    // because they are fixed at 0, then they'll just stay 0 which is okay because we won't
+    // output them anyways)
+    for (int l=0;l<L;l++) {
+      grad_alphas(l,i) = 0;
+    }
+    grad_deltas[i] = 0;
+    
+    for(int k=0;k<n_nodes;k++) {
+      
+      for(int j=0;j<n;j++) { // loop over persons
+        
+        // compute mu's
+        double log_mu = deltas[i];
+        // add alpha * node for each latent trait
+        for (int l=0;l<L;l++) {
+          log_mu += alphas(l,i) * nodes(k,l);
+        }
+        double mu = exp(log_mu);
+        
+        // compute the gradients (summing over persons and nodes)
+        for (int l=0;l<L;l++) {
+          // for alphas, gradients also further need to be trait specific
+          if (comp_alpha_grad(l,i) == true) {
+            grad_alphas(l,i) += PPs(j,k) * nodes(k,l) * (data(j,i) - mu);
+          }
+        }
+        grad_deltas[i] += PPs(j,k) * (data(j,i) - mu);
+      }
+    }
+  }
+  
+  // fill up output vector
+  
+  // start by outputting alpha gradients
+  NumericVector output_grad_alphas(m_alphas);
+  int i = 0;
+  // the order of the loops needs to be correct so that alphas are sorted from matrix into vector
+  // correctly, that is, as expected by 
+  for (int l=0;l<L;l++) {
+    // so first output all alphas for one theta, then move on to next theta and output all alphas for that
+    for (int j=0;j<m;j++) {
+      if (comp_alpha_grad(l,j) == true) {
+        out[i] = grad_alphas(l,j) - 2*penalize_lambda*alphas(l,j);
+        i += 1;
+      }
+    }
+  }
+  // then fill in all the other gradients
+  for(int i=0;i<m;i++){
+    out[i + m_alphas] = grad_deltas[i];
   }
   
   return(out);
@@ -3466,8 +3709,7 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
         for (int l=0;l<L;l++) {
           // for alphas, gradients also further need to be trait specific
           if (comp_alpha_grad(l,i) == true) {
-            grad_alphas(l,i) += PPs(j,k) * (theta_samples(k,l)*mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i)) -
-              2*penalize_lambda*alphas(l,i);
+            grad_alphas(l,i) += PPs(j,k) * (theta_samples(k,l)*mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i));
           }
         }
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
@@ -3487,7 +3729,7 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
     // so first output all alphas for one theta, then move on to next theta and output all alphas for that
     for (int j=0;j<m;j++) {
       if (comp_alpha_grad(l,j) == true) {
-        out[i] = grad_alphas(l,j);
+        out[i] = grad_alphas(l,j) - 2*penalize_lambda*alphas(l,j);
         i += 1;
       }
     }
@@ -9437,7 +9679,7 @@ NumericMatrix estep_multi_gh_cpp(NumericMatrix data,
     // loop over items (columns)
     for(int k=0;k<n_nodes;k++) {
       // loop over persons (rows)
-      double log_mu = deltas[j];
+      double log_mu = deltas[j]; 
       // add alpha * node for each latent trait
       for (int l=0;l<L;l++) {
         log_mu += alphas(l,j) * nodes(k,l);
@@ -9556,6 +9798,93 @@ NumericMatrix estep_multi_mc_cpp(NumericMatrix data,
       for (int j=0;j<m;j++) {
         log_resp_vector_prob(k) += data(i,j)*log_lambda(k,j) -
           log_Z(k,j) - disps[j]*lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k));
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = exp(log_resp_vector_prob(k)) / marg_prob(i);
+    }
+  }
+  
+  return(PPs);
+}
+
+// [[Rcpp::export]]
+NumericMatrix estep_multi_pois_gh_cpp(NumericMatrix data,
+                                 NumericMatrix alphas,
+                                 NumericVector deltas,
+                                 NumericMatrix nodes,
+                                 NumericVector log_weights) {
+  
+  int m = data.ncol();
+  int n_nodes = nodes.nrow();
+  int N = data.nrow();
+  int L = nodes.ncol();
+  
+  // NumericVector exp_abilities(N);
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // compute the marginal probability for each person 
+    // (which we need for the denominator of the posterior probabilities)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes);
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        double log_mu = deltas[j];
+        // add alpha * node for each latent trait
+        for (int l=0;l<L;l++) {
+          log_mu += alphas(l,j) * nodes(k,l);
+        }
+        log_resp_vector_prob(k) += data(i,j)*log_mu - exp(log_mu) - lgamma(data(i,j)+1);
+      }
+      marg_prob(i) += exp(log_resp_vector_prob(k) + log_weights[k]);
+    }
+    
+    // compute the numerators and then the posterior probs
+    // which are person and node specific (because the numerators are node specific)
+    for (int k=0;k<n_nodes;k++){
+      PPs(i, k) = (exp(log_resp_vector_prob(k) + log_weights[k])) / marg_prob(i);
+    }
+  }
+  
+  return(PPs);
+}
+
+// [[Rcpp::export]]
+NumericMatrix estep_multi_pois_mc_cpp(NumericMatrix data,
+                                      NumericMatrix alphas,
+                                      NumericVector deltas,
+                                      NumericMatrix theta_samples) {
+  
+  int m = data.ncol();
+  int n_nodes = theta_samples.nrow();
+  int N = data.nrow();
+  int L = theta_samples.ncol();
+  
+  // NumericVector exp_abilities(N);
+  NumericVector marg_prob(N);
+  NumericMatrix PPs(N, n_nodes);
+  
+  for(int i=0;i<N;i++){
+    // compute the marginal probability for each person 
+    // (which we need for the denominator of the posterior probabilities)
+    marg_prob(i) = 0;
+    NumericVector log_resp_vector_prob(n_nodes);
+    for (int k=0;k<n_nodes;k++){
+      log_resp_vector_prob(k) = 0;
+      for (int j=0;j<m;j++) {
+        double log_mu = deltas[j];
+        // add alpha * node for each latent trait
+        for (int l=0;l<L;l++) {
+          log_mu += alphas(l,j) * theta_samples(k,l);
+        }
+        log_resp_vector_prob(k) += data(i,j)*log_mu - log_mu - lgamma(data(i,j)+1);
       }
       marg_prob(i) += exp(log_resp_vector_prob(k));
     }

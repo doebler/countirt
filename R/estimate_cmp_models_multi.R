@@ -21,7 +21,7 @@ e_step_multi <- function(data, item_params, n_traits,
     byrow = TRUE
   )
   deltas <- item_params[grepl("delta", names(item_params))]
-  disps <- item_params[grepl("log_disp", names(item_params))]
+  disps <- exp(item_params[grepl("log_disp", names(item_params))])
   
   if (em_type == "gh") {
     
@@ -482,11 +482,12 @@ em_cycle_multi <- function(data,
       # we need to only input those item parameters here which need estimation
       # otherwise estimation won't work
       deltas <- item_params[grepl("delta", names(item_params))]
+      log_disps <- item_params[grepl("log_disp", names(item_params))]
       alphas <- item_params[grepl("alpha", names(item_params))]
       alphas_m_step <- alphas[is.na(alpha_constraints)]
       names(alphas_m_step) <- names(alphas[is.na(alpha_constraints)])
-      item_params_m_step <- c(alphas_m_step, deltas)
-      names(item_params_m_step) <- c(names(alphas_m_step), names(deltas))
+      item_params_m_step <- c(alphas_m_step, deltas, log_disps)
+      names(item_params_m_step) <- c(names(alphas_m_step), names(deltas), names(log_disps))
     } else {
       # we estimate an explanatory 2pcmpm, so all items load onto all factors
       item_params_m_step <- item_params
@@ -838,8 +839,8 @@ get_start_values_multi <- function(data,
   init_logdisps <- c()
   sim_abilities <- mvrnorm(nsim, rep(0, n_traits), diag(rep(1, n_traits)))
   for (i in 1:ncol(data)) {
-    alphas_for_item_i <- init_alphas[grepl(paste0("alpha", i), )]
-    mu <- exp(init_deltas[i] + alphas_for_item_i%*%sim_abilities)
+    alphas_for_item_i <- init_alphas[grepl(paste0("alpha", i), names(init_alphas))]
+    mu <- exp(init_deltas[i] + sim_abilities %*% alphas_for_item_i)
     sim <- rpois(nsim, mu)
     init_logdisps[i] <- log((var(sim) / var(data[,i])))
   }

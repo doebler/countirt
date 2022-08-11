@@ -137,6 +137,14 @@ marg_ll_multi_mc_cpp <- function(data, alphas, deltas, disps, theta_samples, gri
     .Call(`_countirt_marg_ll_multi_mc_cpp`, data, alphas, deltas, disps, theta_samples, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
+marg_ll_multi_pois_gh_cpp <- function(data, alphas, deltas, nodes, log_weights) {
+    .Call(`_countirt_marg_ll_multi_pois_gh_cpp`, data, alphas, deltas, nodes, log_weights)
+}
+
+marg_ll_multi_pois_mc_cpp <- function(data, alphas, deltas, theta_samples) {
+    .Call(`_countirt_marg_ll_multi_pois_mc_cpp`, data, alphas, deltas, theta_samples)
+}
+
 marg_ll_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_marg_ll_cmp_with_pcov_cpp`, data, alphas, deltas, disps, betas, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
@@ -191,6 +199,14 @@ grad_multi_gh_cpp <- function(alphas, deltas, disps, data, PPs, nodes, comp_alph
 
 grad_multi_gh_ridge_cpp <- function(alphas, deltas, disps, data, PPs, nodes, comp_alpha_grad, penalize_lambda, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_multi_gh_ridge_cpp`, alphas, deltas, disps, data, PPs, nodes, comp_alpha_grad, penalize_lambda, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_multi_pois_cpp <- function(alphas, deltas, data, PPs, nodes, comp_alpha_grad) {
+    .Call(`_countirt_grad_multi_pois_cpp`, alphas, deltas, data, PPs, nodes, comp_alpha_grad)
+}
+
+grad_multi_pois_ridge_cpp <- function(alphas, deltas, data, PPs, nodes, comp_alpha_grad, penalize_lambda) {
+    .Call(`_countirt_grad_multi_pois_ridge_cpp`, alphas, deltas, data, PPs, nodes, comp_alpha_grad, penalize_lambda)
 }
 
 grad_multi_mc_cpp <- function(alphas, deltas, disps, data, PPs, theta_samples, comp_alpha_grad, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
@@ -407,6 +423,14 @@ estep_multi_gh_cpp <- function(data, alphas, deltas, disps, nodes, log_weights, 
 
 estep_multi_mc_cpp <- function(data, alphas, deltas, disps, theta_samples, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_estep_multi_mc_cpp`, data, alphas, deltas, disps, theta_samples, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
+estep_multi_pois_gh_cpp <- function(data, alphas, deltas, nodes, log_weights) {
+    .Call(`_countirt_estep_multi_pois_gh_cpp`, data, alphas, deltas, nodes, log_weights)
+}
+
+estep_multi_pois_mc_cpp <- function(data, alphas, deltas, theta_samples) {
+    .Call(`_countirt_estep_multi_pois_mc_cpp`, data, alphas, deltas, theta_samples)
 }
 
 estep_cmp_with_icov_delta_cpp <- function(data, alphas, delta, disps, betas, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {

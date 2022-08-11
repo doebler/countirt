@@ -2,7 +2,8 @@
 # e_step_poisson_multi --------------------------------------------------------------------
 e_step_poisson_multi <- function(data, item_params, n_traits,
                                  em_type = c("gh", "mc"),
-                                 weights_and_nodes = NULL, theta_samples = NULL) {
+                                 weights_and_nodes = NULL, 
+                                 theta_samples = NULL) {
   # we don't need the alpha_constraints argument here; everything will automatically work
   # TODO check that this still holds once i implement equality constraints for alpha
   # we don't need to consider regualrization here, posterior probs will be the same regardless
@@ -21,45 +22,65 @@ e_step_poisson_multi <- function(data, item_params, n_traits,
   )
   deltas <- item_params[grepl("delta", names(item_params))]
   
+  # old R implementation:
+    # if (em_type == "gh") {
+    #   # the PPs are the joint posterior probabilities here; we get them for
+    #   # each dimension combination and each person, so they actually have the same
+    #   # dimensionality as in the unidimensional case N x K, just that now,
+    #   # K = length(weights_and_nodes$W), so the no. of quadrature points depending
+    #   # on number of trait dimensions and number of nodes per dimension
+    #   PPs <- matrix(
+    #     weights_and_nodes$W,
+    #     nrow = nrow(data),
+    #     ncol = length(weights_and_nodes$W),
+    #     byrow = TRUE
+    #   )
+    #   # NOTE in uni-dimensional case, we take the log of the prior weights here
+    #   # but in the multidimensional GH function, we already ge the log weights in W
+    # } else if (em_type == "mc") {
+    #   # for the PP in the MC-EM, we don't have the quadrature weights for the prior
+    #   # in fact, all theta_samples have a prior weight of 1/n_samples so that they cancel out
+    #   # (weighting is taken care of by sampling proportionally form prior to prior probability)
+    #   PPs <- matrix(
+    #     0, # initialize with 0 because we sum over items on log scale
+    #     nrow = nrow(data),
+    #     ncol = length(theta_samples[,1]),
+    #     byrow = TRUE
+    #   )
+    # }
+    # 
+    # for (j in 1:ncol(data)) { # TODO see if i can rewrite with some form of apply
+    #   if (em_type == "gh") {
+    #     lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+    #                                 deltas[j]))
+    #   } else if (em_type == "mc") {
+    #     lambdas <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
+    #   }
+    #   PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
+    # }
+    # 
+    # PPs <- exp(PPs)
+    # 
+    # PPs <- PPs / rowSums(PPs)
+    
+    
+  # in C++ for better efficiency
   if (em_type == "gh") {
-    # the PPs are the joint posterior probabilities here; we get them for
-    # each dimension combination and each person, so they actually have the same
-    # dimensionality as in the unidimensional case N x K, just that now, 
-    # K = length(weights_and_nodes$W), so the no. of quadrature points depending
-    # on number of trait dimensions and number of nodes per dimension
-    PPs <- matrix(
-      weights_and_nodes$W,
-      nrow = nrow(data),
-      ncol = length(weights_and_nodes$W),
-      byrow = TRUE
+    PPs <- estep_multi_pois_gh_cpp(
+      data = as.matrix(data),
+      alphas = alphas_matrix,
+      deltas = deltas,
+      nodes = weights_and_nodes$X,
+      log_weights = weights_and_nodes$W
     )
-    # NOTE in uni-dimensional case, we take the log of the prior weights here
-    # but in the multidimensional GH function, we already ge the log weights in W
   } else if (em_type == "mc") {
-    # for the PP in the MC-EM, we don't have the quadrature weights for the prior
-    # in fact, all theta_samples have a prior weight of 1/n_samples so that they cancel out
-    # (weighting is taken care of by sampling proportionally form prior to prior probability)
-    PPs <- matrix(
-      0, # initialize with 0 because we sum over items on log scale
-      nrow = nrow(data),
-      ncol = length(theta_samples[,1]),
-      byrow = TRUE
+    PPs <- estep_multi_pois_mc_cpp(
+      data = as.matrix(data),
+      alphas = alphas_matrix,
+      deltas = deltas,
+      theta_samples = theta_samples
     )
   }
-  
-  for (j in 1:ncol(data)) { # TODO see if i can rewrite with some form of apply
-    if (em_type == "gh") {
-      lambdas <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
-                                  deltas[j]))
-    } else if (em_type == "mc") {
-      lambdas <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
-    }
-    PPs <- PPs + outer(data[,j], lambdas, dpois, log = TRUE)
-  }
-  
-  PPs <- exp(PPs)
-  
-  PPs <- PPs / rowSums(PPs)
   
   # output should be a matrix with N rows and K cols for GH 
   # and a matrix with N rows and n_sample cols for MC
@@ -146,96 +167,141 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
     )
   }
   
-  # TODO see if i can rewrite with some form of apply
-  for (j in 1:ncol(data)) {
-    # for lambdas, we multiply each trait dimension with respective
-    # alpha and sum across those, so that we have a vector of the length
-    # of weights_and_nodes$W (number of quadrature points)
-    if (em_type == "gh") { 
-      lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
-                                  deltas[j]))
-      # lambdas is a vector of length K (= no. of quadrature points)
+  # old R implementation:
+    # for (j in 1:ncol(data)) {
+    #   # for lambdas, we multiply each trait dimension with respective
+    #   # alpha and sum across those, so that we have a vector of the length
+    #   # of weights_and_nodes$W (number of quadrature points)
+    #   if (em_type == "gh") { 
+    #     lambdas <- as.numeric(exp(weights_and_nodes$X %*% full_alphas_matrix[,j,drop= FALSE] +
+    #                                 deltas[j]))
+    #     # lambdas is a vector of length K (= no. of quadrature points)
+    #   } else if (em_type == "mc") {
+    #     lambdas <- as.numeric(exp(theta_samples %*% full_alphas_matrix[,j,drop= FALSE] +
+    #                                 deltas[j]))
+    #     # lambdas is a vector of length n_samples
+    #   }
+    #   
+    #   x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K or N x n_samples matrix 
+    #   x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
+    #   
+    #   grad_deltas[j] <- sum(x_minus_lambda_times_pp) 
+    #   # because we sum over the whole matrix here, we sum over all persons and 
+    #   # all quadrature nodes for GH and all persons and all theta samples for MC
+    #   
+    #   if (em_type == "gh") {  
+    #     # for alpha gradient we just want the node of the trait we are
+    #     # taking the gradient for, so just q_k_l for specific l as in alpha_jl
+    #     grad_alphas_matrix[,j] <- apply(
+    #       # apply for every trait for this one vector of data, so this is like
+    #       # a loop over traits just with apply
+    #       weights_and_nodes$X, # matrix of quadrature points for traits
+    #       2, # for each trait, which we put into output matrix, gradients are
+    #       # trait and item specific
+    #       function(x) {
+    #         sum( # sum across all persons and nodes for that trait
+    #           # from this matrix what we get is the multiplication with q_k_l
+    #           # (where k is a running index, of factor l, so all quad. values of factor l)
+    #           matrix(
+    #             x,
+    #             nrow = nrow(data), # length N
+    #             ncol = length(x), # length K
+    #             byrow = TRUE
+    #             # for each observation (N rows) we fill the row with the vector
+    #             # of length K (this is why K cols) of the nodes of factor l so that for each
+    #             # person they are multiplied with the rest of the gradient
+    #           )*
+    #             x_minus_lambda_times_pp # N x K matrix
+    #         )
+    #         # for alpha constraints in confirmatory models: we are in the loop for 
+    #         # a specific item j, so in the jth column of compute_alpha_gradient and we
+    #         # need to check on which factors this item loads 
+    #       }
+    #     )
+    #     if (penalize == "ridge") {
+    #       grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
+    #         2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
+    #     } 
+    #   } else if (em_type == "mc") {  
+    #     #  this is the same code as in GH case, just swap nodes for theta samples
+    #     # so for details on code, compare comments in GH case
+    #     grad_alphas_matrix[,j] <- apply(
+    #       theta_samples, # matrix with n_traits columns for each of which we need a gradient
+    #       2,
+    #       function(x) {
+    #         sum(matrix(
+    #           x,
+    #           nrow = nrow(data), 
+    #           ncol = length(x), 
+    #           byrow = TRUE
+    #         )*x_minus_lambda_times_pp
+    #         )
+    #       }
+    #     )
+    #     if (penalize == "ridge") {
+    #       grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
+    #         2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
+    #     } 
+    #   }
+    # }
+    # # prep for output, if we have constraints: here we check which alphas to output
+    # # gradients for and output only those so that optimizer works
+    # rownames(compute_alpha_gradient) <- paste0("theta", 1:nrow(compute_alpha_gradient))
+    # colnames(compute_alpha_gradient) <- paste0("alpha", 1:ncol(compute_alpha_gradient))
+    # element_names <- as.character(
+    #   outer(colnames(compute_alpha_gradient), 
+    #         rownames(compute_alpha_gradient),
+    #         "paste", sep = "_"))
+    # compute_grad_alphas <- as.logical(t(compute_alpha_gradient))
+    # 
+    # grad_alphas <- as.numeric(t(grad_alphas_matrix))[compute_grad_alphas]
+    # out <- c(grad_alphas, grad_deltas)
+    
+  # C++ implementation for efficiency
+  if (penalize == "none") {
+    if (em_type == "gh") {
+      out <- grad_multi_pois_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        data = as.matrix(data),
+        PPs = PPs,
+        nodes = weights_and_nodes$X, 
+        comp_alpha_grad = compute_alpha_gradient
+      )
     } else if (em_type == "mc") {
-      lambdas <- as.numeric(exp(theta_samples %*% full_alphas_matrix[,j,drop= FALSE] +
-                                  deltas[j]))
-      # lambdas is a vector of length n_samples
+      out <- grad_multi_pois_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        data = as.matrix(data),
+        PPs = PPs,
+        nodes = theta_samples, 
+        comp_alpha_grad = compute_alpha_gradient
+      )
     }
-    
-    x_minus_lambda <- outer(data[,j], lambdas, "-") # N x K or N x n_samples matrix 
-    x_minus_lambda_times_pp <- x_minus_lambda * PPs # N x K or N x n_samples matrix
-    
-    grad_deltas[j] <- sum(x_minus_lambda_times_pp) 
-    # because we sum over the whole matrix here, we sum over all persons and 
-    # all quadrature nodes for GH and all persons and all theta samples for MC
-    
-    if (em_type == "gh") {  
-      # for alpha gradient we just want the node of the trait we are
-      # taking the gradient for, so just q_k_l for specific l as in alpha_jl
-      grad_alphas_matrix[,j] <- apply(
-        # apply for every trait for this one vector of data, so this is like
-        # a loop over traits just with apply
-        weights_and_nodes$X, # matrix of quadrature points for traits
-        2, # for each trait, which we put into output matrix, gradients are
-        # trait and item specific
-        function(x) {
-          sum( # sum across all persons and nodes for that trait
-            # from this matrix what we get is the multiplication with q_k_l
-            # (where k is a running index, of factor l, so all quad. values of factor l)
-            matrix(
-              x,
-              nrow = nrow(data), # length N
-              ncol = length(x), # length K
-              byrow = TRUE
-              # for each observation (N rows) we fill the row with the vector
-              # of length K (this is why K cols) of the nodes of factor l so that for each
-              # person they are multiplied with the rest of the gradient
-            )*
-              x_minus_lambda_times_pp # N x K matrix
-          )
-          # for alpha constraints in confirmatory models: we are in the loop for 
-          # a specific item j, so in the jth column of compute_alpha_gradient and we
-          # need to check on which factors this item loads 
-        }
+  } else if (penalize == "ridge") {
+    if (em_type == "gh") {
+      out <- grad_multi_pois_ridge_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        data = as.matrix(data),
+        PPs = PPs,
+        nodes = weights_and_nodes$X, 
+        comp_alpha_grad = compute_alpha_gradient,
+        penalize_lambda = penalize_lambda
       )
-      if (penalize == "ridge") {
-        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
-          2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
-      } 
-    } else if (em_type == "mc") {  
-      #  this is the same code as in GH case, just swap nodes for theta samples
-      # so for details on code, compare comments in GH case
-      grad_alphas_matrix[,j] <- apply(
-        theta_samples, # matrix with n_traits columns for each of which we need a gradient
-        2,
-        function(x) {
-          sum(matrix(
-            x,
-            nrow = nrow(data), 
-            ncol = length(x), 
-            byrow = TRUE
-            )*x_minus_lambda_times_pp
-          )
-        }
+    } else  if (em_type == "mc") {
+      out <- grad_multi_pois_ridge_cpp(
+        alphas = full_alphas_matrix,
+        deltas = deltas,
+        data = as.matrix(data),
+        PPs = PPs,
+        nodes = theta_samples, 
+        comp_alpha_grad = compute_alpha_gradient,
+        penalize_lambda = penalize_lambda
       )
-      if (penalize == "ridge") {
-        grad_alphas_matrix[,j] <- grad_alphas_matrix[,j,drop=FALSE] -
-          2*penalize_lambda*full_alphas_matrix[,j,drop=FALSE]
-      } 
     }
   }
   
-  # prep for output, if we have constraints: here we check which alphas to output
-  # gradients for and output only those so that optimizer works
-  rownames(compute_alpha_gradient) <- paste0("theta", 1:nrow(compute_alpha_gradient))
-  colnames(compute_alpha_gradient) <- paste0("alpha", 1:ncol(compute_alpha_gradient))
-  element_names <- as.character(
-    outer(colnames(compute_alpha_gradient), 
-          rownames(compute_alpha_gradient),
-          "paste", sep = "_"))
-  compute_grad_alphas <- as.logical(t(compute_alpha_gradient))
-  
-  grad_alphas <- as.numeric(t(grad_alphas_matrix))[compute_grad_alphas]
-  out <- c(grad_alphas, grad_deltas)
   return(out)
 }
 
@@ -580,45 +646,64 @@ marg_ll_poisson_multi <- function(data, item_params, n_traits,
     byrow = TRUE
   )
   
-  marg_prob <- numeric(n_persons)
-  
+  # old R implementation
+    # marg_prob <- numeric(n_persons)
+    # 
+    # if (em_type == "gh") {
+    #   lambdas <- matrix(
+    #     NA,
+    #     ncol = n_items,
+    #     nrow = length(weights_and_nodes$W)
+    #   )
+    #   for (j in 1:n_items) {
+    #     lambdas[,j] <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
+    #                                     deltas[j]))
+    #   } # TODO durch apply swappen oder matrixmultiplikation
+    # } else if (em_type == "mc") {
+    #   lambdas <- matrix(
+    #     NA,
+    #     ncol = n_items,
+    #     nrow = length(theta_samples[,1])
+    #   )
+    #   for (j in 1:n_items) {
+    #     lambdas[,j] <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
+    #   } # TODO durch apply swappen oder matrixmultiplikation
+    # }
+    # 
+    # for (i in 1:n_persons) {
+    #   out <- 0
+    #   for (j in 1:n_items) {
+    #     out <- out + dpois(data[i,j], lambdas[,j], log = TRUE)
+    #   }
+    #   if (em_type == "gh") {
+    #     # approximate integral
+    #     marg_prob[i] <- sum(exp(out + weights_and_nodes$W)) 
+    #   } else if (em_type == "mc") {
+    #     # approximate integral
+    #     marg_prob[i] <- mean(exp(out))
+    #     # take mean here over theta samples; out should be of length n_samples
+    #   }
+    # }
+    # 
+    # ll <- sum(log(marg_prob)) # sum over persons
+    
+  # C++ implementation for efficiency
   if (em_type == "gh") {
-    lambdas <- matrix(
-      NA,
-      ncol = n_items,
-      nrow = length(weights_and_nodes$W)
+    ll <- marg_ll_multi_pois_gh_cpp(
+      data = as.matrix(data),
+      alphas = alphas_matrix,
+      deltas = deltas,
+      nodes = weights_and_nodes$X,
+      log_weights = weights_and_nodes$W
     )
-    for (j in 1:n_items) {
-      lambdas[,j] <- as.numeric(exp(weights_and_nodes$X %*% alphas_matrix[,j,drop= FALSE] +
-                                      deltas[j]))
-    } # TODO durch apply swappen oder matrixmultiplikation
   } else if (em_type == "mc") {
-    lambdas <- matrix(
-      NA,
-      ncol = n_items,
-      nrow = length(theta_samples[,1])
+    ll <- marg_ll_multi_pois_mc_cpp(
+      data = as.matrix(data),
+      alphas = alphas_matrix,
+      deltas = deltas,
+      theta_samples = theta_samples
     )
-    for (j in 1:n_items) {
-      lambdas[,j] <- as.numeric(exp(theta_samples %*% alphas_matrix[,j,drop= FALSE] + deltas[j]))
-    } # TODO durch apply swappen oder matrixmultiplikation
   }
-  
-  for (i in 1:n_persons) {
-    out <- 0
-    for (j in 1:n_items) {
-      out <- out + dpois(data[i,j], lambdas[,j], log = TRUE)
-    }
-    if (em_type == "gh") {
-      # approximate integral
-      marg_prob[i] <- sum(exp(out + weights_and_nodes$W)) 
-    } else if (em_type == "mc") {
-      # approximate integral
-      marg_prob[i] <- mean(exp(out))
-      # take mean here over theta samples; out should be of length n_samples
-    }
-  }
-  
-  ll <- sum(log(marg_prob)) # sum over persons
   
   if (penalize == "ridge") {
     if (!is.null(penalize_lambda)) {
@@ -843,7 +928,7 @@ get_start_values_pois_multi <- function(data, n_traits,  alpha_constraints = NUL
      # to be estimated but can instead just stay at their start values
   } else {
     # exploratory case where we have laodings of all items on all factors
-    fa_log_data <- fa(log(test_data+0.01), nfactors = n_traits, rotate="varimax")
+    fa_log_data <- fa(log(data+0.01), nfactors = n_traits, rotate="varimax")
     loadings_fa_log_data <- as.matrix(fa_log_data$loadings)
     attributes(loadings_fa_log_data)$dimnames <- NULL
     attributes(loadings_fa_log_data)$class <- NULL

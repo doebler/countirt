@@ -289,7 +289,7 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
         comp_alpha_grad = compute_alpha_gradient,
         penalize_lambda = penalize_lambda
       )
-    } else  if (em_type == "mc") {
+    } else if (em_type == "mc") {
       out <- grad_multi_pois_ridge_cpp(
         alphas = full_alphas_matrix,
         deltas = deltas,

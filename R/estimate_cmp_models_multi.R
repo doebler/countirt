@@ -207,6 +207,11 @@ grad_nu_lasso <- function(log_disps,
                           weights_and_nodes = NULL,
                           theta_samples = NULL) {
   # set up variable
+  if (em_type == "gh") {
+    n_traits <- ncol(weights_and_nodes$X)
+  } else if (em_type == "mc") {
+    n_traits <- ncol(theta_samples)
+  }
   data <- as.matrix(data)
   alphas <- other_params[grepl("alpha", names(other_params))]
   alphas_matrix <- matrix(
@@ -802,8 +807,9 @@ get_start_values_multi <- function(data,
                                    fcov_prior = NULL, truncate_grid = TRUE,
                                    penalize = c("none", "ridge", "lasso"), 
                                    penalize_lambda = NULL,
-                                   maxiter = 100,
-                                   nsim = 1000) {
+                                   maxiter = 1000,
+                                   nsim = 1000,
+                                   convtol = 1e-5) {
   # use maxiter here to not let the poisson model run til full convergence but just
   # enough to get some sensible start values as the poisson em will also already take
   # quite a bit of time here
@@ -826,7 +832,8 @@ get_start_values_multi <- function(data,
     penalize = penalize, 
     penalize_lambda = penalize_lambda,
     maxiter = maxiter,
-    alpha_constraints = alpha_constraints
+    alpha_constraints = alpha_constraints,
+    convtol = convtol
   )
   init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
   # the outputted alphas are the whole matrix, with constrained alphas fixed at 

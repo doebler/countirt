@@ -3805,7 +3805,7 @@ double lasso_delta_update_cpp(NumericVector alphas_j, // alphas for all L traits
     // compute C and D
     double lambda = exp(log_lambda[k]);
     double C = computeC(lambda, mu_interp[k], disp_j, log_Z[k], 10);
-    double EY2 = computeEY2(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+    double EY2  = computeEY2(lambda, mu_interp[k], disp_j, log_Z[k], 10);
     double D = (1/V[k]) - V[k]*(mu_interp[k]*C - exp(2*log(mu_interp[k]))*EY2) - 
       (2*exp(2*log(mu_interp[k])) / exp(2*log(V[k])));
     
@@ -3862,14 +3862,12 @@ NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L
   int n_nodes = nodes.nrow(); // of no. of theta_samples
   int L = nodes.ncol(); // no. of traits
   
-  double first_deriv_jl;
-  double scnd_deriv_jl;
-  
   // we need to coordinate cycle through all L traits and update alphas trait-wise
   // that changes mu values for each alpha_jl as the respective previous have then already 
   // been updated, so interpolate for each trait
   NumericVector new_alphas_j(L);
-  new_alphas_j = alphas_j;
+  new_alphas_j = alphas_j; 
+  
   for (int l=0;l<L;l++) {
     // set up mu's and nu's for interpolation function to be computed all in one
     // we are only looking at one item here, so the dimensionalites reduce
@@ -3905,13 +3903,15 @@ NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L
                                mu_interp, disp_interp);
     // V and log_lambda are vectors of length n_nodes
     
+    
     // compute first and second derivative (based on LQA)
-    first_deriv_jl = 0;
-    scnd_deriv_jl = 0;
+    double first_deriv_jl = 0;
+    double scnd_deriv_jl = 0;
     for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+     
       // compute C and D
       double lambda = exp(log_lambda[k]);
-      double C = computeC(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+      double C  = computeC(lambda, mu_interp[k], disp_j, log_Z[k], 10);
       double EY2 = computeEY2(lambda, mu_interp[k], disp_j, log_Z[k], 10);
       double D = (1/V[k]) - V[k]*(mu_interp[k]*C - exp(2*log(mu_interp[k]))*EY2) - 
         (2*exp(2*log(mu_interp[k])) / exp(2*log(V[k])));
@@ -3921,15 +3921,18 @@ NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L
         first_deriv_jl += PPs(i,k) * (nodes(k,l)*mu_interp[k] / V[k]) * (data_j[i] - mu_interp[k]);
       
         // second derivative
-        scnd_deriv_jl += exp(2*log(nodes(k,l))) * mu_interp[k] * (data_j[i] - mu_interp[k]) * D * PPs(i,k);
+        scnd_deriv_jl += pow(nodes(k,l),2) * mu_interp[k] * (data_j[i] - mu_interp[k]) * D * PPs(i,k);
       }
     }
     
     // compute updated alpha_jl
+    //new_alphas_j[l] = (-1)*soft_thresh_cpp((-1)*scnd_deriv_jl*new_alphas_j[l] + first_deriv_jl, penalize_lambda) /
+    //  scnd_deriv_jl;
     new_alphas_j[l] = (-1)*soft_thresh_cpp((-1)*scnd_deriv_jl*new_alphas_j[l] + first_deriv_jl, penalize_lambda) /
       scnd_deriv_jl;
   }
   
+  // TODO wieder zuruck wechseln zu new_alphas_j
   return(new_alphas_j);
 }
 

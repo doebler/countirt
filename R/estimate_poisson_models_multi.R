@@ -510,7 +510,8 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
                                    penalize = c("none", "ridge", "lasso"), 
                                    penalize_lambda = NULL, 
                                    alpha_constraints = NULL, # so far only work without penalty or with ridge
-                                   ctol_maxstep = 1e-8) {
+                                   ctol_maxstep = 1e-8,
+                                   ctol_lasso = 1e-5) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
   # we start off by just assuming that we only have 0-constraints where we don't 
@@ -548,7 +549,7 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
       theta_samples = theta_samples,
       penalize_lambda = penalize_lambda,
       max_iter = 1000, # TODO das hier oben als richtige argumente uebergeben
-      ctol = 1e-4
+      ctol = ctol_lasso
     )
     
   } else {
@@ -725,7 +726,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
                                  truncate_grid = TRUE,
                                  penalize = c("none", "ridge", "lasso"), 
                                  penalize_lambda = NULL,
-                                 maxiter = 2000, convtol = 1e-5, ctol_maxstep = 1e-8,
+                                 maxiter = 2000, convtol = 1e-5, 
+                                 ctol_maxstep = 1e-8, ctol_lasso = 1e-5,
                                  n_samples_conv = 20, final_n_samples = 8000,
                                  convcrit = "marglik", # can also be "params"
                                  alpha_constraints = NULL) {
@@ -807,7 +809,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       em_type = em_type,
       theta_samples = theta_samples,
       penalize = penalize,
-      penalize_lambda = penalize_lambda
+      penalize_lambda = penalize_lambda,
+      ctol_lasso = ctol_lasso
     )
     print(new_params)
     
@@ -825,8 +828,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- new_ll
-      plot(marg_lls)
-      print(marg_lls)
+      #plot(marg_lls)
+      #print(marg_lls)
       if (em_type == "gh") {
         conv <- (abs(old_ll - new_ll) < convtol)
       } else if (em_type == "mc") {
@@ -852,8 +855,8 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- marg_ll
-      plot(marg_lls)
-      print(marg_lls)
+      #plot(marg_lls)
+      #print(marg_lls)
     }
     
     iter <- iter + 1

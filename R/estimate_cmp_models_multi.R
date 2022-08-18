@@ -428,7 +428,8 @@ em_cycle_multi <- function(data,
                            weights_and_nodes = NULL, theta_samples = NULL,
                            penalize = c("none", "ridge", "lasso"), 
                            penalize_lambda = NULL, 
-                           ctol_maxstep = 1e-8) {
+                           ctol_maxstep = 1e-8,
+                           ctol_lasso = 1e-5) {
   # alpha_constraints should be a vector of the length of all the alpha parameters
   # with the same parameter names and provide the constraints for alphas
   # we start off by just assuming that we only have 0-constraints where we don't 
@@ -462,7 +463,7 @@ em_cycle_multi <- function(data,
       theta_samples = theta_samples,
       penalize_lambda = penalize_lambda,
       max_iter = 1000, # TODO das hier oben als richtige argumente uebergeben
-      ctol = 1e-4
+      ctol = ctol_lasso
     )
     
     # numerical optimization for updating disps
@@ -639,7 +640,8 @@ run_em_multi <- function(data,
                          truncate_grid = TRUE,
                          penalize = c("none", "ridge", "lasso"), 
                          penalize_lambda = NULL,
-                         maxiter = 2000, convtol = 1e-5, ctol_maxstep = 1e-8,
+                         maxiter = 2000, convtol = 1e-5, 
+                         ctol_maxstep = 1e-8, ctol_lasso = 1e-5,
                          n_samples_conv = 20, final_n_samples = 8000,
                          convcrit = "marglik") {
   
@@ -715,7 +717,8 @@ run_em_multi <- function(data,
       em_type = em_type,
       theta_samples = theta_samples,
       penalize = penalize,
-      penalize_lambda = penalize_lambda
+      penalize_lambda = penalize_lambda,
+      ctol_lasso = ctol_lasso
     )
     print(new_params)
     

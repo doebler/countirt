@@ -812,7 +812,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
       penalize_lambda = penalize_lambda,
       ctol_lasso = ctol_lasso
     )
-    print(new_params)
+    #print(new_params)
     
     # check for convergence
     if (convcrit == "marglik") {

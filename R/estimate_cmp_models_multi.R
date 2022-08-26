@@ -5,7 +5,7 @@ e_step_multi <- function(data, item_params, n_traits,
                          em_type = c("gh", "mc"),
                          weights_and_nodes = NULL, 
                          theta_samples = NULL) {
-  # we don't need the alpha_constraints argument here; everything will automatically work
+  # we don't need the alpha_constraints or disp_conctrsiants argument here; everything will automatically work
   # we don't need to consider regualrization here, posterior probs will be the same regardless
   
   data <- as.matrix(data)
@@ -65,7 +65,7 @@ e_step_multi <- function(data, item_params, n_traits,
 
 # lasso_coord_descent --------------------------------------------------------------
 # TODO alpha constraints implementieren (selbst einfach erstmal fuer fixations)
-# TODO disp contraints implementieren
+# TODO equality constraints on disps implementieren, partial disp fixations implementieren
 lasso_coord_descent <- function(item_params,
                                 PPs,
                                 data,
@@ -73,6 +73,7 @@ lasso_coord_descent <- function(item_params,
                                 em_type = c("gh", "mc"), 
                                 weights_and_nodes = NULL, 
                                 theta_samples = NULL,
+                                disp_constraints = NULL,
                                 penalize_lambda = 0,
                                 max_iter = 1000,
                                 ctol = 1e-3) {
@@ -86,7 +87,11 @@ lasso_coord_descent <- function(item_params,
     byrow = TRUE
   )
   deltas <- item_params[grepl("delta", names(item_params))]
-  disps <- exp(item_params[grepl("log_disp", names(item_params))])
+  if (!is.null(disp_constraints)) {
+    disps <- disp_constraints
+  } else {
+    disps <- exp(item_params[grepl("log_disp", names(item_params))])
+  }
   
   # only check here in r whether we have GH or MC EM, we can use the same c++ functions as they just expect
   # a matrix of L columns for argument nodes and we have that for both GH and MC
@@ -118,7 +123,7 @@ lasso_coord_descent <- function(item_params,
         # the idea of cyclic coordinate descent
         alphas_matrix[,j] <- lasso_alpha_update_cpp(
           alphas_j = alphas_matrix[,j], 
-          delta_j = deltas[j],
+          delta_j =  deltas[j], # new_delta_j,
           disp_j = disps[j],
           penalize_lambda = penalize_lambda,
           data_j = data[,j], 
@@ -206,6 +211,10 @@ grad_nu_lasso <- function(log_disps,
                           em_type = c("gh", "mc"),
                           weights_and_nodes = NULL,
                           theta_samples = NULL) {
+  # don't need to incorporate disp constriants here for now cause so far, this 
+  # function only gets used when all disps will be estimated (so when no disp_constraints)
+  # are in place
+  
   # set up variable
   if (em_type == "gh") {
     n_traits <- ncol(weights_and_nodes$X)
@@ -275,7 +284,8 @@ grad_multi <- function(item_params,
                        # we do lasso penalty outside of
                        # this gradient because it needs its own algorithm
                        penalize_lambda = NULL,
-                       alpha_constraints = NULL) {
+                       alpha_constraints = NULL,
+                       disp_constraints = NULL) {
   # the PPs are the joint posterior probabilities here; we get them for
   # each dimension combination and each person, so they actually have the same
   # dimensionality as in the unidimensional case N x K, just that now, 
@@ -290,8 +300,15 @@ grad_multi <- function(item_params,
   # if the value should be fixed to a certain value, then that value should be
   # given in the appropriate place in alpha_constraints
   
+  # alpha_constraints so far expect that all or a subset of alphas are fixed to certain values and the
+  # reminaing freely estimated (so no equality constraints yet)
+  # disp_constraints so far expect that disps are to be fixed to specific values (on original scale!)
+  # (so no eqaulity constraints yet and no fixing only certain disps)
+  
   # we input the alphas for the m step here through item_params so that optimization
   # method works, we then need to "supplement" the fixed values from alpha_constraints
+  
+  # so we also need to "supplement" dispersion values in the case of disp_constraints
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
@@ -313,7 +330,13 @@ grad_multi <- function(item_params,
     )
   }
   deltas <- item_params[grepl("delta", names(item_params))]
-  disps <- exp(item_params[grepl("log_disp", names(item_params))])
+  if (!is.null(disp_constraints)) {
+    disps <- disp_constraints
+    compute_disp_gradient <- FALSE
+  } else {
+    disps <- exp(item_params[grepl("log_disp", names(item_params))])
+    compute_disp_gradient <- TRUE
+  }
   
   # set-up a way to check for which alphas we need gradients
   if (!is.null(alpha_constraints)) {
@@ -335,6 +358,9 @@ grad_multi <- function(item_params,
   # gradient or not; the C++ function can then directly output only gradients for those alphas
   # for which we want to have gradients
   
+  # TODO hier weiter machen und disp_constraints implementieren, indem ich dann das
+  # compute_disp_gradient argument nach c++ uebergebe
+  
   # make distinction between no or ridge regularization
   if (penalize == "none") {
     # make distinction between GH and MC
@@ -347,6 +373,7 @@ grad_multi <- function(item_params,
         PPs = PPs,
         nodes = weights_and_nodes$X,
         comp_alpha_grad = compute_alpha_gradient,
+        comp_disp_grad = compute_disp_gradient,
         grid_mus = grid_mus,
         grid_nus = grid_nus,
         grid_cmp_var_long = grid_cmp_var_long,
@@ -363,6 +390,7 @@ grad_multi <- function(item_params,
         PPs = PPs,
         theta_samples = theta_samples,
         comp_alpha_grad = compute_alpha_gradient,
+        comp_disp_grad = compute_disp_gradient,
         grid_mus = grid_mus,
         grid_nus = grid_nus,
         grid_cmp_var_long = grid_cmp_var_long,
@@ -382,6 +410,7 @@ grad_multi <- function(item_params,
         PPs = PPs,
         nodes = weights_and_nodes$X,
         comp_alpha_grad = compute_alpha_gradient,
+        comp_disp_grad = compute_disp_gradient,
         penalize_lambda = penalize_lambda,
         grid_mus = grid_mus,
         grid_nus = grid_nus,
@@ -399,6 +428,7 @@ grad_multi <- function(item_params,
         PPs = PPs,
         theta_samples = theta_samples,
         comp_alpha_grad = compute_alpha_gradient,
+        comp_disp_grad = compute_disp_gradient,
         penalize_lambda = penalize_lambda,
         grid_mus = grid_mus,
         grid_nus = grid_nus,
@@ -424,6 +454,7 @@ em_cycle_multi <- function(data,
                            item_params, 
                            n_traits,
                            alpha_constraints = NULL, # so far only work without penalty or with ridge
+                           disp_constraints = NULL,
                            em_type = c("gh", "mc"), 
                            weights_and_nodes = NULL, theta_samples = NULL,
                            penalize = c("none", "ridge", "lasso"), 
@@ -437,6 +468,11 @@ em_cycle_multi <- function(data,
   # if there is no constraint on the parameter, expect it to have an entry of NA
   # if the value should be fixed to a certain value, then that value should be
   # given in the appropriate place in alpha_constraints
+  
+  # alpha_constraints so far expect that all or a subset of alphas are fixed to certain values and the
+  # reminaing freely estimated (so no equality constraints yet)
+  # disp_constraints so far expect that disps are to be fixed to specific values (on original scale!)
+  # (so no eqaulity constraints yet and no fixing only certain disps)
   
   # neither constraints nor regularization need consideration in E step (always the same)
   PPs <- e_step_multi(
@@ -462,40 +498,62 @@ em_cycle_multi <- function(data,
       weights_and_nodes = weights_and_nodes, 
       theta_samples = theta_samples,
       penalize_lambda = penalize_lambda,
+      disp_constraints = disp_constraints,
       max_iter = 1000, # TODO das hier oben als richtige argumente uebergeben
       ctol = ctol_lasso
     )
     
-    # numerical optimization for updating disps
-    log_disps <- item_params[grepl("log_disp", names(item_params))]
-    new_log_disps <- nleqslv(
-      x = log_disps,
-      fn = grad_nu_lasso,
-      other_params = new_alphas_deltas,
-      PPs = PPs,
-      data = data,
-      em_type = em_type,
-      weights_and_nodes = weights_and_nodes,
-      theta_samples = theta_samples,
-      control = list(xtol = ctol_maxstep)
-    )$x
+    if (!is.null(disp_constraints)) {
+      new_log_disps <- log(disp_constraints)
+    } else {
+      # numerical optimization for updating disps
+      log_disps <- item_params[grepl("log_disp", names(item_params))]
+      new_log_disps <- nleqslv(
+        x = log_disps,
+        fn = grad_nu_lasso,
+        other_params = new_alphas_deltas,
+        PPs = PPs,
+        data = data,
+        em_type = em_type,
+        weights_and_nodes = weights_and_nodes,
+        theta_samples = theta_samples,
+        control = list(xtol = ctol_maxstep)
+      )$x
+    }
     
     new_item_params <- c(new_alphas_deltas, new_log_disps)
     names(new_item_params) <- names(item_params)
   } else {
+    # no penalization or ridge
+    
     if (!is.null(alpha_constraints)) {
-      # we estimate a confirmatory model
+      # we estimate only a subset of alphas
       # we need to only input those item parameters here which need estimation
       # otherwise estimation won't work
       deltas <- item_params[grepl("delta", names(item_params))]
-      log_disps <- item_params[grepl("log_disp", names(item_params))]
       alphas <- item_params[grepl("alpha", names(item_params))]
       alphas_m_step <- alphas[is.na(alpha_constraints)]
       names(alphas_m_step) <- names(alphas[is.na(alpha_constraints)])
-      item_params_m_step <- c(alphas_m_step, deltas, log_disps)
-      names(item_params_m_step) <- c(names(alphas_m_step), names(deltas), names(log_disps))
+      
+      if (!is.null(disp_constraints)) {
+        # don't estimate disps as they are fixed
+        item_params_m_step <- c(alphas_m_step, deltas)
+        names(item_params_m_step) <- c(names(alphas_m_step), names(deltas))
+      } else {
+        # estimate disps while not estimating all alphas
+        log_disps <- item_params[grepl("log_disp", names(item_params))]
+        item_params_m_step <- c(alphas_m_step, deltas, log_disps)
+        names(item_params_m_step) <- c(names(alphas_m_step), names(deltas), names(log_disps))
+      }
+    } else if (!is.null(disp_constraints)) {
+      # we estimate all alphas, but not the disps
+      alphas <- item_params[grepl("alpha", names(item_params))]
+      deltas <- item_params[grepl("delta", names(item_params))]
+      item_params_m_step <- c(alphas, deltas)
+      names(item_params_m_step) <- c(names(alphas), names(deltas))
     } else {
       # we estimate an explanatory 2pcmpm, so all items load onto all factors
+      # and we estimate the dispersions
       item_params_m_step <- item_params
     }
     
@@ -509,6 +567,7 @@ em_cycle_multi <- function(data,
       weights_and_nodes = weights_and_nodes,
       theta_samples = theta_samples,
       alpha_constraints = alpha_constraints,
+      disp_constraints = disp_constraints,
       penalize = penalize,
       penalize_lambda = penalize_lambda,
       control = list(xtol = ctol_maxstep)
@@ -519,7 +578,13 @@ em_cycle_multi <- function(data,
       # is not yet the full set of item parameters but needs to be filled up
       alphas <- new_item_params[grepl("alpha", names(new_item_params))]
       deltas <- new_item_params[grepl("delta", names(new_item_params))]
-      log_disps <- new_item_params[grepl("log_disp", names(new_item_params))]
+      if (!is.null(disp_constraints)) {
+        # dispersions are fixed to certain values
+        log_disps <- log(disp_constraints)
+      } else {
+        # dispersions were freely estimating
+        log_disps <- new_item_params[grepl("log_disp", names(new_item_params))]
+      }
       new_alphas_m <- matrix(
         alpha_constraints,
         nrow = n_traits,
@@ -543,6 +608,14 @@ em_cycle_multi <- function(data,
         paste0("delta", 1:ncol(data)),
         paste0("log_disp", 1:ncol(data))
       )
+    } else if (!is.null(disp_constraints)) {
+      # alphas have no constraints but we don't estimate dispersions, and instead have them
+      # fixed to certain values
+      alphas <- new_item_params[grepl("alpha", names(new_item_params))]
+      deltas <- new_item_params[grepl("delta", names(new_item_params))]
+      log_disps <- log(disp_constraints)
+      new_item_params <- c(alphas, deltas, log_disps)
+      names(new_item_params) <- names(item_params)
     }
   }
   
@@ -558,7 +631,8 @@ marg_ll_multi <- function(data,
                           penalize = c("none", "ridge", "lasso"),
                           penalize_lambda = NULL,
                           em_type = c("gh", "mc")) {
-  # don't need alpha_constraints argument here as item_params include fixed values; this will work automatically
+  # don't need alpha_constraints or disp_constraints argument here as item_params include fixed values; 
+  # this will work automatically
   
   n_items <- ncol(data)
   n_persons <- nrow(data)
@@ -629,12 +703,12 @@ marg_ll_multi <- function(data,
 
 # run_em_multi ---------------------------------------------------------------------------
 
-# TODO disp_constraints, sowohl fixation als auch equality constraints
-# TODO equality constraints on alpha
+# TODO equality constraints on alpha and disp
 run_em_multi <- function(data, 
                          init_params, 
                          n_traits, 
                          alpha_constraints = NULL,
+                         disp_constraints = NULL,
                          n_nodes = NULL, n_samples = NULL, 
                          em_type = c("gh", "mc"), fcov_prior = NULL,
                          truncate_grid = TRUE,
@@ -662,6 +736,11 @@ run_em_multi <- function(data,
   # if there is no constraint on the parameter, expect it to have an entry of NA
   # if the value should be fixed to a certain value, then that value should be
   # given in the appropriate place in alpha_constraints
+  
+  # alpha_constraints so far expect that all or a subset of alphas are fixed to certain values and the
+  # reminaing freely estimated (so no equality constraints yet)
+  # disp_constraints so far expect that disps are to be fixed to specific values (on original scale!)
+  # (so no eqaulity constraints yet and no fixing only certain disps)
   
   if (em_type == "gh") {
     # TODO actually use fcov_prior argument here
@@ -714,6 +793,7 @@ run_em_multi <- function(data,
       weights_and_nodes = weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
       alpha_constraints = alpha_constraints,
+      disp_constraints = disp_constraints,
       em_type = em_type,
       theta_samples = theta_samples,
       penalize = penalize,
@@ -779,6 +859,7 @@ run_em_multi <- function(data,
       weights_and_nodes = weights_and_nodes,
       ctol_maxstep = ctol_maxstep,
       alpha_constraints = alpha_constraints,
+      disp_constraints = disp_constraints,
       em_type = em_type,
       theta_samples = theta_samples,
       penalize = penalize,
@@ -799,12 +880,11 @@ run_em_multi <- function(data,
 }
 
 # get_start_values_multi -----------------------------------------------------------------
-# TODO disp_constraints implementieren, also das wir die fixieren koennen und auch
-# equality constraints einbauen koennen
-# TODO equality constraints on alpha
+# TODO equality constraints on alpha and disp
 get_start_values_multi <- function(data, 
                                    n_traits, 
                                    alpha_constraints = NULL,
+                                   disp_constraints = NULL,
                                    n_nodes = NULL, n_samples = NULL, 
                                    em_type = c("gh", "mc"), 
                                    fcov_prior = NULL, truncate_grid = TRUE,
@@ -813,9 +893,10 @@ get_start_values_multi <- function(data,
                                    maxiter = 1000,
                                    nsim = 1000,
                                    convtol = 1e-5) {
-  # use maxiter here to not let the poisson model run til full convergence but just
-  # enough to get some sensible start values as the poisson em will also already take
-  # quite a bit of time here
+  # alpha_constraints so far expect that all or a subset of alphas are fixed to certain values and the
+  # reminaing freely estimated (so no equality constraints yet)
+  # disp_constraints so far expect that disps are to be fixed to specific values (on original scale!)
+  # (so no eqaulity constraints yet and no fixing only certain disps)
   
   # for CMP start values, we fit a Poisson model and get deltas and alphas from there
   init_values_pois <- get_start_values_pois_multi(
@@ -845,14 +926,18 @@ get_start_values_multi <- function(data,
   # estimated because they were fixed at a certain values
   init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   
-  # start values for log nus
-  init_logdisps <- c()
-  sim_abilities <- mvrnorm(nsim, rep(0, n_traits), diag(rep(1, n_traits)))
-  for (i in 1:ncol(data)) {
-    alphas_for_item_i <- init_alphas[grepl(paste0("alpha", i), names(init_alphas))]
-    mu <- exp(init_deltas[i] + sim_abilities %*% alphas_for_item_i)
-    sim <- rpois(nsim, mu)
-    init_logdisps[i] <- log((var(sim) / var(data[,i])))
+  if (!is.null(disp_constraints)) {
+    init_logdisps <- log(disp_constraints)
+  } else {
+    # start values for log nus
+    init_logdisps <- c()
+    sim_abilities <- mvrnorm(nsim, rep(0, n_traits), diag(rep(1, n_traits)))
+    for (i in 1:ncol(data)) {
+      alphas_for_item_i <- init_alphas[grepl(paste0("alpha", i), names(init_alphas))]
+      mu <- exp(init_deltas[i] + sim_abilities %*% alphas_for_item_i)
+      sim <- rpois(nsim, mu)
+      init_logdisps[i] <- log((var(sim) / var(data[,i])))
+    }
   }
   
   start_values <- c(init_alphas, init_deltas, init_logdisps)

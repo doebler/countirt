@@ -64,8 +64,7 @@ e_step_multi <- function(data, item_params, n_traits,
 }
 
 # lasso_coord_descent --------------------------------------------------------------
-# TODO alpha constraints implementieren (selbst einfach erstmal fuer fixations)
-# TODO equality constraints on disps implementieren, partial disp fixations implementieren
+# TODO equality constraints on alphas and disps implementieren, partial disp fixations implementieren
 lasso_coord_descent <- function(item_params,
                                 PPs,
                                 data,
@@ -73,6 +72,7 @@ lasso_coord_descent <- function(item_params,
                                 em_type = c("gh", "mc"), 
                                 weights_and_nodes = NULL, 
                                 theta_samples = NULL,
+                                alpha_constraints = NULL,
                                 disp_constraints = NULL,
                                 penalize_lambda = 0,
                                 max_iter = 1000,
@@ -80,17 +80,45 @@ lasso_coord_descent <- function(item_params,
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
-  alphas_matrix <- matrix(
-    alphas,
-    ncol = ncol(data),
-    nrow = n_traits,
-    byrow = TRUE
-  )
+  if (!is.null(alpha_constraints)) {
+    full_alphas <- alpha_constraints
+    full_alphas[is.na(alpha_constraints)] <- alphas[is.na(alpha_constraints)]
+    full_alphas_matrix <- matrix(
+      full_alphas,
+      ncol = ncol(data),
+      nrow = n_traits,
+      byrow = TRUE
+    )
+  } else {
+    full_alphas_matrix <- matrix(
+      alphas,
+      ncol = ncol(data),
+      nrow = n_traits,
+      byrow = TRUE
+    )
+  }
   deltas <- item_params[grepl("delta", names(item_params))]
   if (!is.null(disp_constraints)) {
     disps <- disp_constraints
   } else {
     disps <- exp(item_params[grepl("log_disp", names(item_params))])
+  }
+  
+  # set-up a way to check for which alphas we need gradients
+  if (!is.null(alpha_constraints)) {
+    compute_alpha_gradient <- matrix(
+      is.na(alpha_constraints),
+      nrow = n_traits,
+      ncol = ncol(data),
+      byrow = TRUE
+    )
+  } else {
+    compute_alpha_gradient <- matrix(
+      TRUE,
+      nrow = n_traits,
+      ncol = ncol(data),
+      byrow = TRUE
+    )
   }
   
   # only check here in r whether we have GH or MC EM, we can use the same c++ functions as they just expect
@@ -100,11 +128,11 @@ lasso_coord_descent <- function(item_params,
     for (j in 1:ncol(data)) {
       conv <- FALSE
       iter <- 1
-      new_params <- c(alphas_matrix[,j], deltas[j])
+      new_params <- c(full_alphas_matrix[,j], deltas[j])
       while (!isTRUE(conv) && iter <= max_iter) {
         old_params <- new_params
         new_delta_j <- lasso_delta_update_cpp(
-          alphas_j = alphas_matrix[,j], 
+          alphas_j = full_alphas_matrix[,j], 
           delta_j = deltas[j],
           disp_j = disps[j],
           data_j = data[,j], 
@@ -121,10 +149,11 @@ lasso_coord_descent <- function(item_params,
         # use the previous delta_j like in sun et al.
         # TODO i don't know if it's not maybe better to use the most up to date delta in
         # the idea of cyclic coordinate descent
-        alphas_matrix[,j] <- lasso_alpha_update_cpp(
-          alphas_j = alphas_matrix[,j], 
+        full_alphas_matrix[,j] <- lasso_alpha_update_cpp(
+          alphas_j = full_alphas_matrix[,j], 
           delta_j =  deltas[j], # new_delta_j,
           disp_j = disps[j],
+          update_alphas_j = compute_alpha_gradient[,j],
           penalize_lambda = penalize_lambda,
           data_j = data[,j], 
           PPs = PPs,
@@ -139,7 +168,7 @@ lasso_coord_descent <- function(item_params,
         )
         
         deltas[j] <- new_delta_j
-        new_params <- c(alphas_matrix[,j], deltas[j])
+        new_params <- c(full_alphas_matrix[,j], deltas[j])
         conv <- !any(abs(old_params - new_params) > ctol)
         iter <- iter + 1
       }
@@ -149,11 +178,11 @@ lasso_coord_descent <- function(item_params,
     for (j in 1:ncol(data)) {
       conv <- FALSE
       iter <- 1
-      new_params <- c(alphas_matrix[,j], deltas[j])
+      new_params <- c(full_alphas_matrix[,j], deltas[j])
       while (!isTRUE(conv) && iter <= max_iter) {
         old_params <- new_params
         new_delta_j <- lasso_delta_update_cpp(
-          alphas_j = alphas_matrix[,j], 
+          alphas_j = full_alphas_matrix[,j], 
           delta_j = deltas[j],
           disp_j = disps[j],
           data_j = data[,j], 
@@ -170,10 +199,11 @@ lasso_coord_descent <- function(item_params,
         # use the previous delta_j like in sun et al.
         # TODO i don't know if it's not maybe better to use the most up to date delta in
         # the idea of cyclic coordinate descent
-        alphas_matrix[,j] <- lasso_alpha_update_cpp(
-          alphas_j = alphas_matrix[,j], 
+        full_alphas_matrix[,j] <- lasso_alpha_update_cpp(
+          alphas_j = full_alphas_matrix[,j], 
           delta_j = deltas[j],
           disp_j = disps[j],
+          update_alphas_j = compute_alpha_gradient[,j],
           penalize_lambda = penalize_lambda,
           data_j = data[,j], 
           PPs = PPs,
@@ -188,7 +218,7 @@ lasso_coord_descent <- function(item_params,
         )
         
         deltas[j] <- new_delta_j
-        new_params <- c(alphas_matrix[,j], deltas[j])
+        new_params <- c(full_alphas_matrix[,j], deltas[j])
         conv <- !any(abs(old_params - new_params) > ctol)
         iter <- iter + 1
       }
@@ -196,7 +226,7 @@ lasso_coord_descent <- function(item_params,
   }
   
   # output updated alphas and deltas
-  new_alphas_deltas <- c(as.numeric(t(alphas_matrix)), deltas)
+  new_alphas_deltas <- c(as.numeric(t(full_alphas_matrix)), deltas)
   names(new_alphas_deltas) <- names(item_params[!grepl("log_disp", names(item_params))])
   
   return(new_alphas_deltas)
@@ -314,7 +344,7 @@ grad_multi <- function(item_params,
   alphas <- item_params[grepl("alpha", names(item_params))]
   if (!is.null(alpha_constraints)) {
     full_alphas <- alpha_constraints
-    full_alphas[is.na(full_alphas)] <- alphas
+    full_alphas[is.na(alpha_constraints)] <- alphas
     full_alphas_matrix <- matrix(
       full_alphas,
       ncol = ncol(data),
@@ -332,10 +362,12 @@ grad_multi <- function(item_params,
   deltas <- item_params[grepl("delta", names(item_params))]
   if (!is.null(disp_constraints)) {
     disps <- disp_constraints
-    compute_disp_gradient <- FALSE
+    compute_disp_gradient <- is.na(disp_constraints)
+    # estimate if NA, so not constrained to be fixed to a certain value
   } else {
     disps <- exp(item_params[grepl("log_disp", names(item_params))])
-    compute_disp_gradient <- TRUE
+    compute_disp_gradient <- rep(TRUE, length(disps))
+    # estimate all disps, we have no constraints
   }
   
   # set-up a way to check for which alphas we need gradients
@@ -486,7 +518,6 @@ em_cycle_multi <- function(data,
   
   # m step
   if (penalize == "lasso") {
-    # TODO implement alpha constraints in conjunction with lasso penalty
     
     # blockwise cyclic coordinate descent for updating alpha and delta
     new_alphas_deltas <- lasso_coord_descent(
@@ -499,6 +530,7 @@ em_cycle_multi <- function(data,
       theta_samples = theta_samples,
       penalize_lambda = penalize_lambda,
       disp_constraints = disp_constraints,
+      alpha_constraints = alpha_constraints,
       max_iter = 1000, # TODO das hier oben als richtige argumente uebergeben
       ctol = ctol_lasso
     )
@@ -871,6 +903,10 @@ run_em_multi <- function(data,
   
   out <- list(
     params = new_params,
+    constraints = list(
+      alpha_constraints = alpha_constraints,
+      disp_constraints = disp_constraints
+    ),
     iter = iter,
     conv = conv,
     marg_ll = marg_lls,

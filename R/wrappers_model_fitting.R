@@ -390,4 +390,136 @@ add_inference <- function(model, prob = 0.95) {
 # also wo ich mir ein gutes allg. interface ueberlege (mit guter syntax) und dann einfach von da
 # aus entsprechend dann mcirt_explore und mcirt_confirm calle
 
+#' Model fitting function for exploratory multi-dimensional count data IRT models.
+#' 
+#' @param nfactors An integer. The number of factors to be extracted.
+#' @param data A data frame (or matrix) in wide format where each column corresponds to participants' responses to one item.
+#' @param family A string indicating the count data family, can be either "cmp" or "poisson".
+#' @param penalize A string, can be "none", "ridge", or "lasso". Defaults to "none".
+#' @param penalize_tuning A real. The tuning parameter for regularization. Must be specified if you choose Ridge or Lasso penalization. Will be ignored if you specify penalize = "none". Defaults to NULL.
+#' @param control A list providing control parameters for the estimation.
+#' 
+#' @import Rcpp
+#' @import RcppGSL
+#' @import MultiGHQuad
+#' @importFrom nleqslv nleqslv
+#' @importFrom rootSolve gradient
+#' @importFrom tidyr pivot_wider
+#' @importFrom dplyr enquo
+#' @importFrom psych fa
+#' @importFrom MASS mvrnorm
+#' @useDynLib countirt, .registration=TRUE
+#' @export
+mcirt_explore <- function(nfactors, data, family,
+                          penalize = "none",
+                          penalize_tuning = NULL,
+                          control = list(
+                            start_values = NULL,
+                            alpha_constraints = NULL,
+                            disp_constraints = NULL,
+                            em_type = "gh",
+                            n_nodes = 12,
+                            n_samples = 3000,
+                            truncate_grid = TRUE,
+                            maxiter = 1000, 
+                            convtol = 1e-5, 
+                            n_samples_conv = 20,
+                            final_n_samples = 6000,
+                            ctol_maxstep = 1e-8,
+                            ctol_lasso = 1e-3,
+                            m_method = "nleqslv", 
+                            convcrit = "marglik"
+                            )) {
+  
+  # TODO implement checks
+  
+  # TODO give a warning if no alpha constraints are given with respect to
+  # identifiability
+  
+  # TODO
+  # record all the information in the model_list
+  # model_list <- 
+  
+  # TODO 
+  # i should adjust (default) convergence somehow depending on whether we use 
+  # MC or GH
+  
+  # set start values
+  # only set if start_values is NULL in control list, otherwise use providee start values
+  # this functionality is especially helpful for doing warm starts in tune_lasso and tune_ridge
+  if (is.null(control$start_values)) {
+    if (family == "poisson") {
+      # start_values <- 
+    } else if (family == "cmp") {
+      # start_values <- 
+    }
+  } else {
+    start_values <- control$start_values
+  }
+  
+  # fit the model
+  if (family == "poisson") {
+    fit <- run_em_poisson_multi(
+      data = data,
+      init_params = start_values, 
+      n_traits = nfactors, 
+      penalize = penalize,
+      penalize_lambda = penalize_tuning,
+      n_nodes = control$n_nodes,
+      n_samples = control$n_samples,
+      em_type = control$em_type,
+      truncate_grid = control$truncate_grid,
+      convcrit = control$convcrit,
+      convtol = control$convtol,
+      n_samples_conv = control$n_samples_conv,
+      final_n_samples = control$final_n_samples,
+      alpha_constraints = control$alpha_constraints
+    )
+  } else if (family == "cmp") {
+    # TODO hier weiter machen und weiter anpassen was ich hier einfuelle
+    fit <- run_em_multi(
+      data = test_data_cmp$sim_data,
+      init_params = init_item_params, 
+      n_traits = L,
+      n_nodes = 12, 
+      em_type = "gh",
+      truncate_grid = TRUE,
+      penalize = "none",
+      #penalize_lambda = 0.5,
+      convtol = 1e-4,
+      ctol_lasso = 1e-3,
+      alpha_constraints = alpha_constraints,
+      disp_constraints = true_disps
+    )
+  }
+  
+  
+  # prepare object for returning
+  out <- list(
+    family = family,
+    model = model_list,
+    fit = fit,
+    fit_ses = NULL, # we can add ses with add_inference (which i still need to implement for multi-dim.)
+    start_values = start_values,
+    control = control
+  )
+  class(out) <- "mcirtfit"
+  return(out)
+}
+
+# TODO
+# tune_lasso
+
+# TODO 
+# tune_ridge
+
+
+
+
+
+
+
+
+
+
 

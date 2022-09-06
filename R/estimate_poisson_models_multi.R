@@ -120,7 +120,7 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
   alphas <- item_params[grepl("alpha", names(item_params))]
   if (!is.null(alpha_constraints)) {
     full_alphas <- alpha_constraints
-    full_alphas[is.na(full_alphas)] <- alphas
+    full_alphas[is.na(alpha_constraints)] <- alphas
     full_alphas_matrix <- matrix(
       full_alphas,
       ncol = ncol(data),
@@ -307,6 +307,7 @@ grad_poisson_multi <- function(item_params, PPs, data, n_traits,
 
 # lasso_alpha_update_poisson ---------------------------------------------------------
 lasso_alpha_update_poisson <- function(alphas_j, delta_j,
+                                       update_alphas_j,
                                        penalize_lambda, PPs,
                                        data_j, # a vector of responses just to item j
                                        weights_and_nodes = NULL,
@@ -389,9 +390,13 @@ lasso_alpha_update_poisson <- function(alphas_j, delta_j,
     }
     
     # update 
-    
-    new_alphas_j[l] <- - soft_thresh(-scnd_deriv_j*new_alphas_j[l] + first_deriv_j, penalize_lambda) /
-      scnd_deriv_j
+    # only update those alphas which aren't constrained to be fixed at a certain value
+    new_alphas_j[l] <- ifelse(
+      update_alphas_j[l],
+      - soft_thresh(-scnd_deriv_j*new_alphas_j[l] + first_deriv_j, penalize_lambda) / scnd_deriv_j,
+      new_alphas_j[l]
+    )
+      
   }
   
   return(new_alphas_j)
@@ -445,29 +450,58 @@ lasso_coord_descent_poisson <- function(item_params,
                                  theta_samples = NULL,
                                  penalize_lambda = NULL,
                                  max_iter = 1000,
-                                 ctol = 1e-3) {
-  # TODO implement alpha constraints for lasso penalty
+                                 ctol = 1e-3,
+                                 alpha_constraints = NULL) {
+  # TODO allow alpha_constraints to also be equality constraints, so far it's just fixing
   
   data <- as.matrix(data)
   alphas <- item_params[grepl("alpha", names(item_params))]
-  alphas_matrix <- matrix(
+  if (!is.null(alpha_constraints)) {
+    full_alphas <- alpha_constraints
+    full_alphas[is.na(alpha_constraints)] <- alphas[is.na(alpha_constraints)]
+    full_alphas_matrix <- matrix(
+      full_alphas,
+      ncol = ncol(data),
+      nrow = n_traits,
+      byrow = TRUE
+    )
+  } else {
+    full_alphas_matrix <- matrix(
       alphas,
       ncol = ncol(data),
       nrow = n_traits,
       byrow = TRUE
-  )
+    )
+  }
   deltas <- item_params[grepl("delta", names(item_params))]
+  
+  # set-up a way to check for which alphas we need gradients
+  if (!is.null(alpha_constraints)) {
+    compute_alpha_gradient <- matrix(
+      is.na(alpha_constraints),
+      nrow = n_traits,
+      ncol = ncol(data),
+      byrow = TRUE
+    )
+  } else {
+    compute_alpha_gradient <- matrix(
+      TRUE,
+      nrow = n_traits,
+      ncol = ncol(data),
+      byrow = TRUE
+    )
+  }
   
   # blockwise coordinate descent
   for (j in 1:ncol(data)) {
     conv <- FALSE
     iter <- 1
-    new_params <- c(alphas_matrix[,j], deltas[j])
+    new_params <- c(full_alphas_matrix[,j], deltas[j])
     while (!isTRUE(conv) && iter <= max_iter) {
       old_params <- new_params
       new_delta_j <- lasso_delta_update_poisson(
         delta_j = deltas[j], 
-        alphas_j = alphas_matrix[,j], 
+        alphas_j = full_alphas_matrix[,j], 
         PPs = PPs,
         data_j = data[,j], 
         weights_and_nodes = weights_and_nodes, 
@@ -477,9 +511,10 @@ lasso_coord_descent_poisson <- function(item_params,
       # use the previous delta_j like in sun et al.
       # TODO i don't know if it's not maybe better to use the most up to date delta in
       # the idea of cyclic coordinate descent
-      alphas_matrix[,j] <- lasso_alpha_update_poisson(
-        alphas_j = alphas_matrix[,j], 
+      full_alphas_matrix[,j] <- lasso_alpha_update_poisson(
+        alphas_j = full_alphas_matrix[,j], 
         delta_j = deltas[j],
+        update_alphas_j = compute_alpha_gradient[,j],
         penalize_lambda = penalize_lambda,
         PPs = PPs, 
         data_j = data[,j], 
@@ -489,13 +524,13 @@ lasso_coord_descent_poisson <- function(item_params,
       )
       
       deltas[j] <- new_delta_j
-      new_params <- c(alphas_matrix[,j], deltas[j])
+      new_params <- c(full_alphas_matrix[,j], deltas[j])
       conv <- !any(abs(old_params - new_params) > ctol)
       iter <- iter + 1
     }
   }
   
-  new_item_params <- c(as.numeric(t(alphas_matrix)), deltas)
+  new_item_params <- c(as.numeric(t(full_alphas_matrix)), deltas)
   names(new_item_params) <- names(item_params)
   
   return(new_item_params)
@@ -537,7 +572,6 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
   
   # m step
   if (penalize == "lasso") {
-    # TODO implement alpha constraints in conjunction with lasso penalty
     
     new_item_params <- lasso_coord_descent_poisson(
       item_params = item_params,
@@ -549,7 +583,8 @@ em_cycle_poisson_multi <- function(data, item_params, n_traits,
       theta_samples = theta_samples,
       penalize_lambda = penalize_lambda,
       max_iter = 1000, # TODO das hier oben als richtige argumente uebergeben
-      ctol = ctol_lasso
+      ctol = ctol_lasso,
+      alpha_constraints = alpha_constraints
     )
     
   } else {
@@ -828,7 +863,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- new_ll
-      #plot(marg_lls)
+      plot(marg_lls)
       #print(marg_lls)
       if (em_type == "gh") {
         conv <- (abs(old_ll - new_ll) < convtol)
@@ -855,7 +890,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- marg_ll
-      #plot(marg_lls)
+      plot(marg_lls)
       #print(marg_lls)
     }
     
@@ -882,6 +917,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   
   out <- list(
     params = new_params,
+    constraints = list(alpha_constraints = alpha_constraints),
     iter = iter,
     conv = conv,
     marg_ll = marg_lls,

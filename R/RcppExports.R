@@ -225,8 +225,8 @@ soft_thresh_cpp <- function(x, eta) {
     .Call(`_countirt_soft_thresh_cpp`, x, eta)
 }
 
-lasso_alpha_update_cpp <- function(alphas_j, delta_j, disp_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
-    .Call(`_countirt_lasso_alpha_update_cpp`, alphas_j, delta_j, disp_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+lasso_alpha_update_cpp <- function(alphas_j, delta_j, disp_j, update_alphas_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_lasso_alpha_update_cpp`, alphas_j, delta_j, disp_j, update_alphas_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
 grad_nu_lasso_cpp <- function(alphas, deltas, disps, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {

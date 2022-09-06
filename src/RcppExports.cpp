@@ -927,7 +927,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // grad_multi_gh_cpp
-NumericVector grad_multi_gh_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix nodes, LogicalMatrix comp_alpha_grad, bool comp_disp_grad, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
+NumericVector grad_multi_gh_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix nodes, LogicalMatrix comp_alpha_grad, LogicalVector comp_disp_grad, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
 RcppExport SEXP _countirt_grad_multi_gh_cpp(SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP dataSEXP, SEXP PPsSEXP, SEXP nodesSEXP, SEXP comp_alpha_gradSEXP, SEXP comp_disp_gradSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_cmp_var_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP grid_logZ_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -939,7 +939,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type PPs(PPsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type nodes(nodesSEXP);
     Rcpp::traits::input_parameter< LogicalMatrix >::type comp_alpha_grad(comp_alpha_gradSEXP);
-    Rcpp::traits::input_parameter< bool >::type comp_disp_grad(comp_disp_gradSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type comp_disp_grad(comp_disp_gradSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_cmp_var_long(grid_cmp_var_longSEXP);
@@ -952,7 +952,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // grad_multi_gh_ridge_cpp
-NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix nodes, LogicalMatrix comp_alpha_grad, bool comp_disp_grad, double penalize_lambda, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
+NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix nodes, LogicalMatrix comp_alpha_grad, LogicalVector comp_disp_grad, double penalize_lambda, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
 RcppExport SEXP _countirt_grad_multi_gh_ridge_cpp(SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP dataSEXP, SEXP PPsSEXP, SEXP nodesSEXP, SEXP comp_alpha_gradSEXP, SEXP comp_disp_gradSEXP, SEXP penalize_lambdaSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_cmp_var_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP grid_logZ_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -964,7 +964,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type PPs(PPsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type nodes(nodesSEXP);
     Rcpp::traits::input_parameter< LogicalMatrix >::type comp_alpha_grad(comp_alpha_gradSEXP);
-    Rcpp::traits::input_parameter< bool >::type comp_disp_grad(comp_disp_gradSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type comp_disp_grad(comp_disp_gradSEXP);
     Rcpp::traits::input_parameter< double >::type penalize_lambda(penalize_lambdaSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
@@ -1011,7 +1011,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // grad_multi_mc_cpp
-NumericVector grad_multi_mc_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix theta_samples, LogicalMatrix comp_alpha_grad, bool comp_disp_grad, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
+NumericVector grad_multi_mc_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix theta_samples, LogicalMatrix comp_alpha_grad, LogicalVector comp_disp_grad, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
 RcppExport SEXP _countirt_grad_multi_mc_cpp(SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP dataSEXP, SEXP PPsSEXP, SEXP theta_samplesSEXP, SEXP comp_alpha_gradSEXP, SEXP comp_disp_gradSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_cmp_var_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP grid_logZ_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -1023,7 +1023,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type PPs(PPsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type theta_samples(theta_samplesSEXP);
     Rcpp::traits::input_parameter< LogicalMatrix >::type comp_alpha_grad(comp_alpha_gradSEXP);
-    Rcpp::traits::input_parameter< bool >::type comp_disp_grad(comp_disp_gradSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type comp_disp_grad(comp_disp_gradSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_cmp_var_long(grid_cmp_var_longSEXP);
@@ -1036,7 +1036,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // grad_multi_mc_ridge_cpp
-NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix theta_samples, LogicalMatrix comp_alpha_grad, bool comp_disp_grad, double penalize_lambda, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
+NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas, NumericVector deltas, NumericVector disps, NumericMatrix data, NumericMatrix PPs, NumericMatrix theta_samples, LogicalMatrix comp_alpha_grad, LogicalVector comp_disp_grad, double penalize_lambda, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
 RcppExport SEXP _countirt_grad_multi_mc_ridge_cpp(SEXP alphasSEXP, SEXP deltasSEXP, SEXP dispsSEXP, SEXP dataSEXP, SEXP PPsSEXP, SEXP theta_samplesSEXP, SEXP comp_alpha_gradSEXP, SEXP comp_disp_gradSEXP, SEXP penalize_lambdaSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_cmp_var_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP grid_logZ_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -1048,7 +1048,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type PPs(PPsSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type theta_samples(theta_samplesSEXP);
     Rcpp::traits::input_parameter< LogicalMatrix >::type comp_alpha_grad(comp_alpha_gradSEXP);
-    Rcpp::traits::input_parameter< bool >::type comp_disp_grad(comp_disp_gradSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type comp_disp_grad(comp_disp_gradSEXP);
     Rcpp::traits::input_parameter< double >::type penalize_lambda(penalize_lambdaSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_mus(grid_musSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type grid_nus(grid_nusSEXP);
@@ -1097,14 +1097,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // lasso_alpha_update_cpp
-NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, double delta_j, double disp_j, double penalize_lambda, NumericVector data_j, NumericMatrix PPs, NumericMatrix nodes, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
-RcppExport SEXP _countirt_lasso_alpha_update_cpp(SEXP alphas_jSEXP, SEXP delta_jSEXP, SEXP disp_jSEXP, SEXP penalize_lambdaSEXP, SEXP data_jSEXP, SEXP PPsSEXP, SEXP nodesSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_cmp_var_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP grid_logZ_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
+NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, double delta_j, double disp_j, NumericVector update_alphas_j, double penalize_lambda, NumericVector data_j, NumericMatrix PPs, NumericMatrix nodes, NumericVector grid_mus, NumericVector grid_nus, NumericVector grid_cmp_var_long, NumericVector grid_log_lambda_long, NumericVector grid_logZ_long, double max_mu, double min_mu);
+RcppExport SEXP _countirt_lasso_alpha_update_cpp(SEXP alphas_jSEXP, SEXP delta_jSEXP, SEXP disp_jSEXP, SEXP update_alphas_jSEXP, SEXP penalize_lambdaSEXP, SEXP data_jSEXP, SEXP PPsSEXP, SEXP nodesSEXP, SEXP grid_musSEXP, SEXP grid_nusSEXP, SEXP grid_cmp_var_longSEXP, SEXP grid_log_lambda_longSEXP, SEXP grid_logZ_longSEXP, SEXP max_muSEXP, SEXP min_muSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type alphas_j(alphas_jSEXP);
     Rcpp::traits::input_parameter< double >::type delta_j(delta_jSEXP);
     Rcpp::traits::input_parameter< double >::type disp_j(disp_jSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type update_alphas_j(update_alphas_jSEXP);
     Rcpp::traits::input_parameter< double >::type penalize_lambda(penalize_lambdaSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type data_j(data_jSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type PPs(PPsSEXP);
@@ -1116,7 +1117,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type grid_logZ_long(grid_logZ_longSEXP);
     Rcpp::traits::input_parameter< double >::type max_mu(max_muSEXP);
     Rcpp::traits::input_parameter< double >::type min_mu(min_muSEXP);
-    rcpp_result_gen = Rcpp::wrap(lasso_alpha_update_cpp(alphas_j, delta_j, disp_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu));
+    rcpp_result_gen = Rcpp::wrap(lasso_alpha_update_cpp(alphas_j, delta_j, disp_j, update_alphas_j, penalize_lambda, data_j, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2685,7 +2686,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_countirt_grad_multi_mc_ridge_cpp", (DL_FUNC) &_countirt_grad_multi_mc_ridge_cpp, 16},
     {"_countirt_lasso_delta_update_cpp", (DL_FUNC) &_countirt_lasso_delta_update_cpp, 13},
     {"_countirt_soft_thresh_cpp", (DL_FUNC) &_countirt_soft_thresh_cpp, 2},
-    {"_countirt_lasso_alpha_update_cpp", (DL_FUNC) &_countirt_lasso_alpha_update_cpp, 14},
+    {"_countirt_lasso_alpha_update_cpp", (DL_FUNC) &_countirt_lasso_alpha_update_cpp, 15},
     {"_countirt_grad_nu_lasso_cpp", (DL_FUNC) &_countirt_grad_nu_lasso_cpp, 13},
     {"_countirt_grad_cmp_with_pcov_cpp", (DL_FUNC) &_countirt_grad_cmp_with_pcov_cpp, 15},
     {"_countirt_grad_cmp_with_pcov_cat_cpp", (DL_FUNC) &_countirt_grad_cmp_with_pcov_cat_cpp, 16},

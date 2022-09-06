@@ -3017,7 +3017,7 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
                                 NumericMatrix PPs,
                                 NumericMatrix nodes, 
                                 LogicalMatrix comp_alpha_grad,
-                                bool comp_disp_grad,
+                                LogicalVector comp_disp_grad,
                                 NumericVector grid_mus,
                                 NumericVector grid_nus,
                                 NumericVector grid_cmp_var_long,
@@ -3043,16 +3043,23 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
   // in a model with no alpha constraints, m_alphas is going to be MxL as we then
   // estimate an alpha for each trait X item combination
   
+  // How many disp gradients do we want to compute?
+  int m_disps = 0;
+  for (int j=0;j<m;j++) { // loop over
+    if (comp_disp_grad[j] == true) {
+      m_disps += 1;
+    }
+  }
+  
   // set up gradient matrix for all alphas because it's easier and just fill them up
   // later for those alphas we want gradients for and then also ouput gradients just for
   // those alphas we want gradients for
   NumericMatrix grad_alphas(L,m);
   NumericVector grad_deltas(m);
   NumericVector grad_disps(m);
-  NumericVector out(m_alphas + m);
-  if (comp_disp_grad == true) {
-    NumericVector out(m_alphas + 2*m);
-  }
+  // like with alphas set up full gradient and just don't ouput or update if we don't
+  // compute that alpha
+  NumericVector out(m_alphas + m + m_disps);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3108,13 +3115,13 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
     for(int k=0;k<n_nodes;k++) {
       // over persons (rows in my matrices)
       
-      double A;
-      double B;
-      if (comp_disp_grad == true) {
+      double A = 0;
+      double B = 0;
+      double lambda = exp(log_lambda(k,i));
+      if (comp_disp_grad[i] == true) {
         // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k,i));
-        double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
-        double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        A += computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        B += computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
       }
       
       for(int j=0;j<n;j++) { // loop over persons
@@ -3128,7 +3135,7 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
           }
         }
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i)) * (data(j,i) - mu_interp(k,i));
-        if (comp_disp_grad == true) {
+        if (comp_disp_grad[i] == true) {
           grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
         }
       }
@@ -3150,11 +3157,16 @@ NumericVector grad_multi_gh_cpp(NumericMatrix alphas,
       }
     }
   }
-  // then fill in all the other gradients
+  // then fill with delta gradients
   for(int i=0;i<m;i++){
     out[i + m_alphas] = grad_deltas[i];
-    if (comp_disp_grad == true) {
-      out[i + m_alphas + m] = grad_disps[i];
+  }
+  // and finally fill with disp gradients
+  int f = 0;
+  for (int j=0;j<m;j++){
+    if (comp_disp_grad[j] == true) {
+      out[f + m_alphas + m] = grad_disps[j];
+      f += 1;
     }
   }
   
@@ -3169,7 +3181,7 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
                                       NumericMatrix PPs,
                                       NumericMatrix nodes, 
                                       LogicalMatrix comp_alpha_grad,
-                                      bool comp_disp_grad,
+                                      LogicalVector comp_disp_grad,
                                       double penalize_lambda,
                                       NumericVector grid_mus,
                                       NumericVector grid_nus,
@@ -3196,16 +3208,23 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
   // in a model with no alpha constraints, m_alphas is going to be MxL as we then
   // estimate an alpha for each trait X item combination
   
+  // How many disp gradients do we want to compute?
+  int m_disps = 0;
+  for (int j=0;j<m;j++) { // loop over
+    if (comp_disp_grad[j] == true) {
+      m_disps += 1;
+    }
+  }
+  
   // set up gradient matrix for all alphas because it's easier and just fill them up
   // later for those alphas we want gradients for and then also ouput gradients just for
   // those alphas we want gradients for
   NumericMatrix grad_alphas(L,m);
   NumericVector grad_deltas(m);
-  NumericVector grad_disps(m);
-  NumericVector out(m_alphas + m);
-  if (comp_disp_grad == true) {
-    NumericVector out(m_alphas + 2*m);
-  }
+  NumericVector grad_disps(m); 
+  // like with alphas set up full gradient and just don't ouput or update if we don't
+  // compute that alpha
+  NumericVector out(m_alphas + m + m_disps);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3259,13 +3278,13 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
     for(int k=0;k<n_nodes;k++) {
       // over persons (rows in my matrices)
       
-      double A;
-      double B;
-      if (comp_disp_grad == true) {
+      double A = 0;
+      double B = 0;
+      double lambda = exp(log_lambda(k,i));
+      if (comp_disp_grad[i] == true) {
         // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k,i));
-        double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
-        double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        A += computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        B += computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
       }
       
       for(int j=0;j<n;j++) { // loop over persons
@@ -3279,7 +3298,7 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
           }
         }
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        if (comp_disp_grad == true) {
+        if (comp_disp_grad[i] == true) {
           grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
         }
       }
@@ -3289,7 +3308,6 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
   // fill up output vector
   
   // start by outputting alpha gradients
-  NumericVector output_grad_alphas(m_alphas);
   int i = 0;
   // the order of the loops needs to be correct so that alphas are sorted from matrix into vector
   // correctly, that is, as expected by 
@@ -3302,11 +3320,16 @@ NumericVector grad_multi_gh_ridge_cpp(NumericMatrix alphas,
       }
     }
   }
-  // then fill in all the other gradients
+  // then fill with delta gradients
   for(int i=0;i<m;i++){
     out[i + m_alphas] = grad_deltas[i];
-    if (comp_disp_grad == true) {
-      out[i + m_alphas + m] = grad_disps[i];
+  }
+  // and finally fill with disp gradients
+  int f = 0;
+  for (int j=0;j<m;j++){
+    if (comp_disp_grad[j] == true) {
+      out[f + m_alphas + m] = grad_disps[j];
+      f += 1;
     }
   }
   
@@ -3499,7 +3522,7 @@ NumericVector grad_multi_mc_cpp(NumericMatrix alphas,
                                 NumericMatrix PPs,
                                 NumericMatrix theta_samples, 
                                 LogicalMatrix comp_alpha_grad,
-                                bool comp_disp_grad,
+                                LogicalVector comp_disp_grad,
                                 NumericVector grid_mus,
                                 NumericVector grid_nus,
                                 NumericVector grid_cmp_var_long,
@@ -3525,16 +3548,23 @@ NumericVector grad_multi_mc_cpp(NumericMatrix alphas,
   // in a model with no alpha constraints, m_alphas is going to be MxL as we then
   // estimate an alpha for each trait X item combination
   
+  // How many disp gradients do we want to compute?
+  int m_disps = 0;
+  for (int j=0;j<m;j++) { // loop over
+    if (comp_disp_grad[j] == true) {
+      m_disps += 1;
+    }
+  }
+  
   // set up gradient matrix for all alphas because it's easier and just fill them up
   // later for those alphas we want gradients for and then also ouput gradients just for
   // those alphas we want gradients for
   NumericMatrix grad_alphas(L,m);
   NumericVector grad_deltas(m);
   NumericVector grad_disps(m);
-  NumericVector out(m_alphas + m);
-  if (comp_disp_grad == true) {
-    NumericVector out(m_alphas + 2*m);
-  }
+  // like with alphas set up full gradient and just don't ouput or update if we don't
+  // compute that alpha
+  NumericVector out(m_alphas + m + m_disps);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3588,13 +3618,13 @@ NumericVector grad_multi_mc_cpp(NumericMatrix alphas,
     for(int k=0;k<n_nodes;k++) {
       // over persons (rows in my matrices)
       
-      double A;
-      double B;
-      if (comp_disp_grad == true) {
+      double A = 0;
+      double B = 0;
+      double lambda = exp(log_lambda(k,i));
+      if (comp_disp_grad[i] == true) {
         // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k,i));
-        double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
-        double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        A += computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        B += computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
       }
       
       for(int j=0;j<n;j++) { // loop over persons
@@ -3608,7 +3638,7 @@ NumericVector grad_multi_mc_cpp(NumericMatrix alphas,
           }
         }
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        if (comp_disp_grad == true) {
+        if (comp_disp_grad[i] == true) {
           grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
         }
       }
@@ -3618,7 +3648,7 @@ NumericVector grad_multi_mc_cpp(NumericMatrix alphas,
   // fill up output vector
   
   // start by outputting alpha gradients
-  NumericVector output_grad_alphas(m_alphas);
+  //NumericVector output_grad_alphas(m_alphas);
   int i = 0;
   // the order of the loops needs to be correct so that alphas are sorted from matrix into vector
   // correctly, that is, as expected by 
@@ -3631,11 +3661,16 @@ NumericVector grad_multi_mc_cpp(NumericMatrix alphas,
       }
     }
   }
-  // then fill in all the other gradients
+  // then fill with delta gradients
   for(int i=0;i<m;i++){
     out[i + m_alphas] = grad_deltas[i];
-    if (comp_disp_grad == true) {
-      out[i + m_alphas + m] = grad_disps[i];
+  }
+  // and finally fill with disp gradients
+  int f = 0;
+  for (int j=0;j<m;j++){
+    if (comp_disp_grad[j] == true) {
+      out[f + m_alphas + m] = grad_disps[j];
+      f += 1;
     }
   }
   
@@ -3650,7 +3685,7 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
                                       NumericMatrix PPs,
                                       NumericMatrix theta_samples, 
                                       LogicalMatrix comp_alpha_grad,
-                                      bool comp_disp_grad,
+                                      LogicalVector comp_disp_grad,
                                       double penalize_lambda,
                                       NumericVector grid_mus,
                                       NumericVector grid_nus,
@@ -3677,16 +3712,23 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
   // in a model with no alpha constraints, m_alphas is going to be MxL as we then
   // estimate an alpha for each trait X item combination
   
+  // How many disp gradients do we want to compute?
+  int m_disps = 0;
+  for (int j=0;j<m;j++) { // loop over
+    if (comp_disp_grad[j] == true) {
+      m_disps += 1;
+    }
+  }
+  
   // set up gradient matrix for all alphas because it's easier and just fill them up
   // later for those alphas we want gradients for and then also ouput gradients just for
   // those alphas we want gradients for
   NumericMatrix grad_alphas(L,m);
   NumericVector grad_deltas(m);
   NumericVector grad_disps(m);
-  NumericVector out(m_alphas + m);
-  if (comp_disp_grad == true) {
-    NumericVector out(m_alphas + 2*m);
-  }
+  // like with alphas set up full gradient and just don't ouput or update if we don't
+  // compute that alpha
+  NumericVector out(m_alphas + m + m_disps);
   
   // set up mu's and nu's for interpolation function to be computed all in one
   
@@ -3740,13 +3782,13 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
     for(int k=0;k<n_nodes;k++) {
       // over persons (rows in my matrices)
       
-      double A;
-      double B;
-      if (comp_disp_grad == true) {
+      double A = 0;
+      double B = 0;
+      double lambda = exp(log_lambda(k,i));
+      if (comp_disp_grad[i] == true) {
         // compute A and B for dispersion gradient
-        double lambda = exp(log_lambda(k,i));
-        double A = computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
-        double B = computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        A += computeA(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
+        B += computeB(lambda, mu_interp(k,i), disps[i], log_Z(k,i), 10);
       }
       
       for(int j=0;j<n;j++) { // loop over persons
@@ -3760,7 +3802,7 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
           }
         }
         grad_deltas[i] += PPs(j,k) * (mu_interp(k,i) / V(k,i))*(data(j,i) - mu_interp(k,i));
-        if (comp_disp_grad == true) {
+        if (comp_disp_grad[i] == true) {
           grad_disps[i] += PPs(j,k) * (disps[i]*(A*(data(j,i) - mu_interp(k,i))/V(k,i) - (logFactorial(data(j,i))-B)));
         }
       }
@@ -3783,11 +3825,16 @@ NumericVector grad_multi_mc_ridge_cpp(NumericMatrix alphas,
       }
     }
   }
-  // then fill in all the other gradients
+  // then fill with delta gradients
   for(int i=0;i<m;i++){
     out[i + m_alphas] = grad_deltas[i];
-    if (comp_disp_grad == true) {
-      out[i + m_alphas + m] = grad_disps[i];
+  }
+  // and finally fill with disp gradients
+  int f = 0;
+  for (int j=0;j<m;j++){
+    if (comp_disp_grad[j] == true) {
+      out[f + m_alphas + m] = grad_disps[j];
+      f += 1;
     }
   }
   
@@ -3894,6 +3941,7 @@ double soft_thresh_cpp(double x, double eta) {
 NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L traits
                                      double delta_j,
                                      double disp_j,
+                                     NumericVector update_alphas_j,
                                      double penalize_lambda,
                                      NumericVector data_j,
                                      NumericMatrix PPs, // all of them because they aren't item specific
@@ -3919,64 +3967,66 @@ NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L
   new_alphas_j = alphas_j; 
   
   for (int l=0;l<L;l++) {
-    // set up mu's and nu's for interpolation function to be computed all in one
-    // we are only looking at one item here, so the dimensionalites reduce
-    NumericVector mu(n_nodes);
-    NumericVector mu_interp(n_nodes);
-    NumericVector disp_interp(n_nodes);
-    for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
-      double log_mu = delta_j;
-      // add alpha * node for each latent trait
-      for (int f=0;f<L;f++) {
-        log_mu += new_alphas_j[f] * nodes(k,f);
+    if (update_alphas_j[l] == true) {
+      // set up mu's and nu's for interpolation function to be computed all in one
+      // we are only looking at one item here, so the dimensionalites reduce
+      NumericVector mu(n_nodes);
+      NumericVector mu_interp(n_nodes);
+      NumericVector disp_interp(n_nodes);
+      for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+        double log_mu = delta_j;
+        // add alpha * node for each latent trait
+        for (int f=0;f<L;f++) {
+          log_mu += new_alphas_j[f] * nodes(k,f);
+        }
+        mu[k] = exp(log_mu);
+        mu_interp[k] = mu[k];
+        if (mu[k] > max_mu) { mu_interp[k] = max_mu; }
+        if (mu[k] < min_mu) { mu_interp[k] = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp[k] = disp_j;
       }
-      mu[k] = exp(log_mu);
-      mu_interp[k] = mu[k];
-      if (mu[k] > max_mu) { mu_interp[k] = max_mu; }
-      if (mu[k] < min_mu) { mu_interp[k] = min_mu; }
-      // we need to set maximum for mu to max_mu so that the interpolation will
-      // work, max_mu is the maximum mu value in our grid for interpolation
-      disp_interp[k] = disp_j;
-    }
-    
-    NumericVector V(n_nodes);
-    NumericVector log_lambda(n_nodes);
-    NumericVector log_Z(n_nodes);
-    V = interp_from_grid_v(grid_mus, grid_nus,
-                           grid_cmp_var_long,
-                           mu_interp, disp_interp);
-    log_lambda = interp_from_grid_v(grid_mus, grid_nus,
-                                    grid_log_lambda_long,
-                                    mu_interp, disp_interp);
-    log_Z = interp_from_grid_v(grid_mus, grid_nus,
-                               grid_logZ_long,
-                               mu_interp, disp_interp);
-    // V and log_lambda are vectors of length n_nodes
-    
-    
-    // compute first and second derivative (based on LQA)
-    double first_deriv_jl = 0;
-    double scnd_deriv_jl = 0;
-    for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
       
-      double lambda = exp(log_lambda[k]);
-      double D = computeD(lambda, mu_interp[k], disp_j, log_Z[k], 10);
-      // this is E(X^3 - mu*X^2)
+      NumericVector V(n_nodes);
+      NumericVector log_lambda(n_nodes);
+      NumericVector log_Z(n_nodes);
+      V = interp_from_grid_v(grid_mus, grid_nus,
+                             grid_cmp_var_long,
+                             mu_interp, disp_interp);
+      log_lambda = interp_from_grid_v(grid_mus, grid_nus,
+                                      grid_log_lambda_long,
+                                      mu_interp, disp_interp);
+      log_Z = interp_from_grid_v(grid_mus, grid_nus,
+                                 grid_logZ_long,
+                                 mu_interp, disp_interp);
+      // V and log_lambda are vectors of length n_nodes
       
-      for (int i=0;i<n;i++) { // loop over persons
-        // first derivative
-        first_deriv_jl += PPs(i,k) * (nodes(k,l)*mu_interp[k] / V[k]) * (data_j[i] - mu_interp[k]);
       
-        // second derivative
-        scnd_deriv_jl += (pow(nodes(k,l),2)*PPs(i,k)*mu_interp[k])/pow(V[k],2) * 
-          (V[k]*(data_j[i] - 2*mu_interp[k]) - mu_interp[k]*(data_j[i]-mu_interp[k])*(D/V[k] - 2*mu_interp[k]));
-        // the second line is named C in the paper
+      // compute first and second derivative (based on LQA)
+      double first_deriv_jl = 0;
+      double scnd_deriv_jl = 0;
+      for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+        
+        double lambda = exp(log_lambda[k]);
+        double D = computeD(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+        // this is E(X^3 - mu*X^2)
+        
+        for (int i=0;i<n;i++) { // loop over persons
+          // first derivative
+          first_deriv_jl += PPs(i,k) * (nodes(k,l)*mu_interp[k] / V[k]) * (data_j[i] - mu_interp[k]);
+          
+          // second derivative
+          scnd_deriv_jl += (pow(nodes(k,l),2)*PPs(i,k)*mu_interp[k])/pow(V[k],2) * 
+            (V[k]*(data_j[i] - 2*mu_interp[k]) - mu_interp[k]*(data_j[i]-mu_interp[k])*(D/V[k] - 2*mu_interp[k]));
+          // the second line is named C in the paper
+        }
       }
+      
+      // compute updated alpha_jl
+      new_alphas_j[l] = (-1)*soft_thresh_cpp((-1)*scnd_deriv_jl*new_alphas_j[l] + first_deriv_jl, penalize_lambda) /
+        scnd_deriv_jl;
     }
-    
-    // compute updated alpha_jl
-    new_alphas_j[l] = (-1)*soft_thresh_cpp((-1)*scnd_deriv_jl*new_alphas_j[l] + first_deriv_jl, penalize_lambda) /
-      scnd_deriv_jl;
   }
   
   // TODO wieder zuruck wechseln zu new_alphas_j
@@ -9934,7 +9984,7 @@ NumericMatrix estep_multi_pois_mc_cpp(NumericMatrix data,
         for (int l=0;l<L;l++) {
           log_mu += alphas(l,j) * theta_samples(k,l);
         }
-        log_resp_vector_prob(k) += data(i,j)*log_mu - log_mu - lgamma(data(i,j)+1);
+        log_resp_vector_prob(k) += data(i,j)*log_mu - exp(log_mu) - lgamma(data(i,j)+1);
       }
       marg_prob(i) += exp(log_resp_vector_prob(k));
     }

@@ -121,6 +121,10 @@ marg_ll_cpp <- function(data, alphas, deltas, disps, item_offset, nodes, weights
     .Call(`_countirt_marg_ll_cpp`, data, alphas, deltas, disps, item_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
+marg_ll_poff_cpp <- function(data, alphas, deltas, disps, item_offset, person_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_marg_ll_poff_cpp`, data, alphas, deltas, disps, item_offset, person_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
 marg_ll_cmp_with_pcov_cpp <- function(data, alphas, deltas, disps, betas, item_offset, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_marg_ll_cmp_with_pcov_cpp`, data, alphas, deltas, disps, betas, item_offset, p_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
@@ -169,6 +173,10 @@ grad_cmp_newem_cpp2 <- function(alphas, deltas, disps, item_offset, data, PPs, n
     .Call(`_countirt_grad_cmp_newem_cpp2`, alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+grad_cmp_poff_cpp <- function(alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_poff_cpp`, alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 grad_cmp_with_pcov_cpp <- function(alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_with_pcov_cpp`, alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
@@ -209,6 +217,10 @@ grad_cmp_fixdisps_newem_cpp <- function(alphas, deltas, disps, item_offset, data
     .Call(`_countirt_grad_cmp_fixdisps_newem_cpp`, alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+grad_cmp_fixdisps_poff_cpp <- function(alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_fixdisps_poff_cpp`, alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 grad_cmp_with_pcov_fixdisps_cpp <- function(alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_with_pcov_fixdisps_cpp`, alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
@@ -231,6 +243,10 @@ grad_cmp_with_icov_alpha_delta_fixdisps_cpp <- function(alpha, delta, disps, bet
 
 grad_cmp_fixalphas_newem_cpp <- function(alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_fixalphas_newem_cpp`, alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_fixalphas_poff_cpp <- function(alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_fixalphas_poff_cpp`, alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
 grad_cmp_with_pcov_fixalphas_cpp <- function(alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
@@ -257,6 +273,10 @@ grad_cmp_samedisps_newem_cpp <- function(alphas, deltas, disps, item_offset, dat
     .Call(`_countirt_grad_cmp_samedisps_newem_cpp`, alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
+grad_cmp_samedisps_poff_cpp <- function(alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_samedisps_poff_cpp`, alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
 grad_cmp_with_pcov_samedisps_cpp <- function(alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_with_pcov_samedisps_cpp`, alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
@@ -279,6 +299,10 @@ grad_cmp_with_icov_alpha_delta_samedisps_cpp <- function(alpha, delta, disps, be
 
 grad_cmp_samealphas_newem_cpp <- function(alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
     .Call(`_countirt_grad_cmp_samealphas_newem_cpp`, alphas, deltas, disps, item_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
+}
+
+grad_cmp_samealphas_poff_cpp <- function(alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
+    .Call(`_countirt_grad_cmp_samealphas_poff_cpp`, alphas, deltas, disps, item_offset, person_offset, data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu)
 }
 
 grad_cmp_with_pcov_samealphas_cpp <- function(alphas, deltas, disps, betas, item_offset, data, p_cov_data, PPs, nodes, grid_mus, grid_nus, grid_cmp_var_long, grid_log_lambda_long, grid_logZ_long, max_mu, min_mu) {
@@ -351,6 +375,10 @@ e_values_newem_cpp <- function(data, alphas, deltas, disps, nodes, weights, grid
 
 e_values_newem_cpp2 <- function(data, alphas, deltas, disps, item_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
     .Call(`_countirt_e_values_newem_cpp2`, data, alphas, deltas, disps, item_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
+}
+
+e_values_poff_cpp <- function(data, alphas, deltas, disps, item_offset, person_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {
+    .Call(`_countirt_e_values_poff_cpp`, data, alphas, deltas, disps, item_offset, person_offset, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu)
 }
 
 estep_cmp_with_icov_delta_cpp <- function(data, alphas, delta, disps, betas, item_offset, i_cov_data, nodes, weights, grid_mus, grid_nus, grid_logZ_long, grid_log_lambda_long, max_mu, min_mu) {

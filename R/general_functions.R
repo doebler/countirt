@@ -84,10 +84,10 @@ quad_rule <- function(n_nodes, thres = Inf, prob = 0) {
 }
 
 # marg_ll2 --------------------------------------------------------------------------
-marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = NULL,
+marg_ll2 <- function(item_params, data, weights_and_nodes, family, fix_disps = NULL,
                      fix_alphas = NULL, interp_method = "bicubic",
                      same_disps = FALSE, same_alphas = FALSE,
-                     item_offset = NULL) {
+                     item_offset = NULL, person_offset = NULL) {
   n_items <- ncol(data)
   n_persons <- nrow(data)
   deltas <- item_params[grepl("delta", names(item_params))]
@@ -130,13 +130,16 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
     item_offset <- rep(0, n_items)
   }
   
+  if (is.null(person_offset)) {
+    person_offset <- rep(0, n_persons)
+  }
   
   if (family == "poisson") {
     # function to compute integral with quadrature over
-    f <- function(z, data, alphas, deltas, item_offset) {
+    f <- function(z, data, alphas, deltas, item_offset, person_offset) {
       out <- 0
       for (j in 1:n_items) {
-        lambda <- exp(alphas[j] * z + deltas[j] + item_offset[j])
+        lambda <- exp(alphas[j] * z + deltas[j] + item_offset[j] + person_offset)
         out <- out + (dpois(data[,j], lambda, log = TRUE))
       }
       return(exp(out))
@@ -147,24 +150,44 @@ marg_ll2 <- function(data, item_params, weights_and_nodes, family, fix_disps = N
       marg_prob[i] <- ghQuad(f, rule = weights_and_nodes,
                              data = data[i, , drop = FALSE], 
                              alphas = alphas, deltas = deltas,
-                             item_offset = item_offset)
+                             item_offset = item_offset,
+                             person_offset = person_offset[i])
+      # this is person specific so we just need the person_offset for this one person
     }
     ll <- sum(log(marg_prob))
   } else if (family == "cmp") {
     if (interp_method == "bicubic") {
-      ll <- marg_ll_cpp(data = as.matrix(data),
-                        alphas = alphas,
-                        deltas = deltas, 
-                        disps = disps, 
-                        item_offset = item_offset,
-                        nodes = weights_and_nodes$x,
-                        weights = weights_and_nodes$w,
-                        grid_mus = grid_mus,  
-                        grid_nus = grid_nus, 
-                        grid_logZ_long = grid_logZ_long,
-                        grid_log_lambda_long = grid_log_lambda_long,
-                        max_mu = 150,
-                        min_mu = 0.001)
+      include_poffset <- !(sum(person_offset) == 0)
+      if (include_poffset) {
+        ll <- marg_ll_poff_cpp(data = as.matrix(data),
+                          alphas = alphas,
+                          deltas = deltas, 
+                          disps = disps, 
+                          item_offset = item_offset,
+                          person_offset = person_offset,
+                          nodes = weights_and_nodes$x,
+                          weights = weights_and_nodes$w,
+                          grid_mus = grid_mus,  
+                          grid_nus = grid_nus, 
+                          grid_logZ_long = grid_logZ_long,
+                          grid_log_lambda_long = grid_log_lambda_long,
+                          max_mu = 150,
+                          min_mu = 0.001)
+      } else {
+        ll <- marg_ll_cpp(data = as.matrix(data),
+                          alphas = alphas,
+                          deltas = deltas, 
+                          disps = disps, 
+                          item_offset = item_offset,
+                          nodes = weights_and_nodes$x,
+                          weights = weights_and_nodes$w,
+                          grid_mus = grid_mus,  
+                          grid_nus = grid_nus, 
+                          grid_logZ_long = grid_logZ_long,
+                          grid_log_lambda_long = grid_log_lambda_long,
+                          max_mu = 150,
+                          min_mu = 0.001)
+      }
     } else {
       # TODO remove this option
       # then interpolation method is linear

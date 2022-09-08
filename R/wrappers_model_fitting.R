@@ -27,6 +27,7 @@
 #' @export
 cirt <- function(model, data, family,
                  item_offset = NULL,
+                 person_offset = NULL,
                  data_long = FALSE,
                  person_id = NULL,
                  stand_errors = FALSE,
@@ -40,7 +41,7 @@ cirt <- function(model, data, family,
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
   # TODO add verbose argument and only print iterations if TRUE
-  # TODO print nicer when prining iterations
+  # TODO print nicer when printing iterations
   
   data <- as.data.frame(data)
   
@@ -64,6 +65,21 @@ cirt <- function(model, data, family,
       # item_offset as we have items, otherwise throw an error
       if (length(item_offset) != ncol(model_list$item_data)) {
         stop("Argument item_offset must either be a scalar to be used as the offset for all items or must be the same length as the number of items used in the model. Currently, neither is the case. Please check and adjust the item_offset argument.")
+      }
+    }
+  }
+  
+  if (!is.null(person_offset)) {
+    # if we have personoffsets, check that they make sense
+    if (length(person_offset) == 1) {
+      # if we just one scalar provided as person offser, then we need to turn
+      # that into a vector of length n_persons for all subsequent functions
+      person_offset <- rep(person_offset, nrow(model_list$item_data))
+    } else {
+      # if not just one scalar, make sure that we have as many entries in
+      # person_offset as we have persons, otherwise throw an error
+      if (length(person_offset) != nrow(model_list$item_data)) {
+        stop("Argument person_offset must either be a scalar to be used as the offset for all persons or must be the same length as the number of persons in the sample. Currently, neither is the case. Please check and adjust the person_offset argument.")
       }
     }
   }
@@ -164,19 +180,21 @@ cirt <- function(model, data, family,
         fix_alphas = model_list$fixed_alphas,
         same_disps = model_list$equal_log_disps, 
         same_alpha = model_list$equal_alphas,
-        item_offset = item_offset
+        item_offset = item_offset,
+        person_offset = person_offset
       )
       
       print("Start model fitting. This will take a little bit of time.")
       fit <- run_newem(
+        init_params = start_values,
         data = model_list$item_data, 
-        init_params = start_values, 
         n_nodes = control$n_nodes, 
         fix_disps = fixed_disps,
         fix_alphas = model_list$fixed_alphas,
         same_disps = model_list$equal_log_disps, 
         same_alphas = model_list$equal_alphas,
         item_offset = item_offset,
+        person_offset = person_offset,
         thres = control$thres,
         prob = control$prob,
         maxiter = control$maxiter, 
@@ -191,17 +209,19 @@ cirt <- function(model, data, family,
         data = model_list$item_data,
         same_alpha = model_list$equal_alphas,
         fix_alphas = model_list$fixed_alphas,
-        item_offset = item_offset
+        item_offset = item_offset,
+        person_offset = person_offset
       )
       
       print("Start model fitting.")
       fit <- run_em_poisson(
-        data = model_list$item_data, 
         init_params = start_values, 
+        data = model_list$item_data,
         n_nodes = control$n_nodes, 
         fix_alphas = model_list$fixed_alphas,
         same_alpha = model_list$equal_alphas,
         item_offset = item_offset,
+        person_offset = person_offset,
         thres = control$thres,
         prob = control$prob,
         maxiter = control$maxiter, 

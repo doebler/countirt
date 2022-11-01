@@ -9,10 +9,12 @@
 #' Please note that the model specification expects you to use the name for the parameters as explained here. Your items must have the same name as in the data frame. If you just specify the factor formula, the full 2PCMPM with no covariates will be estimated. Each line of specification must start with the correct parameter name as explained above and must end with ; . Note that for the model specification to be successfully passed, the variable names in your data frame must not contain any '(' nor any '::'.
 #' @param data A data frame either in long or in wide format. For the 2PCMP and the CLRM, wide format is required (which is the default expected format). For the DRTM, long format is required (for which you have to specify `long_format = TRUE`).
 #' @param family A string indicating the count data family, can be either "cmp" or "poisson".
-#' @param item_offset Either a scalar (for same offset for all items) or a vector of the same length as the number of items with an offset to be added to the prediction term.
+#' @param item_offset Either a scalar (for same offset for all items) or a vector of the same length as the number of items with an offset to be added to the prediction term (on log scale).
+#' @param person_offset Either a scalar (for same offset for all persons) or a vector of the same length as the number of persons with an offset to be added to the prediction term (on log scale).
 #' @param data_long A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.
 #' @param person_id A character string. Name of the column with person id in long format data frame. Only necessary if data_long = TRUE.
 #' @param stand_errors A boolean. Indicates whether standard errors for model parameters should be estimated. Defaults to FALSE.
+#' #' @param accelerate A string. Can bei either "none" for no acceleration or "squarem", "pem", "qn" for accelerators as implemented in turboEM. Control parameters can be set via the accelerate_method element in the control list. Compare turboem documentation for how to specify control parameters for the respective methods (accelerate_method will be passed to control.method element in turbem).
 #' @param control A list providing control parameters for the estimation.
 #' 
 #' @import Rcpp
@@ -23,6 +25,7 @@
 #' @importFrom rootSolve gradient
 #' @importFrom tidyr pivot_wider
 #' @importFrom dplyr enquo
+#' @importFrom turboEM turboem
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 cirt <- function(model, data, family,
@@ -31,12 +34,14 @@ cirt <- function(model, data, family,
                  data_long = FALSE,
                  person_id = NULL,
                  stand_errors = FALSE,
+                 accelerate = "none",
                  control = list(
                    n_nodes = 121,
                    thres = Inf, prob = 0, init_disp_one = TRUE,
                    maxiter = 1000, 
                    convtol = 1e-5, ctol_maxstep = 1e-8,
-                   m_method = "nleqslv", convcrit = "marglik"
+                   m_method = "nleqslv", convcrit = "marglik",
+                   accelerate_method = replicate(length(accelerate),list())
                  )) {
   # TODO checks and data prep
   # TODO implement some proper error catching and meaningful error messages
@@ -185,24 +190,59 @@ cirt <- function(model, data, family,
       )
       
       print("Start model fitting. This will take a little bit of time.")
-      fit <- run_newem(
-        init_params = start_values,
-        data = model_list$item_data, 
-        n_nodes = control$n_nodes, 
-        fix_disps = fixed_disps,
-        fix_alphas = model_list$fixed_alphas,
-        same_disps = model_list$equal_log_disps, 
-        same_alphas = model_list$equal_alphas,
-        item_offset = item_offset,
-        person_offset = person_offset,
-        thres = control$thres,
-        prob = control$prob,
-        maxiter = control$maxiter, 
-        convtol = control$convtol, 
-        ctol_maxstep = control$ctol_maxstep,
-        m_method = control$m_method, 
-        convcrit = control$convcrit
-      )
+      if (accelerate == "none") {
+        fit <- run_newem(
+          init_params = start_values,
+          data = model_list$item_data, 
+          n_nodes = control$n_nodes, 
+          fix_disps = fixed_disps,
+          fix_alphas = model_list$fixed_alphas,
+          same_disps = model_list$equal_log_disps, 
+          same_alphas = model_list$equal_alphas,
+          item_offset = item_offset,
+          person_offset = person_offset,
+          thres = control$thres,
+          prob = control$prob,
+          maxiter = control$maxiter, 
+          convtol = control$convtol, 
+          ctol_maxstep = control$ctol_maxstep,
+          m_method = control$m_method, 
+          convcrit = control$convcrit
+        )
+      } else {
+        weights_and_nodes <- quad_rule(control$n_nodes, 
+                                      thres = control$thres, 
+                                      prob = control$prob)
+        if (is.null(item_offset)) {
+          item_offset <- rep(0, ncol(data))
+        }
+        if (is.null(person_offset)) {
+          person_offset <- rep(0, nrow(data))
+        }
+        fit <- turboem(
+          par = start_values,
+          fixtptfn = newem_em_cycle,
+          objfn = neg_marg_ll,
+          method = accelerate,
+          control.method = control$accelerate_method,
+          # arguments for fixtptfn and objfn
+          data = model_list$item_data,
+          weights_and_nodes = weights_and_nodes,
+          ctol_maxstep = control$ctol_maxstep, 
+          m_method = control$m_method,
+          fix_disps = fixed_disps, 
+          fix_alphas = model_list$fixed_alphas,
+          same_disps = model_list$equal_log_disps, 
+          same_alphas = model_list$equal_alphas, 
+          item_offset = item_offset,
+          person_offset = person_offset,
+          family = "cmp"
+        )
+        # TODO 
+        # this is fine for outputting out of cirt, i just need to support this in summary
+        # i have to think about whether i am shaping this here (which is probably nicer)
+        # or in summary
+      }
 
     } else if (family == "poisson") {
       start_values <- get_start_values_pois(
@@ -214,21 +254,54 @@ cirt <- function(model, data, family,
       )
       
       print("Start model fitting.")
-      fit <- run_em_poisson(
-        init_params = start_values, 
-        data = model_list$item_data,
-        n_nodes = control$n_nodes, 
-        fix_alphas = model_list$fixed_alphas,
-        same_alpha = model_list$equal_alphas,
-        item_offset = item_offset,
-        person_offset = person_offset,
-        thres = control$thres,
-        prob = control$prob,
-        maxiter = control$maxiter, 
-        convtol = control$convtol, 
-        ctol_maxstep = control$ctol_maxstep,
-        convcrit = control$convcrit
-      )
+      if (accelerate == "none") {
+        fit <- run_em_poisson(
+          init_params = start_values, 
+          data = model_list$item_data,
+          n_nodes = control$n_nodes, 
+          fix_alphas = model_list$fixed_alphas,
+          same_alpha = model_list$equal_alphas,
+          item_offset = item_offset,
+          person_offset = person_offset,
+          thres = control$thres,
+          prob = control$prob,
+          maxiter = control$maxiter, 
+          convtol = control$convtol, 
+          ctol_maxstep = control$ctol_maxstep,
+          convcrit = control$convcrit
+        )
+      } else {
+        weights_and_nodes<- quad_rule(control$n_nodes, 
+                                      thres = control$thres, 
+                                      prob = control$prob)
+        if (is.null(item_offset)) {
+          item_offset <- rep(0, ncol(data))
+        }
+        if (is.null(person_offset)) {
+          person_offset <- rep(0, nrow(data))
+        }
+        fit <- turboem(
+          par = start_values,
+          fixtptfn = em_cycle_poisson,
+          objfn = neg_marg_ll,
+          method = accelerate,
+          control.method = control$accelerate_method,
+          # arguments for fixtptfn and objfn
+          data = model_list$item_data,
+          weights_and_nodes = weights_and_nodes,
+          ctol_maxstep = control$ctol_maxstep, 
+          m_method = mcontrol$m_method,
+          fix_alphas = model_list$fixed_alphas,
+          same_alphas = model_list$equal_alphas, 
+          item_offset = item_offset,
+          person_offset = person_offset,
+          family = "poisson"
+        )
+        # TODO 
+        # this is fine for outputting out of cirt, i just need to support this in summary
+        # i have to think about whether i am shaping this here (which is probably nicer)
+        # or in summary
+      }
       
     } else {
       stop("Invalid family specified. Please see documentations for available families.")
@@ -327,6 +400,7 @@ cirt <- function(model, data, family,
     fit = fit,
     fit_ses = NULL, # we can add ses with add_inference
     start_values = start_values,
+    accelerate = accelerate,
     control = control
   )
   class(out) <- "cirtfit"

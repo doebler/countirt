@@ -617,9 +617,14 @@ get_start_values <- function(data, nodes = 121, nsim = 1000,
     init_values_pois <- get_start_values_pois(data, same_alpha = TRUE, 
                                               item_offset = item_offset, 
                                               person_offset = person_offset)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes, same_alpha = TRUE, 
-                               item_offset = item_offset,
-                               person_offset = person_offset)
+    fit_pois <- run_em_poisson(
+      init_params = init_values_pois,
+      data = data,
+      n_nodes = nodes, 
+      same_alpha = TRUE, 
+      item_offset = item_offset,
+      person_offset = person_offset
+      )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else if (!is.null(fix_alphas)) {
@@ -629,18 +634,27 @@ get_start_values <- function(data, nodes = 121, nsim = 1000,
     init_values_pois <- get_start_values_pois(data, fix_alphas = fix_alphas, 
                                               item_offset = item_offset,
                                               person_offset = person_offset)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes, fix_alphas = fix_alphas, 
-                               item_offset = item_offset,
-                               person_offset = person_offset)
+    fit_pois <- run_em_poisson(
+      init_params = init_values_pois,
+      data = data,
+      n_nodes = nodes, 
+      fix_alphas = fix_alphas, 
+      item_offset = item_offset,
+      person_offset = person_offset
+      )
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   } else {
     # different alpha for each item
     init_values_pois <- get_start_values_pois(data, 
                                               item_offset = item_offset,
                                               person_offset = person_offset)
-    fit_pois <- run_em_poisson(data, init_values_pois, nodes, 
-                               item_offset = item_offset,
-                               person_offset = person_offset)
+    fit_pois <- run_em_poisson(
+      init_params = init_values_pois,
+      data = data,
+      n_nodes = nodes,                       
+      item_offset = item_offset,
+      person_offset = person_offset
+      )
     init_alphas <- fit_pois$params[grepl("alpha", names(fit_pois$params))]
     init_deltas <- fit_pois$params[grepl("delta", names(fit_pois$params))]
   }

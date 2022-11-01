@@ -1,5 +1,7 @@
 summary.cirtfit <- function(x) {
   
+  # TODO be able to account for turboEM output if accelerators are used
+  
   # TODO change when i allow combination of constraints, cant be if else
   if (!is.null(x$model$fixed_alphas)) {
     con <- paste0("Slopes fixed to: ", 

@@ -381,7 +381,7 @@ newem_em_cycle <- function(item_params, data, weights_and_nodes,
       # e step
       PPs <- newem_estep2(data, item_params, weights_and_nodes, 
                           item_offset = item_offset,
-                          person_offset = person_offset,)
+                          person_offset = person_offset)
       # m step
       new_item_params <- nleqslv(
         x = item_params,

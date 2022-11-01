@@ -1,6 +1,6 @@
 # gradients for full 2pcmp model standard errors -------------------------------------
 grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
-                                     p_covariates, i_covariates, offset,
+                                     p_covariates, i_covariates, item_offset,
                                      i_cov_on = c("alpha", "delta", "log_disp"),
                                      which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                      p_cov_cat = TRUE,
@@ -15,7 +15,7 @@ grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
     which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
     )
   g <- grad_cmp_with_cov(
     item_params = item_params,
@@ -28,13 +28,13 @@ grad_for_se_cmp_with_cov <- function(y, item_params, weights_and_nodes, data,
     which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   return(g)
 }
 
 wrap_grad_cmp_with_cov <- function(y, PPs, weights_and_nodes, data,
-                                   p_covariates, i_covariates, offset,
+                                   p_covariates, i_covariates, item_offset,
                                    i_cov_on = c("alpha", "delta", "log_disp"),
                                    which_i_cov = list(alpha="all", delta="all", log_disp="all"),
                                    p_cov_cat = TRUE,
@@ -50,7 +50,7 @@ wrap_grad_cmp_with_cov <- function(y, PPs, weights_and_nodes, data,
     which_i_cov = which_i_cov,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   return(grad)
 }
@@ -59,7 +59,7 @@ wrap_grad_cmp_with_cov <- function(y, PPs, weights_and_nodes, data,
 # also add that argument here
 # gradients for 2pcmp with constant alphas ----------------------------------------
 grad_for_se_cmp_samealpha_with_cov <- function(y, item_params, weights_and_nodes, data,
-                                               p_covariates, i_covariates, offset,
+                                               p_covariates, i_covariates, item_offset,
                                                i_cov_on = c("delta", "log_disp"),
                                                p_cov_cat = TRUE, 
                                                resp_patterns_matrix = NULL) {
@@ -117,7 +117,7 @@ grad_for_se_cmp_samealpha_with_cov <- function(y, item_params, weights_and_nodes
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   g <- grad_cmp_with_cov_samealphas(
     item_params = item_params,
@@ -129,13 +129,13 @@ grad_for_se_cmp_samealpha_with_cov <- function(y, item_params, weights_and_nodes
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   return(g)
 }
 
 wrap_grad_cmp_samealpha_with_cov <- function(y, PPs, weights_and_nodes, data,
-                                             p_covariates, i_covariates, offset,
+                                             p_covariates, i_covariates, item_offset,
                                              i_cov_on = c("delta", "log_disp"),
                                              p_cov_cat = TRUE, 
                                              resp_patterns_matrix = NULL) {
@@ -150,14 +150,14 @@ wrap_grad_cmp_samealpha_with_cov <- function(y, PPs, weights_and_nodes, data,
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with constant dispersions standard errors ------------
 grad_for_se_cmp_samedisp_with_cov <- function(y, item_params, weights_and_nodes, data,
-                                              p_covariates, i_covariates, offset,
+                                              p_covariates, i_covariates, item_offset,
                                               i_cov_on = c("alpha", "delta"),
                                               p_cov_cat = TRUE,
                                               resp_patterns_matrix = NULL) {
@@ -212,7 +212,7 @@ grad_for_se_cmp_samedisp_with_cov <- function(y, item_params, weights_and_nodes,
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   g <- grad_cmp_with_cov_samedisps(
     item_params = item_params,
@@ -224,13 +224,13 @@ grad_for_se_cmp_samedisp_with_cov <- function(y, item_params, weights_and_nodes,
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   return(g)
 }
 
 wrap_grad_cmp_samedisp_with_cov <- function(y, PPs, weights_and_nodes, data,
-                                            p_covariates, i_covariates, offset,
+                                            p_covariates, i_covariates, item_offset,
                                             i_cov_on = c("alpha", "delta"),
                                             p_cov_cat = TRUE,
                                             resp_patterns_matrix = NULL) {
@@ -247,14 +247,14 @@ wrap_grad_cmp_samedisp_with_cov <- function(y, PPs, weights_and_nodes, data,
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with fixed dispersions standard errors -----------------
 grad_for_se_cmp_fixdisps_with_cov <- function(y, item_params, weights_and_nodes, 
-                                              data, fix_disps, offset,
+                                              data, fix_disps, item_offset,
                                               p_covariates, i_covariates,
                                               i_cov_on = c("alpha", "delta"),
                                               p_cov_cat = TRUE,
@@ -309,7 +309,7 @@ grad_for_se_cmp_fixdisps_with_cov <- function(y, item_params, weights_and_nodes,
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   
   g <- grad_cmp_with_cov_fixdisps(
@@ -323,13 +323,13 @@ grad_for_se_cmp_fixdisps_with_cov <- function(y, item_params, weights_and_nodes,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
     fix_disps = fix_disps,
-    offset = offset
+    item_offset = item_offset
     )
   return(g)
 }
 
 wrap_grad_cmp_fixdisps_with_cov <- function(y, PPs, weights_and_nodes, 
-                                            data, fix_disps, offset,
+                                            data, fix_disps, item_offset,
                                             p_covariates, i_covariates,
                                             i_cov_on = c("alpha", "delta"),
                                             p_cov_cat = TRUE,
@@ -348,14 +348,14 @@ wrap_grad_cmp_fixdisps_with_cov <- function(y, PPs, weights_and_nodes,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
     fix_disps = fix_disps,
-    offset = offset
+    item_offset = item_offset
   )
   return(grad)
 }
 
 # gradients for 2pcmp model with fixed alphas standard errors -------------------
 grad_for_se_cmp_fixalphas_with_cov <- function(y, item_params, weights_and_nodes, 
-                                   data, fix_alphas, offset,
+                                   data, fix_alphas, item_offset,
                                    p_covariates, i_covariates,
                                    i_cov_on = c("delta", "log_disp"),
                                    p_cov_cat = TRUE, 
@@ -411,7 +411,7 @@ grad_for_se_cmp_fixalphas_with_cov <- function(y, item_params, weights_and_nodes
     i_cov_on = i_cov_on,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
-    offset = offset
+    item_offset = item_offset
   )
   
   g <- grad_cmp_with_cov_fixalphas(
@@ -425,13 +425,13 @@ grad_for_se_cmp_fixalphas_with_cov <- function(y, item_params, weights_and_nodes
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
     fix_alphas = fix_alphas,
-    offset = offset
+    item_offset = item_offset
   )
   return(g)
 }
 
 wrap_grad_cmp_fixalphas_with_cov <- function(y, PPs, weights_and_nodes, 
-                                             data, fix_alphas, offset,
+                                             data, fix_alphas, item_offset,
                                              p_covariates, i_covariates,
                                              i_cov_on = c("delta", "log_disp"),
                                              p_cov_cat = TRUE, 
@@ -450,7 +450,7 @@ wrap_grad_cmp_fixalphas_with_cov <- function(y, PPs, weights_and_nodes,
     p_cov_cat = p_cov_cat,
     resp_patterns_matrix = resp_patterns_matrix,
     fix_alphas = fix_alphas,
-    offset = offset
+    item_offset = item_offset
   )
   return(grad)
 }
@@ -464,7 +464,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
                          resp_patterns_matrix = NULL,
                          same_alphas = FALSE, same_disps = FALSE,
                          fix_alphas = NULL, fix_disps = NULL,
-                         offset = NULL) {
+                         item_offset = NULL) {
   
   # computes vcov matrix with Oake's identity approximation (Chalmers, 2012)#
   
@@ -487,7 +487,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x <- numDeriv::jacobian(
@@ -502,7 +502,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -517,7 +517,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         which_i_cov = which_i_cov,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
     } else if (same_alphas & !same_disps) {
       # standard errors for constant alphas across items
@@ -578,7 +578,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x <- numDeriv::jacobian(
@@ -592,7 +592,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -606,7 +606,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
     } else if (!same_alphas & same_disps) {
       # standard errors for constant dispersions across items
@@ -662,7 +662,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       
@@ -677,7 +677,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -691,7 +691,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
     }
   } else {
@@ -746,7 +746,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x <- numDeriv::jacobian(
@@ -761,7 +761,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps,
-        offset = offset
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -776,7 +776,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_disps = fix_disps,
-        offset = offset
+        item_offset = item_offset
       )
     } else if (!is.null(fix_alphas)) {
       # we only have deltas and disps, but we fix slopes to the values provided
@@ -830,7 +830,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         i_cov_on = i_cov_on,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
-        offset = offset
+        item_offset = item_offset
       )
       
       x <- numDeriv::jacobian(
@@ -845,7 +845,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas,
-        offset = offset
+        item_offset = item_offset
       )
       
       x2 <- numDeriv::jacobian(
@@ -860,7 +860,7 @@ compute_vcov_with_cov <- function(item_params, weights_and_nodes, data,
         p_cov_cat = p_cov_cat,
         resp_patterns_matrix = resp_patterns_matrix,
         fix_alphas = fix_alphas,
-        offset = offset
+        item_offset = item_offset
       )
     }
   }

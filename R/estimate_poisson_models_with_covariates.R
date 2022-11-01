@@ -889,6 +889,7 @@ run_em_poisson_with_cov <- function(data, init_params, n_nodes,
   # weights_and_nodes$w <- weights_and_nodes$w / sqrt(pi)
   weights_and_nodes<- quad_rule(n_nodes, thres = thres,prob = prob)
   
+  n_items <- ncol(data)
   new_params <- init_params
   conv <- FALSE
   iter <- 1

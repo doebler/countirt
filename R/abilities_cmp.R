@@ -12,6 +12,7 @@ grad_ll_cmp_ability_1P <- function(ability, data_1P, item_params) {
   log_disps <- item_params[grepl("log_disp", names(item_params))]
   disps <- exp(log_disps)
   
+  
   grad <- grad_ll_cmp_ability_1P_cpp(
     ability = ability,
     alphas = alphas, 

@@ -397,15 +397,14 @@ add_inference <- function(model, prob = 0.95) {
 #' @param family A string indicating the count data family, can be either "cmp" or "poisson".
 #' @param penalize A string, can be "none", "ridge", or "lasso". Defaults to "none".
 #' @param penalize_tuning A real. The tuning parameter for regularization. Must be specified if you choose Ridge or Lasso penalization. Will be ignored if you specify penalize = "none". Defaults to NULL.
+#' @param alpha_constraints A matrix with constraints for the dispersion parameter matrix. The matrix should be of dimensionality: nfactor rows and ncol(data) columns. Each row represents a factor, each column an item. You can currently either specify to estimate a discrimination parameter freely (by entering `NA` into the `alpha_constraints` matrix) or fix it to a specific value (by entering that value into the `alpha_constraints` matrix) Support for further constraints  (e.g., equality constraints) may be added in the future.
+#' @param disp_constraints A vector. Specifies constraints for the dispersion parameters (on the original scale). Defaults to no constraints. Currently, you can provide a vector of values (of length ncol(data), i.e., number of items) to which dispersions should be fixed. Support for partial fixations (and free estimation of the rest) and equality constraints may be added in the future.
 #' @param control A list providing control parameters for the estimation.
 #' 
 #' @import Rcpp
 #' @import RcppGSL
 #' @import MultiGHQuad
 #' @importFrom nleqslv nleqslv
-#' @importFrom rootSolve gradient
-#' @importFrom tidyr pivot_wider
-#' @importFrom dplyr enquo
 #' @importFrom psych fa
 #' @importFrom MASS mvrnorm
 #' @useDynLib countirt, .registration=TRUE
@@ -413,10 +412,10 @@ add_inference <- function(model, prob = 0.95) {
 mcirt_explore <- function(nfactors, data, family,
                           penalize = "none",
                           penalize_tuning = NULL,
+                          alpha_constraints = NULL,
+                          disp_constraints = NULL,
                           control = list(
                             start_values = NULL,
-                            alpha_constraints = NULL,
-                            disp_constraints = NULL,
                             em_type = "gh",
                             n_nodes = 12,
                             n_samples = 3000,
@@ -433,14 +432,33 @@ mcirt_explore <- function(nfactors, data, family,
   
   # TODO implement checks
   
-  # TODO give a warning if no alpha constraints are given with respect to
-  # identifiability
+  # are alpha constraints provided?
+  if (is.null(alpha_constraints)) {
+    warning("No constraints to the discrimination matrix were provided. Identifiablity of the exploratory model is thus not garanteed. It is recommended to provide constraints on the discrimination matrix via alpha_constraints argument to ensure identifiability. Please see documentation for more information.")
+  } else {
+    # check that alpha_constraints input is sensible 
+    if (nrow(alpha_constraints) == nfactors & ncol(alpha_constraints) == ncol(data)) {
+      # make the alpha_constraints matrix into a vector as the functions expects it
+      alpha_constraints <- as.numeric(t(alpha_constraints))
+    } else {
+      stop("Invalid alpha_constraints matrix. Please check the documentation.")
+    }
+  }
   
-  # TODO
   # record all the information in the model_list
-  # model_list <- 
+  model_list <- list(
+    model_type = "multidimensional exploratory",
+    nfactors = nfactors,
+    family = family,
+    penalize = penalize,
+    penalize_tuning = penalize_tuning,
+    alpha_constraints = alpha_constraints,
+    disp_constraints = disp_constraints,
+    em_type = control$em_type,
+    data = data
+  )
   
-  # TODO 
+  # TODO MC CONVERGENCE
   # i should adjust (default) convergence somehow depending on whether we use 
   # MC or GH
   
@@ -449,15 +467,30 @@ mcirt_explore <- function(nfactors, data, family,
   # this functionality is especially helpful for doing warm starts in tune_lasso and tune_ridge
   if (is.null(control$start_values)) {
     if (family == "poisson") {
-      # start_values <- 
+      start_values <- get_start_values_pois_multi(
+        data = data,
+        n_traits = nfactors
+      )
     } else if (family == "cmp") {
-      # start_values <- 
+      start_values <- get_start_values_multi(
+        data = data,
+        n_traits = nfactors,
+        n_nodes = control$n_nodes,
+        em_type = control$em_type,
+        penalize = penalize,
+        penalize_lambda = penalize_tuning,
+        maxiter = control$maxiter,
+        convtol = control$convtol,
+        n_samples = control$n_samples,
+        alpha_constraints = alpha_constraints
+      )
     }
   } else {
     start_values <- control$start_values
   }
   
   # fit the model
+  # TODO MC CONVERGENCE
   if (family == "poisson") {
     fit <- run_em_poisson_multi(
       data = data,
@@ -471,35 +504,38 @@ mcirt_explore <- function(nfactors, data, family,
       truncate_grid = control$truncate_grid,
       convcrit = control$convcrit,
       convtol = control$convtol,
+      ctol_lasso = control$ctol_lasso,
       n_samples_conv = control$n_samples_conv,
       final_n_samples = control$final_n_samples,
-      alpha_constraints = control$alpha_constraints
+      alpha_constraints = alpha_constraints
     )
   } else if (family == "cmp") {
-    # TODO hier weiter machen und weiter anpassen was ich hier einfuelle
     fit <- run_em_multi(
-      data = test_data_cmp$sim_data,
-      init_params = init_item_params, 
-      n_traits = L,
-      n_nodes = 12, 
-      em_type = "gh",
-      truncate_grid = TRUE,
-      penalize = "none",
-      #penalize_lambda = 0.5,
-      convtol = 1e-4,
-      ctol_lasso = 1e-3,
+      data = data,
+      init_params = start_values, 
+      n_traits = nfactors, 
+      penalize = penalize,
+      penalize_lambda = penalize_tuning,
+      n_nodes = control$n_nodes,
+      n_samples = control$n_samples,
+      em_type = control$em_type,
+      truncate_grid = control$truncate_grid,
+      convcrit = control$convcrit,
+      convtol = control$convtol,
+      ctol_lasso = control$ctol_lasso,
+      n_samples_conv = control$n_samples_conv,
+      final_n_samples = control$final_n_samples,
       alpha_constraints = alpha_constraints,
-      disp_constraints = true_disps
+      disp_constraints = disp_constraints
     )
   }
-  
   
   # prepare object for returning
   out <- list(
     family = family,
     model = model_list,
     fit = fit,
-    fit_ses = NULL, # we can add ses with add_inference (which i still need to implement for multi-dim.)
+    fit_ses = NULL, # TODO implement inference for multi models
     start_values = start_values,
     control = control
   )
@@ -507,14 +543,87 @@ mcirt_explore <- function(nfactors, data, family,
   return(out)
 }
 
-# TODO
-# tune_lasso
 
-# TODO 
-# tune_ridge
+#' Tune lasso regularization for exploratory multi-dimensional count data IRT models.
+#' 
+#' @param nfactors An integer. The number of factors to be extracted.
+#' @param data A data frame (or matrix) in wide format where each column corresponds to participants' responses to one item.
+#' @param family A string indicating the count data family, can be either "cmp" or "poisson".
+#' @param penalize_grid A vector of reals for possible penalization parameter values.
+#' @param tuning_crit A string. Can be either "AIC" or "BIC". Specifies after what criterion tuning parameter should be selected.
+#' @param alpha_constraints A matrix with constraints for the dispersion parameter matrix. The matrix should be of dimensionality: nfactor rows and ncol(data) columns. Each row represents a factor, each column an item. You can currently either specify to estimate a discrimination parameter freely (by entering `NA` into the `alpha_constraints` matrix) or fix it to a specific value (by entering that value into the `alpha_constraints` matrix) Support for further constraints  (e.g., equality constraints) may be added in the future.
+#' @param disp_constraints A vector. Specifies constraints for the dispersion parameters (on the original scale). Defaults to no constraints. Currently, you can provide a vector of values (of length ncol(data), i.e., number of items) to which dispersions should be fixed. Support for partial fixations (and free estimation of the rest) and equality constraints may be added in 
+#' @param control A list providing control parameters for the estimation to be passed to \link[countirt]{mcirt_explore}.
+#' 
+#' @import Rcpp
+#' @import RcppGSL
+#' @import MultiGHQuad
+#' @importFrom nleqslv nleqslv
+#' @importFrom psych fa
+#' @importFrom MASS mvrnorm
+#' @useDynLib countirt, .registration=TRUE
+#' @export
+mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
+                       tuning_crit = "AIC",
+                       alpha_constraints = NULL,
+                       disp_constraints = NULL,
+                       control = list(
+                         start_values = NULL,
+                         em_type = "gh",
+                         n_nodes = 12,
+                         n_samples = 3000,
+                         truncate_grid = TRUE,
+                         maxiter = 1000, 
+                         convtol = 1e-5, 
+                         n_samples_conv = 20,
+                         final_n_samples = 6000,
+                         ctol_maxstep = 1e-8,
+                         ctol_lasso = 1e-3,
+                         m_method = "nleqslv", 
+                         convcrit = "marglik")) {
+  
+  # TODO hier weitermachen für implementation warm starts
+  
+  # prepare output
+  out <- vector(mode = "list", length = length(penalize_grid))
+  names(out) <- paste0("eta = ", penalize_grid)
+  
+  # start with first value in penalize_grid and fit the entire model once
+  out[[1]] <- mcirt_explore(
+    nfactors = nfactors, 
+    data = data,
+    family = family,
+    penalize = "lasso",
+    penalize_tuning = penalize_grid[1],
+    alpha_constraints = alpha_constraints,
+    disp_constraints = disp_constraints,
+    control = control)
+  
+
+  return(out)
+}
 
 
-
+#' Tune lasso regularization for exploratory multi-dimensional count data IRT models.
+#' 
+#' @param nfactors An integer. The number of factors to be extracted.
+#' @param data A data frame (or matrix) in wide format where each column corresponds to participants' responses to one item.
+#' @param family A string indicating the count data family, can be either "cmp" or "poisson".
+#' @param penalize_grid A vector of reals for possible penalization parameter values.
+#' @param tuning_crit A string. Can be either "AIC" or "BIC". Specifies after what criterion tuning parameter should be selected.
+#' @param alpha_constraints A matrix with constraints for the dispersion parameter matrix. The matrix should be of dimensionality: nfactor rows and ncol(data) columns. Each row represents a factor, each column an item. You can currently either specify to estimate a discrimination parameter freely (by entering `NA` into the `alpha_constraints` matrix) or fix it to a specific value (b< entering that value into the `alpha_constraints` matrix) Support for further constraints  (e.g., equality constraints) may be added in the future.
+#' @param control A list providing control parameters for the estimation to be passed to \link[countirt]{mcirt_explore}.
+#' 
+#' @import Rcpp
+#' @import RcppGSL
+#' @importFrom nleqslv nleqslv
+#' @importFrom psych fa
+#' @importFrom MASS mvrnorm
+#' @useDynLib countirt, .registration=TRUE
+#' @export
+mcirt_tune_ridge <- function(x) {
+  
+}
 
 
 

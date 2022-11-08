@@ -420,7 +420,7 @@ Copyright (C) 2021 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/Users/mariebeisemann/Documents/14_countirt/countirt'
+ac_pwd='/Users/mariebeisemann/Documents/03_r_packages/countirt'
 srcdir='.'
 test -n "$AWK" || AWK=awk
 # The default lists apply if the user does not specify any file.
@@ -576,9 +576,9 @@ echo 'BEGIN {' >"$ac_tmp/subs1.awk" &&
 cat >>"$ac_tmp/subs1.awk" <<\_ACAWK &&
 S["LTLIBOBJS"]=""
 S["LIBOBJS"]=""
-S["GSL_LIBS"]="-L/usr/local/Cellar/gsl/2.6/lib -lgsl -lgslcblas"
-S["GSL_CFLAGS"]="-I/usr/local/Cellar/gsl/2.6/include"
-S["GSL_CONFIG"]="/usr/local/bin/gsl-config"
+S["GSL_LIBS"]="-L/opt/homebrew/Cellar/gsl/2.7.1/lib -lgsl -lgslcblas"
+S["GSL_CFLAGS"]="-I/opt/homebrew/Cellar/gsl/2.7.1/include"
+S["GSL_CONFIG"]="/opt/homebrew/bin/gsl-config"
 S["target_alias"]=""
 S["host_alias"]=""
 S["build_alias"]=""

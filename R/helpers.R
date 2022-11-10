@@ -1,3 +1,43 @@
+# compute_aic -------------------------------------------------------------------------
+
+compute_aic <- function(fit) {
+  
+  # assess how many parameters are freely estimated (substract for constraints)
+  p <- length(fit$fit$params)
+  p <- p - sum(is.na(fit$model$alpha_constraints))
+  # TODO if i allow more constraints on disps, i need to adjust this
+  if (!is.null(fit$model$disp_constraints)) {
+    # atm we can only either fix all disps or estimate all disps so if constraints
+    # aren't 0, we can substract the whole number of disp parameters
+    p <- p - length(fit$model$disp_constraints)
+  }
+  
+  aic <- 2*p - 2*fit$fit$marg_ll[length(fit$fit$marg_ll)]
+  
+  return(aic)
+}
+
+# compute_bic -------------------------------------------------------------------------
+
+compute_bic <- function(fit) {
+
+  # assess how many parameters are freely estimated (substract for constraints)
+  p <- length(fit$fit$params)
+  p <- p - sum(is.na(fit$model$alpha_constraints))
+  # TODO if i allow more constraints on disps, i need to adjust this
+  if (!is.null(fit$model$disp_constraints)) {
+    # atm we can only either fix all disps or estimate all disps so if constraints
+    # aren't 0, we can substract the whole number of disp parameters
+    p <- p - length(fit$model$disp_constraints)
+  }
+  n <- nrow(fit$model$data)
+  
+  bic <- p*log(n) - 2*fit$fit$marg_ll[length(fit$fit$marg_ll)]
+  
+  return(bic)
+}
+
+
 # soft_thresh --------------------------------------------------------------------------
 
 soft_thresh <- function(x, eta) {
@@ -32,6 +72,8 @@ get_resp_patterns_pcov_cat <- function(n_levels) {
   }
   return(out)
 }
+
+
 
 # make_resp_patterns_mat ------------------------------------------------------------
 

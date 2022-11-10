@@ -736,6 +736,7 @@ marg_ll_multi <- function(data,
 # run_em_multi ---------------------------------------------------------------------------
 
 # TODO equality constraints on alpha and disp
+# if i implement other types of constraints on disps, i need to adjust the compute_aic function
 run_em_multi <- function(data, 
                          init_params, 
                          n_traits, 

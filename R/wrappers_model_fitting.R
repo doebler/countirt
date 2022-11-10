@@ -582,14 +582,12 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
                          m_method = "nleqslv", 
                          convcrit = "marglik")) {
   
-  # TODO hier weitermachen für implementation warm starts
-  
   # prepare output
-  out <- vector(mode = "list", length = length(penalize_grid))
-  names(out) <- paste0("eta = ", penalize_grid)
+  models <- vector(mode = "list", length = length(penalize_grid))
+  names(models) <- paste0("eta = ", penalize_grid)
   
   # start with first value in penalize_grid and fit the entire model once
-  out[[1]] <- mcirt_explore(
+  models[[1]]$fit <- mcirt_explore(
     nfactors = nfactors, 
     data = data,
     family = family,
@@ -598,20 +596,65 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
     alpha_constraints = alpha_constraints,
     disp_constraints = disp_constraints,
     control = control)
+  if (tuning_crit == "AIC") {
+    models[[1]]$crit <- compute_aic(models[[1]]$fit)
+  } else if (tuning_cirt == "BIC") {
+    models[[1]]$crit <- compute_bic(models[[1]]$fit)
+  }
   
+  # fit models for the remaining penalize_grid values with warm starts
+  for (i in 2:length(penalize_grid)) {
+    models[[i]]$fit <- mcirt_explore(
+      nfactors = nfactors, 
+      data = data,
+      family = family,
+      penalize = "lasso",
+      penalize_tuning = penalize_grid[i],
+      alpha_constraints = alpha_constraints,
+      disp_constraints = disp_constraints,
+      control = list(
+        start_values = models[[i-1]]$fit$params,
+        em_type = control$em_type,
+        n_nodes = control$n_nodes,
+        n_samples = control$n_samples,
+        truncate_grid = control$truncate_grid,
+        maxiter = control$maxiter, 
+        convtol = control$convtol, 
+        n_samples_conv = control$n_samples_conv,
+        final_n_samples = control$final_n_samples,
+        ctol_maxstep = control$ctol_maxstep,
+        ctol_lasso = control$ctol_lasso,
+        m_method = control$m_method, 
+        convcrit = control$convcrit))
+  }
+  
+  # select model 
+  all_model_crits <- unlist(lapply(models, function(x){x$crit}))
+  min_crit <- min(all_model_crits)
+  chosen_eta_index <- which(all_model_crots == min_crit)
+  chosen_model <- models[[chosen_eta_index]]$fit
+  
+  # prepare output
+  out <- list(
+    selected_fit = chosen_model,
+    selected_eta = min_crit,
+    tuning_criterion = tuning_crit,
+    all_models = models
+  )
 
   return(out)
 }
 
 
-#' Tune lasso regularization for exploratory multi-dimensional count data IRT models.
+#' Tune ridge regularization for exploratory multi-dimensional count data IRT models.
 #' 
 #' @param nfactors An integer. The number of factors to be extracted.
 #' @param data A data frame (or matrix) in wide format where each column corresponds to participants' responses to one item.
 #' @param family A string indicating the count data family, can be either "cmp" or "poisson".
 #' @param penalize_grid A vector of reals for possible penalization parameter values.
 #' @param tuning_crit A string. Can be either "AIC" or "BIC". Specifies after what criterion tuning parameter should be selected.
-#' @param alpha_constraints A matrix with constraints for the dispersion parameter matrix. The matrix should be of dimensionality: nfactor rows and ncol(data) columns. Each row represents a factor, each column an item. You can currently either specify to estimate a discrimination parameter freely (by entering `NA` into the `alpha_constraints` matrix) or fix it to a specific value (b< entering that value into the `alpha_constraints` matrix) Support for further constraints  (e.g., equality constraints) may be added in the future.
+#' @param alpha_constraints A matrix with constraints for the dispersion parameter matrix. The matrix should be of dimensionality: nfactor rows and ncol(data) columns. Each row represents a factor, each column an item. You can currently either specify to estimate a discrimination parameter freely (by entering `NA` into the `alpha_constraints` matrix) or fix it to a specific value (by entering that value into the `alpha_constraints` matrix) Support for further constraints  (e.g., equality constraints) may be added in the future.
+#' @param disp_constraints A vector. Specifies constraints for the dispersion parameters (on the original scale). Defaults to no constraints. Currently, you can provide a vector of values (of length ncol(data), i.e., number of items) to which dispersions should be fixed. Support for partial fixations (and free estimation of the rest) and equality constraints may be added in 
 #' @param control A list providing control parameters for the estimation to be passed to \link[countirt]{mcirt_explore}.
 #' 
 #' @import Rcpp
@@ -621,8 +664,86 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
 #' @importFrom MASS mvrnorm
 #' @useDynLib countirt, .registration=TRUE
 #' @export
-mcirt_tune_ridge <- function(x) {
+mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
+                             tuning_crit = "AIC",
+                             alpha_constraints = NULL,
+                             disp_constraints = NULL,
+                             control = list(
+                               start_values = NULL,
+                               em_type = "gh",
+                               n_nodes = 12,
+                               n_samples = 3000,
+                               truncate_grid = TRUE,
+                               maxiter = 1000, 
+                               convtol = 1e-5, 
+                               n_samples_conv = 20,
+                               final_n_samples = 6000,
+                               ctol_maxstep = 1e-8,
+                               ctol_lasso = 1e-3,
+                               m_method = "nleqslv", 
+                               convcrit = "marglik")) {
   
+  # prepare output
+  models <- vector(mode = "list", length = length(penalize_grid))
+  names(models) <- paste0("eta = ", penalize_grid)
+  
+  # start with first value in penalize_grid and fit the entire model once
+  models[[1]]$fit <- mcirt_explore(
+    nfactors = nfactors, 
+    data = data,
+    family = family,
+    penalize = "ridge",
+    penalize_tuning = penalize_grid[1],
+    alpha_constraints = alpha_constraints,
+    disp_constraints = disp_constraints,
+    control = control)
+  if (tuning_crit == "AIC") {
+    models[[1]]$crit <- compute_aic(models[[1]]$fit)
+  } else if (tuning_cirt == "BIC") {
+    models[[1]]$crit <- compute_bic(models[[1]]$fit)
+  }
+  
+  # fit models for the remaining penalize_grid values with warm starts
+  for (i in 2:length(penalize_grid)) {
+    models[[i]]$fit <- mcirt_explore(
+      nfactors = nfactors, 
+      data = data,
+      family = family,
+      penalize = "ridge",
+      penalize_tuning = penalize_grid[i],
+      alpha_constraints = alpha_constraints,
+      disp_constraints = disp_constraints,
+      control = list(
+        start_values = models[[i-1]]$fit$params,
+        em_type = control$em_type,
+        n_nodes = control$n_nodes,
+        n_samples = control$n_samples,
+        truncate_grid = control$truncate_grid,
+        maxiter = control$maxiter, 
+        convtol = control$convtol, 
+        n_samples_conv = control$n_samples_conv,
+        final_n_samples = control$final_n_samples,
+        ctol_maxstep = control$ctol_maxstep,
+        ctol_lasso = control$ctol_lasso,
+        m_method = control$m_method, 
+        convcrit = control$convcrit))
+  }
+  
+  # select model 
+  all_model_crits <- unlist(lapply(models, function(x){x$crit}))
+  min_crit <- min(all_model_crits)
+  chosen_eta_index <- which(all_model_crots == min_crit)
+  chosen_model <- models[[chosen_eta_index]]$fit
+  
+  # prepare output
+  out <- list(
+    selected_fit = chosen_model,
+    selected_eta = min_crit,
+    tuning_criterion = tuning_crit,
+    all_models = models
+  )
+  
+  return(out)
 }
 
 

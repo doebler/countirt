@@ -8,9 +8,12 @@ cirt(
   model,
   data,
   family,
+  item_offset = NULL,
+  person_offset = NULL,
   data_long = FALSE,
   person_id = NULL,
   stand_errors = FALSE,
+  accelerate = "none",
   control = list(n_nodes = 121, thres = Inf, prob = 0, init_disp_one = TRUE, maxiter =
     1000, convtol = 1e-05, ctol_maxstep = 1e-08, m_method = "nleqslv", convcrit =
     "marglik")
@@ -28,6 +31,10 @@ Please note that the model specification expects you to use the name for the par
 \item{data}{A data frame either in long or in wide format. For the 2PCMP and the CLRM, wide format is required (which is the default expected format). For the DRTM, long format is required (for which you have to specify `long_format = TRUE`).}
 
 \item{family}{A string indicating the count data family, can be either "cmp" or "poisson".}
+
+\item{item_offset}{Either a scalar (for same offset for all items) or a vector of the same length as the number of items with an offset to be added to the prediction term (on log scale).}
+
+\item{person_offset}{Either a scalar (for same offset for all persons) or a vector of the same length as the number of persons with an offset to be added to the prediction term (on log scale).}
 
 \item{data_long}{A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.}
 

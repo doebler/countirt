@@ -19,6 +19,6 @@ Imports:
     utils
 LinkingTo: Rcpp, RcppGSL
 NeedsCompilation: yes
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 Depends: 
     R (>= 2.10)

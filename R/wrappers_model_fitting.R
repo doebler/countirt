@@ -465,6 +465,7 @@ mcirt_explore <- function(nfactors, data, family,
   # set start values
   # only set if start_values is NULL in control list, otherwise use providee start values
   # this functionality is especially helpful for doing warm starts in tune_lasso and tune_ridge
+  print("Determine start values.")
   if (is.null(control$start_values)) {
     if (family == "poisson") {
       start_values <- get_start_values_pois_multi(
@@ -491,6 +492,7 @@ mcirt_explore <- function(nfactors, data, family,
   
   # fit the model
   # TODO MC CONVERGENCE
+  print("Start model estimation. This may take a little bit of time.")
   if (family == "poisson") {
     fit <- run_em_poisson_multi(
       data = data,
@@ -598,7 +600,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
     control = control)
   if (tuning_crit == "AIC") {
     models[[1]]$crit <- compute_aic(models[[1]]$fit)
-  } else if (tuning_cirt == "BIC") {
+  } else if (tuning_crit == "BIC") {
     models[[1]]$crit <- compute_bic(models[[1]]$fit)
   }
   
@@ -631,7 +633,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
   # select model 
   all_model_crits <- unlist(lapply(models, function(x){x$crit}))
   min_crit <- min(all_model_crits)
-  chosen_eta_index <- which(all_model_crots == min_crit)
+  chosen_eta_index <- which(all_model_crits == min_crit)
   chosen_model <- models[[chosen_eta_index]]$fit
   
   # prepare output
@@ -688,6 +690,7 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
   names(models) <- paste0("eta = ", penalize_grid)
   
   # start with first value in penalize_grid and fit the entire model once
+  print(paste0("Fit the model for eta = ", penalize_grid[1], "."))
   models[[1]]$fit <- mcirt_explore(
     nfactors = nfactors, 
     data = data,
@@ -699,12 +702,13 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
     control = control)
   if (tuning_crit == "AIC") {
     models[[1]]$crit <- compute_aic(models[[1]]$fit)
-  } else if (tuning_cirt == "BIC") {
+  } else if (tuning_crit == "BIC") {
     models[[1]]$crit <- compute_bic(models[[1]]$fit)
   }
   
   # fit models for the remaining penalize_grid values with warm starts
   for (i in 2:length(penalize_grid)) {
+    print(paste0("Fit the model for eta = ", penalize_grid[i], "."))
     models[[i]]$fit <- mcirt_explore(
       nfactors = nfactors, 
       data = data,
@@ -732,7 +736,7 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
   # select model 
   all_model_crits <- unlist(lapply(models, function(x){x$crit}))
   min_crit <- min(all_model_crits)
-  chosen_eta_index <- which(all_model_crots == min_crit)
+  chosen_eta_index <- which(all_model_crits == min_crit)
   chosen_model <- models[[chosen_eta_index]]$fit
   
   # prepare output

@@ -718,7 +718,7 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
       alpha_constraints = alpha_constraints,
       disp_constraints = disp_constraints,
       control = list(
-        start_values = models[[i-1]]$fit$params,
+        start_values = models[[i-1]]$fit$fit$params,
         em_type = control$em_type,
         n_nodes = control$n_nodes,
         n_samples = control$n_samples,

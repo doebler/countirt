@@ -589,6 +589,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
   names(models) <- paste0("eta = ", penalize_grid)
   
   # start with first value in penalize_grid and fit the entire model once
+  print(paste0("Fit the model for eta = ", penalize_grid[1], "."))
   models[[1]]$fit <- mcirt_explore(
     nfactors = nfactors, 
     data = data,
@@ -606,6 +607,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
   
   # fit models for the remaining penalize_grid values with warm starts
   for (i in 2:length(penalize_grid)) {
+    print(paste0("Fit the model for eta = ", penalize_grid[i], "."))
     models[[i]]$fit <- mcirt_explore(
       nfactors = nfactors, 
       data = data,
@@ -615,7 +617,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
       alpha_constraints = alpha_constraints,
       disp_constraints = disp_constraints,
       control = list(
-        start_values = models[[i-1]]$fit$params,
+        start_values = models[[i-1]]$fit$fit$params,
         em_type = control$em_type,
         n_nodes = control$n_nodes,
         n_samples = control$n_samples,
@@ -628,18 +630,24 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
         ctol_lasso = control$ctol_lasso,
         m_method = control$m_method, 
         convcrit = control$convcrit))
+    if (tuning_crit == "AIC") {
+      models[[i]]$crit <- compute_aic(models[[i]]$fit)
+    } else if (tuning_crit == "BIC") {
+      models[[i]]$crit <- compute_bic(models[[i]]$fit)
+    }
   }
   
   # select model 
   all_model_crits <- unlist(lapply(models, function(x){x$crit}))
   min_crit <- min(all_model_crits)
   chosen_eta_index <- which(all_model_crits == min_crit)
+  chosen_eta <- penalize_grid[chosen_eta_index]
   chosen_model <- models[[chosen_eta_index]]$fit
   
   # prepare output
   out <- list(
     selected_fit = chosen_model,
-    selected_eta = min_crit,
+    selected_eta = chosen_eta,
     tuning_criterion = tuning_crit,
     all_models = models
   )
@@ -731,18 +739,24 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
         ctol_lasso = control$ctol_lasso,
         m_method = control$m_method, 
         convcrit = control$convcrit))
+    if (tuning_crit == "AIC") {
+      models[[i]]$crit <- compute_aic(models[[i]]$fit)
+    } else if (tuning_crit == "BIC") {
+      models[[i]]$crit <- compute_bic(models[[i]]$fit)
+    }
   }
   
   # select model 
   all_model_crits <- unlist(lapply(models, function(x){x$crit}))
   min_crit <- min(all_model_crits)
   chosen_eta_index <- which(all_model_crits == min_crit)
+  chosen_eta <- penalize_grid[chosen_eta_index]
   chosen_model <- models[[chosen_eta_index]]$fit
   
   # prepare output
   out <- list(
     selected_fit = chosen_model,
-    selected_eta = min_crit,
+    selected_eta = chosen_eta,
     tuning_criterion = tuning_crit,
     all_models = models
   )

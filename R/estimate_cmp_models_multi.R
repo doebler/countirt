@@ -970,7 +970,7 @@ get_start_values_multi <- function(data,
     init_logdisps <- c()
     sim_abilities <- mvrnorm(nsim, rep(0, n_traits), diag(rep(1, n_traits)))
     for (i in 1:ncol(data)) {
-      alphas_for_item_i <- init_alphas[grepl(paste0("alpha", i), names(init_alphas))]
+      alphas_for_item_i <- init_alphas[grepl(paste0("alpha", i, "_"), names(init_alphas))]
       mu <- exp(init_deltas[i] + sim_abilities %*% alphas_for_item_i)
       sim <- rpois(nsim, mu)
       init_logdisps[i] <- log((var(sim) / var(data[,i])))

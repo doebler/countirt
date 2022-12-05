@@ -12,6 +12,10 @@ compute_aic <- function(fit) {
     p <- p - length(fit$model$disp_constraints)
   }
   
+  # then adjust for parameters which have been shrunken to 0
+  a <- fit$fit$params[grepl("alpha", names(fit$fit$params))]
+  p <- p - sum(a[is.na(fit$model$alpha_constraints)] == 0)
+  
   aic <- 2*p - 2*fit$fit$marg_ll[length(fit$fit$marg_ll)]
   
   return(aic)
@@ -21,6 +25,8 @@ compute_aic <- function(fit) {
 
 compute_bic <- function(fit) {
 
+  n <- nrow(fit$model$data)
+  
   # assess how many parameters are freely estimated (substract for constraints)
   p <- length(fit$fit$params)
   p <- p - sum(!is.na(fit$model$alpha_constraints))
@@ -30,7 +36,10 @@ compute_bic <- function(fit) {
     # aren't 0, we can substract the whole number of disp parameters
     p <- p - length(fit$model$disp_constraints)
   }
-  n <- nrow(fit$model$data)
+  
+  # then adjust for parameters which have been shrunken to 0
+  a <- fit$fit$params[grepl("alpha", names(fit$fit$params))]
+  p <- p - sum(a[is.na(fit$model$alpha_constraints)] == 0)
   
   bic <- p*log(n) - 2*fit$fit$marg_ll[length(fit$fit$marg_ll)]
   

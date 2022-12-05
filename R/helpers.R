@@ -1,6 +1,6 @@
 # compute_aic -------------------------------------------------------------------------
 
-compute_aic <- function(fit) {
+compute_aic <- function(fit, mll_unpenal) {
   
   # assess how many parameters are freely estimated (substract for constraints)
   p <- length(fit$fit$params)
@@ -16,14 +16,14 @@ compute_aic <- function(fit) {
   a <- fit$fit$params[grepl("alpha", names(fit$fit$params))]
   p <- p - sum(a[is.na(fit$model$alpha_constraints)] == 0)
   
-  aic <- 2*p - 2*fit$fit$marg_ll[length(fit$fit$marg_ll)]
+  aic <- 2*p - 2*mll_unpenal
   
   return(aic)
 }
 
 # compute_bic -------------------------------------------------------------------------
 
-compute_bic <- function(fit) {
+compute_bic <- function(fit, mll_unpenal) {
 
   n <- nrow(fit$model$data)
   
@@ -41,7 +41,7 @@ compute_bic <- function(fit) {
   a <- fit$fit$params[grepl("alpha", names(fit$fit$params))]
   p <- p - sum(a[is.na(fit$model$alpha_constraints)] == 0)
   
-  bic <- p*log(n) - 2*fit$fit$marg_ll[length(fit$fit$marg_ll)]
+  bic <- p*log(n) - 2*mll_unpenal
   
   return(bic)
 }

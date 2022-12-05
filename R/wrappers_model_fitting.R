@@ -584,6 +584,9 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
                          m_method = "nleqslv", 
                          convcrit = "marglik")) {
   
+  # FIXME implement for MC! This only works for GH
+  weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+  
   # prepare output
   models <- vector(mode = "list", length = length(penalize_grid))
   names(models) <- paste0("eta = ", penalize_grid)
@@ -599,10 +602,17 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
     alpha_constraints = alpha_constraints,
     disp_constraints = disp_constraints,
     control = control)
+  models[[1]]$mll_unpenal <- marg_ll_multi(data = data, 
+                                           item_params = models[[1]]$fit$fit$params, 
+                                           n_traits = nfactors,
+                                           weights_and_nodes = weights_and_nodes, 
+                                           # theta_samples = , # TODO
+                                           penalize = "none",
+                                           em_type = control$em_type) 
   if (tuning_crit == "AIC") {
-    models[[1]]$crit <- compute_aic(models[[1]]$fit)
+    models[[1]]$crit <- compute_aic(models[[1]]$fit, models[[1]]$mll_unpenal)
   } else if (tuning_crit == "BIC") {
-    models[[1]]$crit <- compute_bic(models[[1]]$fit)
+    models[[1]]$crit <- compute_bic(models[[1]]$fit, models[[1]]$mll_unpenal)
   }
   
   # fit models for the remaining penalize_grid values with warm starts
@@ -630,10 +640,17 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
         ctol_lasso = control$ctol_lasso,
         m_method = control$m_method, 
         convcrit = control$convcrit))
+    models[[i]]$mll_unpenal <- marg_ll_multi(data = data, 
+                                             item_params = models[[i]]$fit$fit$params, 
+                                             n_traits = nfactors,
+                                             weights_and_nodes = weights_and_nodes, 
+                                             # theta_samples = , # TODO
+                                             penalize = "none",
+                                             em_type = control$em_type) 
     if (tuning_crit == "AIC") {
-      models[[i]]$crit <- compute_aic(models[[i]]$fit)
+      models[[i]]$crit <- compute_aic(models[[i]]$fit, models[[i]]$mll_unpenal)
     } else if (tuning_crit == "BIC") {
-      models[[i]]$crit <- compute_bic(models[[i]]$fit)
+      models[[i]]$crit <- compute_bic(models[[i]]$fit, models[[i]]$mll_unpenal)
     }
   }
   
@@ -655,7 +672,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
   return(out)
 }
 
-
+# TODO anpassen mit unpenalisierter MLL
 #' Tune ridge regularization for exploratory multi-dimensional count data IRT models.
 #' 
 #' @param nfactors An integer. The number of factors to be extracted.

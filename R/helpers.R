@@ -4,7 +4,7 @@ compute_aic <- function(fit) {
   
   # assess how many parameters are freely estimated (substract for constraints)
   p <- length(fit$fit$params)
-  p <- p - sum(is.na(fit$model$alpha_constraints))
+  p <- p - sum(!is.na(fit$model$alpha_constraints))
   # TODO if i allow more constraints on disps, i need to adjust this
   if (!is.null(fit$model$disp_constraints)) {
     # atm we can only either fix all disps or estimate all disps so if constraints
@@ -23,7 +23,7 @@ compute_bic <- function(fit) {
 
   # assess how many parameters are freely estimated (substract for constraints)
   p <- length(fit$fit$params)
-  p <- p - sum(is.na(fit$model$alpha_constraints))
+  p <- p - sum(!is.na(fit$model$alpha_constraints))
   # TODO if i allow more constraints on disps, i need to adjust this
   if (!is.null(fit$model$disp_constraints)) {
     # atm we can only either fix all disps or estimate all disps so if constraints

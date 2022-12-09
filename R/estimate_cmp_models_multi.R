@@ -743,7 +743,8 @@ run_em_multi <- function(data,
                          alpha_constraints = NULL,
                          disp_constraints = NULL,
                          n_nodes = NULL, n_samples = NULL, 
-                         em_type = c("gh", "mc"), fcov_prior = NULL,
+                         em_type = c("gh", "mc"), 
+                         fcov_prior = NULL,
                          truncate_grid = TRUE,
                          penalize = c("none", "ridge", "lasso"), 
                          penalize_lambda = NULL,
@@ -776,9 +777,16 @@ run_em_multi <- function(data,
   # (so no eqaulity constraints yet and no fixing only certain disps)
   
   if (em_type == "gh") {
-    # TODO actually use fcov_prior argument here
     # get nodes and weights for multivariate GH quadrature
-    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+    if (is.null(fcov_prior)) {
+      weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+    } else {
+      weights_and_nodes <- init.quad(
+        Q = n_traits, 
+        prior = fcov_prior,
+        ip = n_nodes, 
+        prune = truncate_grid)
+    }
     # weights W are on log scale
     # default prior works for the m2ppcm
     # for output we have a list with X which is a matrix with nodes for

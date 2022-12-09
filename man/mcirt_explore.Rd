@@ -13,9 +13,9 @@ mcirt_explore(
   alpha_constraints = NULL,
   disp_constraints = NULL,
   control = list(start_values = NULL, em_type = "gh", n_nodes = 12, n_samples = 3000,
-    truncate_grid = TRUE, maxiter = 1000, convtol = 1e-05, n_samples_conv = 20,
-    final_n_samples = 6000, ctol_maxstep = 1e-08, ctol_lasso = 0.001, m_method =
-    "nleqslv", convcrit = "marglik")
+    fcov_prior = NULL, truncate_grid = TRUE, maxiter = 1000, convtol = 1e-05,
+    n_samples_conv = 20, final_n_samples = 6000, ctol_maxstep = 1e-08, ctol_lasso =
+    0.001, m_method = "nleqslv", convcrit = "marglik")
 )
 }
 \arguments{

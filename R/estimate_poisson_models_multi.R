@@ -791,9 +791,16 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
   # and maybe even allow delta_constraints
    
   if (em_type == "gh") {
-    # TODO actually use fcov_prior argument here
     # get nodes and weights for multivariate GH quadrature
-    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+    if (is.null(fcov_prior)) {
+      weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+    } else {
+      weights_and_nodes <- init.quad(
+        Q = n_traits, 
+        prior = fcov_prior,
+        ip = n_nodes, 
+        prune = truncate_grid)
+    }
     # NOTE the weights W are on log scale
     # default prior works for the m2ppcm
     # for output we have a list with X which is a matrix with nodes for

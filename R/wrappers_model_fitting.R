@@ -419,6 +419,7 @@ mcirt_explore <- function(nfactors, data, family,
                             em_type = "gh",
                             n_nodes = 12,
                             n_samples = 3000,
+                            fcov_prior = NULL,
                             truncate_grid = TRUE,
                             maxiter = 1000, 
                             convtol = 1e-5, 
@@ -455,6 +456,7 @@ mcirt_explore <- function(nfactors, data, family,
     alpha_constraints = alpha_constraints,
     disp_constraints = disp_constraints,
     em_type = control$em_type,
+    fcov_prior = control$fcov_prior,
     data = data
   )
   
@@ -478,6 +480,7 @@ mcirt_explore <- function(nfactors, data, family,
         n_traits = nfactors,
         n_nodes = control$n_nodes,
         em_type = control$em_type,
+        fcov_prior = control$fcov_prior,
         penalize = penalize,
         penalize_lambda = penalize_tuning,
         maxiter = control$maxiter,
@@ -503,6 +506,7 @@ mcirt_explore <- function(nfactors, data, family,
       n_nodes = control$n_nodes,
       n_samples = control$n_samples,
       em_type = control$em_type,
+      fcov_prior = control$fcov_prior,
       truncate_grid = control$truncate_grid,
       convcrit = control$convcrit,
       convtol = control$convtol,
@@ -521,6 +525,7 @@ mcirt_explore <- function(nfactors, data, family,
       n_nodes = control$n_nodes,
       n_samples = control$n_samples,
       em_type = control$em_type,
+      fcov_prior = control$fcov_prior,
       truncate_grid = control$truncate_grid,
       convcrit = control$convcrit,
       convtol = control$convtol,
@@ -574,6 +579,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
                          em_type = "gh",
                          n_nodes = 12,
                          n_samples = 3000,
+                         fcov_prior = NULL,
                          truncate_grid = TRUE,
                          maxiter = 1000, 
                          convtol = 1e-5, 
@@ -585,7 +591,15 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
                          convcrit = "marglik")) {
   
   # FIXME implement for MC! This only works for GH
-  weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+  if (is.null(fcov_prior)) {
+    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+  } else {
+    weights_and_nodes <- init.quad(
+      Q = n_traits, 
+      prior = fcov_prior,
+      ip = n_nodes, 
+      prune = truncate_grid)
+  }
   
   # prepare output
   models <- vector(mode = "list", length = length(penalize_grid))
@@ -631,6 +645,7 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
         em_type = control$em_type,
         n_nodes = control$n_nodes,
         n_samples = control$n_samples,
+        fcov_prior = control$fcov_prior,
         truncate_grid = control$truncate_grid,
         maxiter = control$maxiter, 
         convtol = control$convtol, 
@@ -672,7 +687,6 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
   return(out)
 }
 
-# TODO anpassen mit unpenalisierter MLL
 #' Tune ridge regularization for exploratory multi-dimensional count data IRT models.
 #' 
 #' @param nfactors An integer. The number of factors to be extracted.
@@ -700,6 +714,7 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
                                em_type = "gh",
                                n_nodes = 12,
                                n_samples = 3000,
+                               fcov_prior = NULL,
                                truncate_grid = TRUE,
                                maxiter = 1000, 
                                convtol = 1e-5, 
@@ -709,6 +724,17 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
                                ctol_lasso = 1e-3,
                                m_method = "nleqslv", 
                                convcrit = "marglik")) {
+  
+  # FIXME implement for MC! This only works for GH
+  if (is.null(fcov_prior)) {
+    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+  } else {
+    weights_and_nodes <- init.quad(
+      Q = n_traits, 
+      prior = fcov_prior,
+      ip = n_nodes, 
+      prune = truncate_grid)
+  }
   
   # prepare output
   models <- vector(mode = "list", length = length(penalize_grid))
@@ -725,10 +751,17 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
     alpha_constraints = alpha_constraints,
     disp_constraints = disp_constraints,
     control = control)
+  models[[1]]$mll_unpenal <- marg_ll_multi(data = data, 
+                                           item_params = models[[1]]$fit$fit$params, 
+                                           n_traits = nfactors,
+                                           weights_and_nodes = weights_and_nodes, 
+                                           # theta_samples = , # TODO
+                                           penalize = "none",
+                                           em_type = control$em_type) 
   if (tuning_crit == "AIC") {
-    models[[1]]$crit <- compute_aic(models[[1]]$fit)
+    models[[1]]$crit <- compute_aic(models[[1]]$fit, models[[1]]$mll_unpenal)
   } else if (tuning_crit == "BIC") {
-    models[[1]]$crit <- compute_bic(models[[1]]$fit)
+    models[[1]]$crit <- compute_bic(models[[1]]$fit, models[[1]]$mll_unpenal)
   }
   
   # fit models for the remaining penalize_grid values with warm starts
@@ -747,6 +780,7 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
         em_type = control$em_type,
         n_nodes = control$n_nodes,
         n_samples = control$n_samples,
+        fcov_prior = control$fcov_prior,
         truncate_grid = control$truncate_grid,
         maxiter = control$maxiter, 
         convtol = control$convtol, 
@@ -757,9 +791,9 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
         m_method = control$m_method, 
         convcrit = control$convcrit))
     if (tuning_crit == "AIC") {
-      models[[i]]$crit <- compute_aic(models[[i]]$fit)
+      models[[i]]$crit <- compute_aic(models[[i]]$fit, models[[i]]$mll_unpenal)
     } else if (tuning_crit == "BIC") {
-      models[[i]]$crit <- compute_bic(models[[i]]$fit)
+      models[[i]]$crit <- compute_bic(models[[i]]$fit, models[[i]]$mll_unpenal)
     }
   }
   
@@ -782,9 +816,45 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
 }
 
 
-
-
-
-
+#' Control parameters for mcirt_explore, mcirt_tune_lasso, and mcirt_tune_ridge.
+#' 
+#' @param start_values Optional external start values, must be of the same structure as mcirt start values (i.e., first all alphas for one trait, then all alphas for the next, etc., then all deltas, then all log nus). Dispersions must be provided on log scale. Parameters must be named as expected bei mcirt, that is of the form: "alphaj_thetal" with j in {1, ..., M} and l in {1, ..., L}, where M is the number of items and L is the number of traits (factors); "deltaj" with j in {1, ..., M}, and "log_dispj" with j in {1, ..., M}.
+#' @param em_type A string. Either "gh" or "mc". Specifies whether Gauss-Hermite Quadrature or Monte Carlo integration is used to approximate integrals in EM algorithm.
+#' @param n_nodes An integer. Only used in conjunction with `em_type = "gh"`. Specifies number of nodes per trait.
+#' @param n_samples An integer. Only used in conjunction with `em_type = "mc"`. Specifies number of MC samples.
+#' @param fcov_prior A list. First element must be the vector for mu (of length L, which is the number of traits) and second element must be the covariance matrix sigma (of dimensionality L x L).
+#' @param truncate_grid A boolean. Only used in conjunction with `em_type = "gh"`. Indicates whether quadrature points with very low weight are removed.
+#' @param maxiter An integer. Maximum number of EM iterations.
+#' @param convtol A real. Convergence tolerance for EM algorithm.
+#' @param n_samples_conv An integer. Only used in conjunction with `em_type = "mc"`.
+#' @param final_n_samples An integer. Only used in conjunction with `em_type = "mc"`.
+#' @param ctol_maxstep A real. Convergence tolerance for M step of EM algorithm.
+#' @param ctol_lasso A real. Convergence tolerance for Lasso coordinate descent algorithm in M step of EM algorithm.
+#' @param m_method A string. Can be "nleqslv". Specifying optimizer used for M step of EM algorithm,
+#' @param convcrit A string. Can be "marglik" or "params". Specifying whether to assess convergence on marginal likelihood or parameter estimates.
+#' 
+#' @useDynLib countirt, .registration=TRUE
+#' @export
+mcirt_control <- function(start_values = NULL, em_type = "gh",  n_nodes = 12, n_samples = 3000, fcov_prior = NULL, truncate_grid = TRUE, maxiter = 1000,
+                          convtol = 1e-5, n_samples_conv = 20, final_n_samples = 6000, ctol_maxstep = 1e-8, ctol_lasso = 1e-3, m_method = "nleqslv", 
+                          convcrit = "marglik") {
+  out <- list(
+    start_values = start_values,
+    em_type = em_type,
+    n_nodes = n_nodes,
+    n_samples = n_samples,
+    fcov_prior = fcov_prior,
+    truncate_grid = truncate_grid,
+    maxiter = maxiter, 
+    convtol = convtol, 
+    n_samples_conv = n_samples_conv,
+    final_n_samples = final_n_samples,
+    ctol_maxstep = ctol_maxstep,
+    ctol_lasso = ctol_lasso,
+    m_method = m_method, 
+    convcrit = convcrit
+  )
+  return(out)
+}
 
 

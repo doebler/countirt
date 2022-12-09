@@ -2,6 +2,7 @@
 
 export(add_inference)
 export(cirt)
+export(mcirt_control)
 export(mcirt_explore)
 export(mcirt_tune_lasso)
 export(mcirt_tune_ridge)

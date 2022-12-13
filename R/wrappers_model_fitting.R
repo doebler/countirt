@@ -591,15 +591,16 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
                          convcrit = "marglik")) {
   
   # FIXME implement for MC! This only works for GH
-  if (is.null(fcov_prior)) {
-    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+  if (is.null(control$fcov_prior)) {
+    weights_and_nodes <- init.quad(Q = nfactors, ip = control$n_nodes, prune = control$truncate_grid)
   } else {
     weights_and_nodes <- init.quad(
-      Q = n_traits, 
-      prior = fcov_prior,
-      ip = n_nodes, 
-      prune = truncate_grid)
+      Q = nfactors, 
+      prior = control$fcov_prior,
+      ip = control$n_nodes, 
+      prune = control$truncate_grid)
   }
+  
   
   # prepare output
   models <- vector(mode = "list", length = length(penalize_grid))
@@ -726,14 +727,14 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
                                convcrit = "marglik")) {
   
   # FIXME implement for MC! This only works for GH
-  if (is.null(fcov_prior)) {
-    weights_and_nodes <- init.quad(Q = n_traits, ip = n_nodes, prune = truncate_grid)
+  if (is.null(control$fcov_prior)) {
+    weights_and_nodes <- init.quad(Q = nfactors, ip = control$n_nodes, prune = control$truncate_grid)
   } else {
     weights_and_nodes <- init.quad(
-      Q = n_traits, 
-      prior = fcov_prior,
-      ip = n_nodes, 
-      prune = truncate_grid)
+      Q = nfactors, 
+      prior = control$fcov_prior,
+      ip = control$n_nodes, 
+      prune = control$truncate_grid)
   }
   
   # prepare output
@@ -790,6 +791,13 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
         ctol_lasso = control$ctol_lasso,
         m_method = control$m_method, 
         convcrit = control$convcrit))
+    models[[i]]$mll_unpenal <- marg_ll_multi(data = data, 
+                                             item_params = models[[i]]$fit$fit$params, 
+                                             n_traits = nfactors,
+                                             weights_and_nodes = weights_and_nodes, 
+                                             # theta_samples = , # TODO
+                                             penalize = "none",
+                                             em_type = control$em_type) 
     if (tuning_crit == "AIC") {
       models[[i]]$crit <- compute_aic(models[[i]]$fit, models[[i]]$mll_unpenal)
     } else if (tuning_crit == "BIC") {

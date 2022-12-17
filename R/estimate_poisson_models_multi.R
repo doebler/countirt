@@ -870,7 +870,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- new_ll
-      plot(marg_lls)
+      #plot(marg_lls)
       #print(marg_lls)
       if (em_type == "gh") {
         conv <- (abs(old_ll - new_ll) < convtol)
@@ -897,7 +897,7 @@ run_em_poisson_multi <- function(data, init_params, n_traits,
         penalize_lambda = penalize_lambda
         )
       marg_lls[iter] <- marg_ll
-      plot(marg_lls)
+      #plot(marg_lls)
       #print(marg_lls)
     }
     

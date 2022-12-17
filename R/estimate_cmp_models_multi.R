@@ -841,7 +841,7 @@ run_em_multi <- function(data,
       penalize_lambda = penalize_lambda,
       ctol_lasso = ctol_lasso
     )
-    print(new_params)
+    #print(new_params)
     
     # check for convergence
     if (convcrit == "marglik") {
@@ -857,8 +857,8 @@ run_em_multi <- function(data,
         penalize_lambda = penalize_lambda
       )
       marg_lls[iter] <- new_ll
-      plot(marg_lls)
-      print(marg_lls)
+      #plot(marg_lls)
+      #print(marg_lls)
       if (em_type == "gh") {
         conv <- (abs(old_ll - new_ll) < convtol)
       } else if (em_type == "mc") {
@@ -884,8 +884,8 @@ run_em_multi <- function(data,
         penalize_lambda = penalize_lambda
       )
       marg_lls[iter] <- marg_ll
-      plot(marg_lls)
-      print(marg_lls)
+      #plot(marg_lls)
+      #print(marg_lls)
     }
     
     iter <- iter + 1

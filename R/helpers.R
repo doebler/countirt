@@ -18,6 +18,7 @@ compute_aic <- function(fit, mll_unpenal) {
   
   aic <- 2*p - 2*mll_unpenal
   
+  # output
   return(aic)
 }
 

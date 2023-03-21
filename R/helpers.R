@@ -65,18 +65,20 @@ parse_model <- function(model, data, data_long, person_id, family) {
     if (fixed_params) {
       model_fixed <- model_parts[grepl("=:", model_parts)]
       # atm i can only fix log_nus and alphas
-      if (any(grepl("alpha", model_parts))) {
+      if (any(grepl("alpha", model_fixed))) {
         fixed_alphas <- model_fixed[grepl("alpha", model_fixed)]
         fixed_alphas <- gsub("alpha[0-9]+=:", "", fixed_alphas)
         fixed_alphas <- gsub("alpha[0-9]+ =:", "", fixed_alphas)
+        fixed_alphas <- trimws(unlist(strsplit(fixed_alphas, "[,]")))
         fixed_alphas <- as.numeric(trimws(fixed_alphas))
       } else {
         fixed_alphas <- NULL
       }
-      if (any(grepl("log_nu", model_parts))) {
+      if (any(grepl("log_nu", model_fixed))) {
         fixed_log_disps <- model_fixed[grepl("log_nu", model_fixed)]
         fixed_log_disps <- gsub("log_nu[0-9]+=:", "", fixed_log_disps)
         fixed_log_disps <- gsub("log_nu[0-9]+ =:", "", fixed_log_disps)
+        fixed_log_disps <- trimws(unlist(strsplit(fixed_log_disps, "[,]")))
         fixed_log_disps <- as.numeric(trimws(fixed_log_disps))
       } else {
         fixed_log_disps <- NULL

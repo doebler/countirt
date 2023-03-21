@@ -2,7 +2,7 @@
 % Please edit documentation in R/cirt_mice.R
 \name{cirt_mice}
 \alias{cirt_mice}
-\title{Model fitting function for count data IRT models using \link[countirt]{cirt} on mids objects (as returned after performing multiple imputations with \link[mice] package).}
+\title{Model fitting function for count data IRT models using \link[countirt]{cirt} on mids objects (as returned after performing multiple imputations with \link[mice]{mice}).}
 \usage{
 cirt_mice(
   model,
@@ -35,5 +35,5 @@ cirt_mice(
 \item{control}{A list providing control parameters for \link[countirt]{cirt}.}
 }
 \description{
-Model fitting function for count data IRT models using \link[countirt]{cirt} on mids objects (as returned after performing multiple imputations with \link[mice] package).
+Model fitting function for count data IRT models using \link[countirt]{cirt} on mids objects (as returned after performing multiple imputations with \link[mice]{mice}).
 }

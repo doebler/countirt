@@ -162,6 +162,65 @@ grad_cmp_fixdisps_newem <- function(item_params, PPs,
   return(grads)
 }
 
+# grad_cmp_fixdisps_samealpha ----------------------------------------------------------
+grad_cmp_fixdisps_samealpha <- function(item_params, PPs, 
+                                    weights_and_nodes, data,
+                                    fix_disps, 
+                                    item_offset = NULL, person_offset = NULL) {
+  
+  n_items <- ncol(data)
+  alpha <- item_params[grepl("alpha", names(item_params))]
+  alphas <- rep(alpha, n_items)
+  deltas <- item_params[grepl("delta", names(item_params))]
+  disps <- fix_disps
+  
+  include_poffset <- !(sum(person_offset) == 0)
+  
+  if (include_poffset) {
+    grads <- grad_cmp_fixdisps_samealpha_poff_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      item_offset = item_offset,
+      person_offset = person_offset,
+      data = as.matrix(data),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  } else {
+    grads <- grad_cmp_fixdisps_samealpha_cpp(
+      alphas = alphas, 
+      deltas = deltas, 
+      disps = disps, 
+      item_offset = item_offset,
+      data = as.matrix(data),
+      PPs = PPs,
+      nodes = weights_and_nodes$x,
+      grid_mus = grid_mus,
+      grid_nus = grid_nus,
+      grid_cmp_var_long = grid_cmp_var_long,
+      grid_log_lambda_long = grid_log_lambda_long,
+      grid_logZ_long = grid_logZ_long,
+      max_mu = 200,
+      min_mu = 0.001
+    )
+  }
+  
+  if (any(is.na(grads))) {
+    stop("Gradient contained NA", paste0(grads, collapse = ","),
+         paste0(item_params, collapse = ","))
+  } 
+  #print(grads)
+  return(grads)
+}
+
 # grad_cmp_fixalphas_newem -------------------------------------------------------
 grad_cmp_fixalphas_newem <- function(item_params, PPs, 
                                     weights_and_nodes, data,
@@ -452,24 +511,57 @@ newem_em_cycle <- function(item_params, data, weights_and_nodes,
     }
   } else {
     if (!is.null(fix_disps)) {
-      # e step
-      params_estep <- c(item_params, log(fix_disps))
-      names(params_estep) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
-      PPs <- newem_estep2(data, params_estep, weights_and_nodes, 
-                          item_offset = item_offset,
-                          person_offset = person_offset)
-      # m step
-      new_item_params <- nleqslv(
-        x = item_params,
-        fn = grad_cmp_fixdisps_newem,
-        PPs = PPs,
-        weights_and_nodes = weights_and_nodes,
-        data = data,
-        fix_disps = fix_disps,
-        item_offset = item_offset,
-        person_offset = person_offset,
-        control = list(xtol = ctol_maxstep)
-      )$x
+      if (same_alphas) {
+        # additionally same alphas
+        # e step
+        alpha <- item_params[grepl("alpha", names(item_params))]
+        deltas <- item_params[grepl("delta", names(item_params))]
+        n_items <- length(deltas)
+        log_disps <- log(fix_disps)
+        params_estep <- c(rep(alpha, n_items), deltas, log_disps)
+        names(params_estep) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:length(fix_disps))
+        )
+        PPs <- newem_estep2(data, params_estep, weights_and_nodes, 
+                            item_offset = item_offset,
+                            person_offset = person_offset)
+        
+        # m step
+        new_item_params <- nleqslv(
+          x = item_params,
+          fn = grad_cmp_fixdisps_samealpha,
+          PPs = PPs,
+          weights_and_nodes = weights_and_nodes,
+          data = data,
+          fix_disps = fix_disps,
+          item_offset = item_offset,
+          person_offset = person_offset,
+          control = list(xtol = ctol_maxstep)
+        )$x
+      } else {
+        # estimate separate alphas
+        # e step
+        params_estep <- c(item_params, log(fix_disps))
+        names(params_estep) <- c(names(item_params), paste0("log_disp", 1:length(fix_disps)))
+        PPs <- newem_estep2(data, params_estep, weights_and_nodes, 
+                            item_offset = item_offset,
+                            person_offset = person_offset)
+        
+        # m step
+        new_item_params <- nleqslv(
+          x = item_params,
+          fn = grad_cmp_fixdisps_newem,
+          PPs = PPs,
+          weights_and_nodes = weights_and_nodes,
+          data = data,
+          fix_disps = fix_disps,
+          item_offset = item_offset,
+          person_offset = person_offset,
+          control = list(xtol = ctol_maxstep)
+        )$x
+      }
     } else if (!is.null(fix_alphas)) {
       # e step
       params_estep <- c(fix_alphas, item_params)

@@ -157,6 +157,52 @@ wrap_grad_cmp_fixdisps_newem <- function(y, PPs, weights_and_nodes, data, fix_di
   return(grad)
 }
 
+# gradients for 2pcmp model with fixed dispersions and same alphas standard errors -----------------
+grad_for_se_fix_disps_same_alphas <- function(y, item_params, weights_and_nodes, data, fix_disps, item_offset) {
+  # y and item parameters only have one alpha and deltas, dispersions
+  # are fixed an contained in fix_disps
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
+  
+  # prep the parameters for the e-step
+  alpha <- y[grepl("alpha", names(y))]
+  deltas <- y[grepl("delta", names(y))]
+  n_items <- length(deltas)
+  log_disps <- log(fix_disps)
+  item_params_estep <- c(rep(alpha, n_items), deltas, log_disps)
+  names(item_params_estep) <- c(
+    paste0("alpha", 1:n_items),
+    names(y[grepl("delta", names(y))]),
+    paste0("log_disp", 1:n_items)
+  )
+  post_probs <- newem_estep2(data, item_params_etsep, weights_and_nodes, item_offset = item_offset)
+  
+  g <- grad_cmp_fixdisps_samealpha(item_params = item_params,
+                               PPs = post_probs,
+                               weights_and_nodes = weights_and_nodes,
+                               data = data,
+                               fix_disps = fix_disps,
+                               item_offset = item_offset)
+  return(g)
+}
+
+wrap_grad_cmp_fixdisps_same_alphas <- function(y, PPs, weights_and_nodes, data, fix_disps, item_offset) {
+  # y and item parameters only have alphas and deltas, dispersions
+  # are fixed an contained in fix_disps
+  
+  # handle item_offset prep in compute_vcov, so expect non-empty vector of length n_items here
+  
+  grad <- grad_cmp_fixdisps_samealpha(
+    item_params = y,
+    PPs = PPs,
+    weights_and_nodes = weights_and_nodes,
+    data = data,
+    fix_disps = fix_disps,
+    item_offset = item_offset
+  )
+  return(grad)
+}
+
 # gradients for 2pcmp model with fixed alphas standard errors -------------------
 grad_for_se_fix_alphas <- function(y, item_params, weights_and_nodes, data, fix_alphas, item_offset) {
   # y and item parameters only have deltas and disps, slopes
@@ -311,35 +357,72 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
   } else {
     # we either have fixed dispersions or fixed alphas
     if (!is.null(fix_disps)) {
-      # we only have alphas and deltas, but we fix dispersions to the values provided
-      # in fix_disps
-      
-      # prep for e step
-      item_params_fixdisps <- c(item_params, log(fix_disps))
-      names(item_params_fixdisps) <- c(names(item_params), 
-                                       paste0("log_disp", 1:length(fix_disps)))
-      
-      post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes, item_offset = item_offset)
-      
-      x <- numDeriv::jacobian(
-        wrap_grad_cmp_fixdisps_newem,
-        item_params,
-        PPs = post_probs, 
-        weights_and_nodes = weights_and_nodes,
-        data = data,
-        fix_disps = fix_disps,
-        item_offset = item_offset
-      )
-      
-      x2 <- numDeriv::jacobian(
-        grad_for_se_fix_disps,
-        item_params, 
-        item_params = item_params,
-        weights_and_nodes = weights_and_nodes,
-        data = data,
-        fix_disps = fix_disps,
-        item_offset = item_offset
-      )
+      if (same_alphas) {
+        # e have fixed disps and same discriminations
+        # prep for e step
+        alpha <- item_params[grepl("alpha", names(y))]
+        deltas <- item_params[grepl("delta", names(y))]
+        n_items <- length(deltas)
+        log_disps <- log(fix_disps)
+        item_params_estep <- c(rep(alpha, n_items), deltas, log_disps)
+        names(item_params_estep) <- c(
+          paste0("alpha", 1:n_items),
+          names(item_params[grepl("delta", names(item_params))]),
+          paste0("log_disp", 1:n_items)
+        )
+        
+        post_probs <- newem_estep2(data, item_params_estep, weights_and_nodes, item_offset = item_offset)
+        
+        x <- numDeriv::jacobian(
+          wrap_grad_cmp_fixdisps_newem,
+          item_params,
+          PPs = post_probs, 
+          weights_and_nodes = weights_and_nodes,
+          data = data,
+          fix_disps = fix_disps,
+          item_offset = item_offset
+        )
+        
+        x2 <- numDeriv::jacobian(
+          grad_for_se_fix_disps,
+          item_params, 
+          item_params = item_params,
+          weights_and_nodes = weights_and_nodes,
+          data = data,
+          fix_disps = fix_disps,
+          item_offset = item_offset
+        )
+      } else {
+        # we only have alphas and deltas, but we fix dispersions to the values provided
+        # in fix_disps
+        
+        # prep for e step
+        item_params_fixdisps <- c(item_params, log(fix_disps))
+        names(item_params_fixdisps) <- c(names(item_params), 
+                                         paste0("log_disp", 1:length(fix_disps)))
+        
+        post_probs <- newem_estep2(data, item_params_fixdisps, weights_and_nodes, item_offset = item_offset)
+        
+        x <- numDeriv::jacobian(
+          wrap_grad_cmp_fixdisps_newem,
+          item_params,
+          PPs = post_probs, 
+          weights_and_nodes = weights_and_nodes,
+          data = data,
+          fix_disps = fix_disps,
+          item_offset = item_offset
+        )
+        
+        x2 <- numDeriv::jacobian(
+          grad_for_se_fix_disps,
+          item_params, 
+          item_params = item_params,
+          weights_and_nodes = weights_and_nodes,
+          data = data,
+          fix_disps = fix_disps,
+          item_offset = item_offset
+        )
+      }
     } else if (!is.null(fix_alphas)) {
       # we only have deltas and disps, but we fix slopes to the values provided
       # in fix_alphas

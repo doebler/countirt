@@ -168,14 +168,14 @@ grad_for_se_fix_disps_same_alphas <- function(y, item_params, weights_and_nodes,
   alpha <- y[grepl("alpha", names(y))]
   deltas <- y[grepl("delta", names(y))]
   n_items <- length(deltas)
-  log_disps <- log(fix_disps)
+  log_disps <- fix_disps
   item_params_estep <- c(rep(alpha, n_items), deltas, log_disps)
   names(item_params_estep) <- c(
     paste0("alpha", 1:n_items),
     names(y[grepl("delta", names(y))]),
     paste0("log_disp", 1:n_items)
   )
-  post_probs <- newem_estep2(data, item_params_etsep, weights_and_nodes, item_offset = item_offset)
+  post_probs <- newem_estep2(data, item_params_estep, weights_and_nodes, item_offset = item_offset)
   
   g <- grad_cmp_fixdisps_samealpha(item_params = item_params,
                                PPs = post_probs,
@@ -358,12 +358,12 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
     # we either have fixed dispersions or fixed alphas
     if (!is.null(fix_disps)) {
       if (same_alphas) {
-        # e have fixed disps and same discriminations
+        # we have fixed disps and same discriminations
         # prep for e step
-        alpha <- item_params[grepl("alpha", names(y))]
-        deltas <- item_params[grepl("delta", names(y))]
+        alpha <- item_params[grepl("alpha", names(item_params))]
+        deltas <- item_params[grepl("delta", names(item_params))]
         n_items <- length(deltas)
-        log_disps <- log(fix_disps)
+        log_disps <- fix_disps
         item_params_estep <- c(rep(alpha, n_items), deltas, log_disps)
         names(item_params_estep) <- c(
           paste0("alpha", 1:n_items),
@@ -374,7 +374,7 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         post_probs <- newem_estep2(data, item_params_estep, weights_and_nodes, item_offset = item_offset)
         
         x <- numDeriv::jacobian(
-          wrap_grad_cmp_fixdisps_newem,
+          wrap_grad_cmp_fixdisps_same_alphas,
           item_params,
           PPs = post_probs, 
           weights_and_nodes = weights_and_nodes,
@@ -384,7 +384,7 @@ compute_vcov <- function(item_params, weights_and_nodes, data,
         )
         
         x2 <- numDeriv::jacobian(
-          grad_for_se_fix_disps,
+          grad_for_se_fix_disps_same_alphas,
           item_params, 
           item_params = item_params,
           weights_and_nodes = weights_and_nodes,

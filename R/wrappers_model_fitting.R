@@ -445,6 +445,10 @@ add_inference <- function(model, prob = 0.95) {
         item_params = model$fit$params,
         weights_and_nodes = quad_rule(model$control$n_nodes),
         data = model$model$item_data,
+        same_alphas = model$model$equal_alphas, 
+        same_disps = model$model$equal_log_disps,
+        fix_alphas = model$model$fixed_alphas, 
+        fix_disps = model$model$fixed_log_disps,
         item_offset = model$fit$item_offset
       )
     } else if (model$family == "poisson") {
@@ -452,6 +456,8 @@ add_inference <- function(model, prob = 0.95) {
         item_params = model$fit$params,
         weights_and_nodes = quad_rule(model$control$n_nodes),
         data = model$model$item_data,
+        same_alphas = model$model$equal_alphas, 
+        fix_alphas = model$model$fixed_alphas, 
         item_offset = model$fit$item_offset
       ) 
     }

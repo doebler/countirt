@@ -7,7 +7,7 @@
 #' 
 #' @useDynLib countirt, .registration=TRUE
 #' @export
-abilities <- function(x, type = c("EAP")) {
+abilities <- function(x, type = "EAP") {
   
   if (type == "EAP") {
     if (x$family == "cmp") {

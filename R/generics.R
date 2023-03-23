@@ -1,10 +1,6 @@
 #' Summary for cirtfit objects.
 #' 
 #' @param x A cirtfit object.
-#' 
-#' @importFrom knitr kable
-#' @importFrom kableExtra kable_styling
-#' @useDynLib countirt, .registration=TRUE
 #' @export
 summary.cirtfit <- function(x) {
   
@@ -131,21 +127,142 @@ summary.cirtfit <- function(x) {
     cat("----------------------------------------------------------")
     cat("\n")
     cat("Significance: '***' < .001, '**' < .01, '*' < .05, '.' < .1")
-    cat("\n")
-    cat("----------------------------------------------------------")
   invisible(x)
 }
 
-#' Compare two nested cirtfit object.
+#' Compare two nested cirtfit objects
+#' 
+#' Compare two nested cirtfit objects in using a likelihood ratio test, the AIC and the BIC.
 #' 
 #' @param object A cirtfit object.
+#' @param ... Additional cirtfit objects.
 #' 
-#' @importFrom knitr kable
-#' @importFrom kableExtra kable_styling
+#' @details The degrees of freedom used for the AIC and BIC are the number of model parameters. For the LR test, the degrees of freedom are the difference in the number of model parameters between the two models.
+#' 
 #' @useDynLib countirt, .registration=TRUE
 #' @export
 anova.cirtfit <- function(object, ...) {
   
+  # TODO this only works for comparing two models at the moment
+  # TODO make this work with explanatory models
+  
+  # make the other inputted models accessible
+  models <- list(...)
+  
+  # check which one is the smaller model
+  if (length(object$fit$params) < length(models[[1]]$fit$params)) {
+    fit_small <- object
+    fit_big <- models[[1]]
+  } else {
+    fit_small <- models[[1]]
+    fit_big <- object
+  }
+  
+  # LR test
+  lr <- (-2)*(fit_small$fit$marg_ll[length(fit_small$fit$marg_ll)] - 
+                fit_big$fit$marg_ll[length(fit_big$fit$marg_ll)])
+  df <- length(fit_big$fit$params) - length(fit_small$fit$params)
+  p_value <- 1 - pchisq(lr, df)
+  
+  # AIC 
+  aic_big <- 2*length(fit_big$fit$params) - 2*fit_big$fit$marg_ll[length(fit_big$fit$marg_ll)]
+  aic_small <- 2*length(fit_small$fit$params) - 2*fit_small$fit$marg_ll[length(fit_small$fit$marg_ll)]
+  
+  # BIC 
+  n <- nrow(fit_small$model$item_data)
+  bic_big <- length(fit_big$fit$params)*log(n) - 2*fit_big$fit$marg_ll[length(fit_big$fit$marg_ll)]
+  bic_small <- length(fit_small$fit$params)*log(n) - 2*fit_small$fit$marg_ll[length(fit_small$fit$marg_ll)]
+  
+  
+  # extract constraints for 
+  # TODO adapt if i ever allow more constraints
+  # TODO adapt to explanatory models
+  if (!is.null(fit_big$model$fixed_alphas)) {
+    con_big <- paste0("Slopes fixed to: ", 
+                  paste(fit_big$model$fixed_alphas, collapse = ", "))
+  } else if (!is.null(fit_big$model$fixed_log_disps)) {
+    if (fit_big$model$equal_alphas) {
+      con_big <- paste0("Log dispersions fixed to: ", 
+                    paste(fit_big$model$fixed_log_disps, collapse = ", "), "\n",
+                    "     Slopes are constrained to be equal.")
+    } else {
+      con_big <- paste0("Log dispersions fixed to: ", 
+                    paste(fit_big$model$fixed_log_disps, collapse = ", "))
+    }
+  } else if (fit_big$model$equal_alphas) {
+    con_big <- "Slopes are constrained to be equal."
+  } else if (fit_big$model$equal_log_disps) {
+    con_big <- "Log dispersions are constrained to be equal."
+  } else {
+    # No constraints
+    con_big <- "No constraints specified."
+  }
+  
+  if (!is.null(fit_small$model$fixed_alphas)) {
+    con_small <- paste0("Slopes fixed to: ", 
+                      paste(fit_small$model$fixed_alphas, collapse = ", "))
+  } else if (!is.null(fit_small$model$fixed_log_disps)) {
+    if (fit_small$model$equal_alphas) {
+      con_small <- paste0("Log dispersions fixed to: ", 
+                        paste(fit_small$model$fixed_log_disps, collapse = ", "), "\n",
+                        "     Slopes are constrained to be equal.")
+    } else {
+      con_small <- paste0("Log dispersions fixed to: ", 
+                        paste(fit_small$model$fixed_log_disps, collapse = ", "))
+    }
+  } else if (fit_small$model$equal_alphas) {
+    con_small <- "Slopes are constrained to be equal."
+  } else if (fit_small$model$equal_log_disps) {
+    con_small <- "Log dispersions are constrained to be equal."
+  } else {
+    # No constraints
+    con_small <- "No constraints specified."
+  }
+  
+  # TODO im Output die modellbeschreibung einfuegen
+  out <- data.frame(
+    Model = c("Constr. Model", "Model"),
+    Params = c(length(fit_small$fit$params), length(fit_big$fit$params)),
+    MLL = c(round(fit_small$fit$marg_ll[length(fit_small$fit$marg_ll)],2), 
+            round(fit_big$fit$marg_ll[length(fit_big$fit$marg_ll)],2)),
+    AIC = c(aic_small, aic_big),
+    BIC = c(bic_small, aic_big),
+    Df = c("", df),
+    ChiSqrd = c("", round(lr,2)),
+    p = c("", round(p_value, 5)),
+    Signif = c("",ifelse(
+      p_value < 0.001, "***",
+      ifelse(
+        p_value < 0.01, "**",
+        ifelse(
+          p_value < 0.05, "*",
+          ifelse(
+            p_value < 0.1, ".",
+            ""
+          )
+        )
+      )
+    )
+  ))
+  cat("Model Comparison")
+  cat("\n")
+  cat("-------------------------------------------------------------------------")
+  cat("\n")
+  cat(paste0("Family: ", object$family, "\n"))
+  cat(paste0("Items: ", ncol(object$model$item_data), "\n"))
+  cat("-------------------------------------------------------------------------")
+  cat("\n")
+  cat(paste0(paste0("Model: ", con_big, "\n")))
+  cat(paste0(paste0("Constr. Model: ", con_small, "\n")))
+  cat("-------------------------------------------------------------------------")
+  cat("\n")
+  print(out)
+  cat("\n")
+  cat("-------------------------------------------------------------------------")
+  cat("\n")
+  cat("Significance: '***' < .001, '**' < .01, '*' < .05, '.' < .1")
+  
+  invisible(object)
 }
 
 

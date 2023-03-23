@@ -10,15 +10,19 @@ License: GPL (>= 2)
 Imports: 
     dplyr,
     fastGHQuad,
+    ggplot2,
+    mice,
     nleqslv,
     Rcpp (>= 1.0.6),
     RcppGSL,
     rootSolve,
     stats,
     tidyr,
+    turboEM,
     utils
 LinkingTo: Rcpp, RcppGSL
 NeedsCompilation: yes
 RoxygenNote: 7.2.1
 Depends: 
     R (>= 2.10)
+

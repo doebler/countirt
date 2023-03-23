@@ -2,6 +2,7 @@
 
 S3method(anova,cirtfit)
 S3method(summary,cirtfit)
+export(abilities)
 export(add_inference)
 export(cirt)
 export(cirt_mice)

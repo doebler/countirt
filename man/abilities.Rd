@@ -4,7 +4,7 @@
 \alias{abilities}
 \title{Extract ability parameter estimates from a cirtfit object}
 \usage{
-abilities(x, type = c("EAP"))
+abilities(x, type = "EAP")
 }
 \arguments{
 \item{x}{A cirtfit object.}

@@ -10,7 +10,6 @@
 #' @param data A data frame either in long or in wide format. For the 2PCMP and the CLRM, wide format is required (which is the default expected format). For the DRTM, long format is required (for which you have to specify `long_format = TRUE`).
 #' @param family A string indicating the count data family, can be either "cmp" or "poisson".
 #' @param item_offset Either a scalar (for same offset for all items) or a vector of the same length as the number of items with an offset to be added to the prediction term (on log scale).
-#' @param person_offset Either a scalar (for same offset for all persons) or a vector of the same length as the number of persons with an offset to be added to the prediction term (on log scale).
 #' @param data_long A boolean. Indicates whether data is in long format. If FALSE, expects data in wide format. Defaults to FALSE.
 #' @param person_id A character string. Name of the column with person id in long format data frame. Only necessary if data_long = TRUE.
 #' @param stand_errors A boolean. Indicates whether standard errors for model parameters should be estimated. Defaults to FALSE.
@@ -29,7 +28,6 @@
 #' @export
 cirt <- function(model, data, family,
                  item_offset = NULL,
-                 person_offset = NULL,
                  data_long = FALSE,
                  person_id = NULL,
                  stand_errors = FALSE,
@@ -53,6 +51,10 @@ cirt <- function(model, data, family,
   # via the accelerate_method element in the control list. Compare turboem documentation for
   #how to specify control parameters for the respective methods (accelerate_method will be 
   #passed to control.method element in turbem).
+  
+  # TODO maybe re-implement person offsets? currently they are not implemented all the 
+  # way thorugh, so just set to null so that everything works until i take care of it
+  person_offset <- NULL
   
   data <- as.data.frame(data)
   

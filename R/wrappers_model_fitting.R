@@ -531,12 +531,35 @@ add_inference <- function(model, prob = 0.95) {
   return(out)
 }
 
-# TODO generic summary schreiben, wenn ich die auf
-# cirt objekt aufrufe ohne se teil (is.null), weil ich den in cirt immer auf null setzen,
-# warnung schreiben mit hinweis, dass ich das hinzufuegen kann mit add_inference()
+#' Control parameters for cirt
+#' 
+#' @param n_nodes An integer. Specifies the number of quadrature nodes used in Gauss-Hermite quadrature.
+#' @param thres A threshold for quadrature node values if we want to truncate the qudrature grid. Will be used to truncate on lower and upper end (i.e., absolute quadrature node values will be compared to the threshhold).
+#' @param prob A threshold for quadrature weight values if we want to truncate the grid for only quadrature weights above prob.
+#' @param maxiter An integer. Maximum number of EM iterations.
+#' @param convtol A real. Convergence tolerance for EM algorithm.
+#' @param ctol_maxstep A real. Convergence tolerance for M step of EM algorithm.
+#' @param m_method A string. Can be "nleqslv". Specifying optimizer used for M step of EM algorithm,
+#' @param convcrit A string. Can be "marglik" or "params". Specifying whether to assess convergence on marginal likelihood or parameter estimates.
+#' 
+#' @useDynLib countirt, .registration=TRUE
+#' @export
+cirt_control <- function(n_nodes = 121, thres = Inf, prob = 0, maxiter = 1000, convtol = 1e-5, ctol_maxstep = 1e-8, m_method = "nleqslv", convcrit = "marglik") {
+  
+  out <- list(
+    n_nodes = n_nodes,
+    thres = thres, 
+    prob = prob, 
+    init_disp_one = TRUE,
+    maxiter = maxiter, 
+    convtol = convtol, 
+    ctol_maxstep = ctol_maxstep,
+    m_method = m_method, 
+    convcrit = convcrit
+  )
 
-
-# TODO wrapper for ability estimation
+  return(out)
+}
 
 
 

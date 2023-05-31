@@ -456,7 +456,9 @@ mcirt_explore <- function(nfactors, data, family,
     alpha_constraints = alpha_constraints,
     disp_constraints = disp_constraints,
     em_type = control$em_type,
+    n_nodes = control$n_nodes,
     fcov_prior = control$fcov_prior,
+    truncate_grid = control$truncate_grid,
     data = data
   )
   

@@ -22,6 +22,7 @@ double logFactorial( int n )
 // global iter_max
 int iter_max = 1e4;
 
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeA(double lambda, double mu, double nu, double log_Z, double min_iter) {
 
@@ -68,6 +69,7 @@ double computeA(double lambda, double mu, double nu, double log_Z, double min_it
   return A;
 }
 
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeB(double lambda, double mu, double nu, double log_Z, double min_iter) {
 
@@ -114,6 +116,7 @@ double computeB(double lambda, double mu, double nu, double log_Z, double min_it
   return B;
 }
 
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeD(double lambda, double mu, double nu, double log_Z, double min_iter) {
   // this is E(X^3 - mu*X^2)
@@ -161,6 +164,7 @@ double computeD(double lambda, double mu, double nu, double log_Z, double min_it
   return D;
 }
 
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeEY2(double lambda, double mu, double nu, double log_Z, double min_iter) {
   
@@ -207,9 +211,7 @@ double computeEY2(double lambda, double mu, double nu, double log_Z, double min_
   return EY2;
 }
   
-  
-  
-
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeQ(double lambda, double mu, double nu, double min_iter) {
 
@@ -257,6 +259,7 @@ double computeQ(double lambda, double mu, double nu, double min_iter) {
   return Q;
 }
 
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeW(double lambda, double mu, double nu, double min_iter) {
 
@@ -306,6 +309,7 @@ double computeW(double lambda, double mu, double nu, double min_iter) {
   // und dann erst die Reihe berechnen und die fertige Summe einmal durch Q teilen
 }
 
+// inspired by code from TMB (https://kaskr.github.io/adcomp/compois_8hpp_source.html; by Kasper Kristensen)
 // [[Rcpp::export]]
 double computeR(double lambda, double mu, double nu,
                 double log_Z, double min_iter) {

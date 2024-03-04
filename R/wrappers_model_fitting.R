@@ -433,6 +433,10 @@ mcirt_explore <- function(nfactors, data, family,
   
   # TODO implement checks
   
+  if (any(data > 70)) {
+    warning("(Some of) Your counts appear to be quite large. The interpolation method used in countirt was not designed for large counts and will likely be inaccurate for them. Please consult the README on the main branch of countirt on GitHub. We do not recommend using countirt for such large counts.")
+  }
+  
   # are alpha constraints provided?
   if (is.null(alpha_constraints)) {
     warning("No constraints to the discrimination matrix were provided. Identifiablity of the exploratory model is thus not garanteed. It is recommended to provide constraints on the discrimination matrix via alpha_constraints argument to ensure identifiability. Please see documentation for more information.")
@@ -592,6 +596,10 @@ mcirt_tune_lasso <- function(nfactors, data, family, penalize_grid,
                          m_method = "nleqslv", 
                          convcrit = "marglik")) {
   
+  if (any(data > 70)) {
+    warning("(Some of) Your counts appear to be quite large. The interpolation method used in countirt was not designed for large counts and will likely be inaccurate for them. Please consult the README on the main branch of countirt on GitHub. We do not recommend using countirt for such large counts.")
+  }
+  
   # FIXME implement for MC! This only works for GH
   if (is.null(control$fcov_prior)) {
     weights_and_nodes <- init.quad(Q = nfactors, ip = control$n_nodes, prune = control$truncate_grid)
@@ -727,6 +735,10 @@ mcirt_tune_ridge <- function(nfactors, data, family, penalize_grid,
                                ctol_lasso = 1e-3,
                                m_method = "nleqslv", 
                                convcrit = "marglik")) {
+  
+  if (any(data > 70)) {
+    warning("(Some of) Your counts appear to be quite large. The interpolation method used in countirt was not designed for large counts and will likely be inaccurate for them. Please consult the README on the main branch of countirt on GitHub. We do not recommend using countirt for such large counts.")
+  }
   
   # FIXME implement for MC! This only works for GH
   if (is.null(control$fcov_prior)) {

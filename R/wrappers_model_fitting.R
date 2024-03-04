@@ -78,7 +78,7 @@ cirt <- function(model, data, family,
   }
   
   if (any(model_list$item_data > 70)) {
-    warning("(Some of) Your counts appear to be quite large. Please be aware that the interpolation method in countirt was not designed for large counts and will likely be inaccurate for them. Please consult the GitHub README for more information.")
+    warning("(Some of) Your counts appear to be quite large. Please be aware that the interpolation method in countirt was not designed for large counts and will likely be inaccurate for them. Please consult the GitHub README for more information. We do not recommend using countirt for counts this large.")
   }
   
   if (!is.null(item_offset)) {

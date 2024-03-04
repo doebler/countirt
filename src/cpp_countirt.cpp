@@ -3922,6 +3922,168 @@ double lasso_delta_update_cpp(NumericVector alphas_j, // alphas for all L traits
   return(new_delta_j);
 }
 
+// [[Rcpp::export]]
+double second_deriv_delta_cpp(NumericVector alphas_j, // alphas for all L traits
+                              double delta_j,
+                              double disp_j,
+                              NumericVector data_j,
+                              NumericMatrix PPs, // all of them because they aren't item specific
+                              NumericMatrix nodes, // can be either nodes or theta_samples
+                              NumericVector grid_mus,
+                              NumericVector grid_nus,
+                              NumericVector grid_cmp_var_long,
+                              NumericVector grid_log_lambda_long,
+                              NumericVector grid_logZ_long,
+                              double max_mu,
+                              double min_mu) {
+  
+  // we are doing the coordinate descent block-wise, so we have all values here just for one item
+  
+  int n = data_j.size(); // no. of persons
+  int n_nodes = nodes.nrow(); // of no. of theta_samples
+  int L = nodes.ncol(); // no. of traits
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  // we are only looking at one item here, so the dimensionalites reduce
+  NumericVector mu(n_nodes);
+  NumericVector mu_interp(n_nodes);
+  NumericVector disp_interp(n_nodes);
+  for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+    double log_mu = delta_j;
+    // add alpha * node for each latent trait
+    for (int l=0;l<L;l++) {
+      log_mu += alphas_j[l] * nodes(k,l);
+    }
+    mu[k] = exp(log_mu);
+    mu_interp[k] = mu[k];
+    if (mu[k] > max_mu) { mu_interp[k] = max_mu; }
+    if (mu[k] < min_mu) { mu_interp[k] = min_mu; }
+    // we need to set maximum for mu to max_mu so that the interpolation will
+    // work, max_mu is the maximum mu value in our grid for interpolation
+    disp_interp[k] = disp_j;
+  }
+  
+  NumericVector V(n_nodes);
+  NumericVector log_lambda(n_nodes);
+  NumericVector log_Z(n_nodes);
+  V = interp_from_grid_v(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_v(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_v(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are vectors of length n_nodes
+  
+  // compute first and second derivative (based on LQA)
+  double first_deriv_j = 0;
+  double scnd_deriv_j = 0;
+  for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+    // compute C and D
+    double lambda = exp(log_lambda[k]);
+    double D = computeD(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+    // this is E(X^3 - mu*X^2)
+    
+    for (int i=0;i<n;i++) { // loop over persons
+      // first derivative
+      first_deriv_j += PPs(i,k) * (mu_interp[k] / V[k])*(data_j[i] - mu_interp[k]);
+      
+      // second derivative
+      scnd_deriv_j += (PPs(i,k)*mu_interp[k])/pow(V[k],2) * 
+        (V[k]*(data_j[i] - 2*mu_interp[k]) - mu_interp[k]*(data_j[i]-mu_interp[k])*(D/V[k] - 2*mu_interp[k]));
+      // the second line is named C in the paper
+    }
+  }
+  
+  return(scnd_deriv_j);
+}
+
+// [[Rcpp::export]]
+NumericVector var_deriv_delta_cpp(NumericVector alphas_j, // alphas for all L traits
+                              double delta_j,
+                              double disp_j,
+                              NumericVector data_j,
+                              NumericMatrix PPs, // all of them because they aren't item specific
+                              NumericMatrix nodes, // can be either nodes or theta_samples
+                              NumericVector grid_mus,
+                              NumericVector grid_nus,
+                              NumericVector grid_cmp_var_long,
+                              NumericVector grid_log_lambda_long,
+                              NumericVector grid_logZ_long,
+                              double max_mu,
+                              double min_mu) {
+  
+  // we are doing the coordinate descent block-wise, so we have all values here just for one item
+  
+  int n = data_j.size(); // no. of persons
+  int n_nodes = nodes.nrow(); // of no. of theta_samples
+  int L = nodes.ncol(); // no. of traits
+  
+  // set up mu's and nu's for interpolation function to be computed all in one
+  // we are only looking at one item here, so the dimensionalites reduce
+  NumericVector mu(n_nodes);
+  NumericVector mu_interp(n_nodes);
+  NumericVector disp_interp(n_nodes);
+  for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+    double log_mu = delta_j;
+    // add alpha * node for each latent trait
+    for (int l=0;l<L;l++) {
+      log_mu += alphas_j[l] * nodes(k,l);
+    }
+    mu[k] = exp(log_mu);
+    mu_interp[k] = mu[k];
+    if (mu[k] > max_mu) { mu_interp[k] = max_mu; }
+    if (mu[k] < min_mu) { mu_interp[k] = min_mu; }
+    // we need to set maximum for mu to max_mu so that the interpolation will
+    // work, max_mu is the maximum mu value in our grid for interpolation
+    disp_interp[k] = disp_j;
+  }
+  
+  NumericVector V(n_nodes);
+  NumericVector log_lambda(n_nodes);
+  NumericVector log_Z(n_nodes);
+  V = interp_from_grid_v(grid_mus, grid_nus,
+                         grid_cmp_var_long,
+                         mu_interp, disp_interp);
+  log_lambda = interp_from_grid_v(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_v(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are vectors of length n_nodes
+  
+  // compute first and second derivative (based on LQA)
+  double first_deriv_j = 0;
+  double scnd_deriv_j = 0;
+  NumericVector out(n_nodes);
+  for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+    // compute C and D
+    double lambda = exp(log_lambda[k]);
+    double D = computeD(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+    // this is E(X^3 - mu*X^2)
+    
+    for (int i=0;i<n;i++) { // loop over persons
+      // first derivative
+      first_deriv_j += PPs(i,k) * (mu_interp[k] / V[k])*(data_j[i] - mu_interp[k]);
+      
+      // second derivative
+      scnd_deriv_j += (PPs(i,k)*mu_interp[k])/pow(V[k],2) * 
+        (V[k]*(data_j[i] - 2*mu_interp[k]) - mu_interp[k]*(data_j[i]-mu_interp[k])*(D/V[k] - 2*mu_interp[k]));
+      // the second line is named C in the paper
+      
+    }
+    
+    double element = mu_interp[k]/V[k] * D - 2*pow(mu_interp[k],2);
+    out[k] = element;
+    
+  }
+  
+  return(out);
+}
+
 
 // [[Rcpp::export]]
 double soft_thresh_cpp(double x, double eta) {
@@ -4031,6 +4193,204 @@ NumericVector lasso_alpha_update_cpp(NumericVector alphas_j, // alphas for all L
   
   // TODO wieder zuruck wechseln zu new_alphas_j
   return(new_alphas_j);
+}
+
+// [[Rcpp::export]]
+NumericMatrix var_deriv_alpha_cpp(NumericVector alphas_j, // alphas for all L traits
+                                     double delta_j,
+                                     double disp_j,
+                                     NumericVector update_alphas_j,
+                                     double penalize_lambda,
+                                     NumericVector data_j,
+                                     NumericMatrix PPs, // all of them because they aren't item specific
+                                     NumericMatrix nodes, // can be either nodes or theta_samples
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // we are doing the coordinate descent block-wise, so we have all values here just for one item
+  
+  int n = data_j.size(); // no. of persons
+  int n_nodes = nodes.nrow(); // of no. of theta_samples
+  int L = nodes.ncol(); // no. of traits
+  
+  // we need to coordinate cycle through all L traits and update alphas trait-wise
+  // that changes mu values for each alpha_jl as the respective previous have then already 
+  // been updated, so interpolate for each trait
+  NumericVector new_alphas_j(L);
+  new_alphas_j = alphas_j; 
+  
+  NumericMatrix out(n_nodes, L);
+  for (int l=0;l<L;l++) {
+    if (update_alphas_j[l] == true) {
+      // set up mu's and nu's for interpolation function to be computed all in one
+      // we are only looking at one item here, so the dimensionalites reduce
+      NumericVector mu(n_nodes);
+      NumericVector mu_interp(n_nodes);
+      NumericVector disp_interp(n_nodes);
+      for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+        double log_mu = delta_j;
+        // add alpha * node for each latent trait
+        for (int f=0;f<L;f++) {
+          log_mu += new_alphas_j[f] * nodes(k,f);
+        }
+        mu[k] = exp(log_mu);
+        mu_interp[k] = mu[k];
+        if (mu[k] > max_mu) { mu_interp[k] = max_mu; }
+        if (mu[k] < min_mu) { mu_interp[k] = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp[k] = disp_j;
+      }
+      
+      NumericVector V(n_nodes);
+      NumericVector log_lambda(n_nodes);
+      NumericVector log_Z(n_nodes);
+      V = interp_from_grid_v(grid_mus, grid_nus,
+                             grid_cmp_var_long,
+                             mu_interp, disp_interp);
+      log_lambda = interp_from_grid_v(grid_mus, grid_nus,
+                                      grid_log_lambda_long,
+                                      mu_interp, disp_interp);
+      log_Z = interp_from_grid_v(grid_mus, grid_nus,
+                                 grid_logZ_long,
+                                 mu_interp, disp_interp);
+      // V and log_lambda are vectors of length n_nodes
+      
+      
+      // compute first and second derivative (based on LQA)
+      double first_deriv_jl = 0;
+      double scnd_deriv_jl = 0;
+      for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+        
+        double lambda = exp(log_lambda[k]);
+        double D = computeD(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+        // this is E(X^3 - mu*X^2)
+        
+        for (int i=0;i<n;i++) { // loop over persons
+          // first derivative
+          first_deriv_jl += PPs(i,k) * (nodes(k,l)*mu_interp[k] / V[k]) * (data_j[i] - mu_interp[k]);
+          
+          // second derivative
+          scnd_deriv_jl += (pow(nodes(k,l),2)*PPs(i,k)*mu_interp[k])/pow(V[k],2) * 
+            (V[k]*(data_j[i] - 2*mu_interp[k]) - mu_interp[k]*(data_j[i]-mu_interp[k])*(D/V[k] - 2*mu_interp[k]));
+          // the second line is named C in the paper
+        }
+        
+        out(k,l) = (mu_interp[k]*nodes(k,l))/V[k] * D - 2*pow(mu_interp[k],2)*nodes(k,l);
+      }
+      
+      // compute updated alpha_jl
+      //new_alphas_j[l] = (-1)*soft_thresh_cpp((-1)*scnd_deriv_jl*new_alphas_j[l] + first_deriv_jl, penalize_lambda) /
+      //  scnd_deriv_jl;
+    }
+  }
+  
+  // TODO wieder zuruck wechseln zu new_alphas_j
+  return(out);
+}
+
+// [[Rcpp::export]]
+NumericVector second_deriv_alpha_cpp(NumericVector alphas_j, // alphas for all L traits
+                                     double delta_j,
+                                     double disp_j,
+                                     NumericVector update_alphas_j,
+                                     double penalize_lambda,
+                                     NumericVector data_j,
+                                     NumericMatrix PPs, // all of them because they aren't item specific
+                                     NumericMatrix nodes, // can be either nodes or theta_samples
+                                     NumericVector grid_mus,
+                                     NumericVector grid_nus,
+                                     NumericVector grid_cmp_var_long,
+                                     NumericVector grid_log_lambda_long,
+                                     NumericVector grid_logZ_long,
+                                     double max_mu,
+                                     double min_mu) {
+  
+  // we are doing the coordinate descent block-wise, so we have all values here just for one item
+  
+  int n = data_j.size(); // no. of persons
+  int n_nodes = nodes.nrow(); // of no. of theta_samples
+  int L = nodes.ncol(); // no. of traits
+  
+  // we need to coordinate cycle through all L traits and update alphas trait-wise
+  // that changes mu values for each alpha_jl as the respective previous have then already 
+  // been updated, so interpolate for each trait
+  NumericVector new_alphas_j(L);
+  new_alphas_j = alphas_j; 
+  
+  NumericVector out(L);
+  for (int l=0;l<L;l++) {
+    if (update_alphas_j[l] == true) {
+      // set up mu's and nu's for interpolation function to be computed all in one
+      // we are only looking at one item here, so the dimensionalites reduce
+      NumericVector mu(n_nodes);
+      NumericVector mu_interp(n_nodes);
+      NumericVector disp_interp(n_nodes);
+      for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+        double log_mu = delta_j;
+        // add alpha * node for each latent trait
+        for (int f=0;f<L;f++) {
+          log_mu += new_alphas_j[f] * nodes(k,f);
+        }
+        mu[k] = exp(log_mu);
+        mu_interp[k] = mu[k];
+        if (mu[k] > max_mu) { mu_interp[k] = max_mu; }
+        if (mu[k] < min_mu) { mu_interp[k] = min_mu; }
+        // we need to set maximum for mu to max_mu so that the interpolation will
+        // work, max_mu is the maximum mu value in our grid for interpolation
+        disp_interp[k] = disp_j;
+      }
+      
+      NumericVector V(n_nodes);
+      NumericVector log_lambda(n_nodes);
+      NumericVector log_Z(n_nodes);
+      V = interp_from_grid_v(grid_mus, grid_nus,
+                             grid_cmp_var_long,
+                             mu_interp, disp_interp);
+      log_lambda = interp_from_grid_v(grid_mus, grid_nus,
+                                      grid_log_lambda_long,
+                                      mu_interp, disp_interp);
+      log_Z = interp_from_grid_v(grid_mus, grid_nus,
+                                 grid_logZ_long,
+                                 mu_interp, disp_interp);
+      // V and log_lambda are vectors of length n_nodes
+      
+      
+      // compute first and second derivative (based on LQA)
+      double first_deriv_jl = 0;
+      double scnd_deriv_jl = 0;
+      for(int k=0;k<n_nodes;k++) { // loop over nodes or theta samples
+        
+        double lambda = exp(log_lambda[k]);
+        double D = computeD(lambda, mu_interp[k], disp_j, log_Z[k], 10);
+        // this is E(X^3 - mu*X^2)
+        
+        for (int i=0;i<n;i++) { // loop over persons
+          // first derivative
+          first_deriv_jl += PPs(i,k) * (nodes(k,l)*mu_interp[k] / V[k]) * (data_j[i] - mu_interp[k]);
+          
+          // second derivative
+          scnd_deriv_jl += (pow(nodes(k,l),2)*PPs(i,k)*mu_interp[k])/pow(V[k],2) * 
+            (V[k]*(data_j[i] - 2*mu_interp[k]) - mu_interp[k]*(data_j[i]-mu_interp[k])*(D/V[k] - 2*mu_interp[k]));
+          // the second line is named C in the paper
+        }
+      }
+      
+      // compute updated alpha_jl
+      //new_alphas_j[l] = (-1)*soft_thresh_cpp((-1)*scnd_deriv_jl*new_alphas_j[l] + first_deriv_jl, penalize_lambda) /
+      //  scnd_deriv_jl;
+      
+      out[l] = scnd_deriv_jl;
+    }
+  }
+  
+  // TODO wieder zuruck wechseln zu new_alphas_j
+  return(out);
 }
 
 // [[Rcpp::export]]
@@ -8792,6 +9152,76 @@ double ell_cmp_newem_cpp (NumericVector alphas,
     }
     out = out + sum_for_item;
   }
+  
+  return(out);
+}
+
+// [[Rcpp::export]]
+double ell_cmp_multi_cpp (NumericMatrix alphas,
+                          NumericVector deltas,
+                          NumericVector disps,
+                          NumericMatrix data,
+                          NumericMatrix nodes, 
+                          NumericMatrix PPs,
+                          NumericVector grid_mus,
+                          NumericVector grid_nus,
+                          NumericVector grid_cmp_var_long,
+                          NumericVector grid_log_lambda_long,
+                          NumericVector grid_logZ_long,
+                          double max_mu,
+                          double min_mu) {
+  
+  // r needs to be a matrix with one column per item and then the r values
+  // for this item in the column
+  // analogously for f and h
+  
+  int m = data.ncol();
+  int n_nodes = nodes.nrow();
+  int N = data.nrow();
+  int L = nodes.ncol();
+  
+  NumericMatrix mu(n_nodes, m);
+  NumericMatrix mu_interp(n_nodes, m);
+  NumericMatrix disp_interp(n_nodes, m);
+  for(int j=0;j<m;j++){
+    // loop over items (columns)
+    for(int k=0;k<n_nodes;k++) {
+      // loop over persons (rows)
+      double log_mu = deltas[j]; 
+      // add alpha * node for each latent trait
+      for (int l=0;l<L;l++) {
+        log_mu += alphas(l,j) * nodes(k,l);
+      }
+      mu(k,j) = exp(log_mu);
+      mu_interp(k,j) = mu(k,j);
+      if (mu(k,j) > max_mu) { mu_interp(k,j) = max_mu; }
+      if (mu(k,j) < min_mu) { mu_interp(k,j) = min_mu; }
+      // we need to set maximum for mu to max_mu so that the interpolation will
+      // work, max_mu is the maximum mu value in our grid for interpolation
+      disp_interp(k,j) = disps[j];
+    }
+  }
+  
+  NumericMatrix log_lambda(N, m);
+  NumericMatrix log_Z(N, m);
+  log_lambda = interp_from_grid_m(grid_mus, grid_nus,
+                                  grid_log_lambda_long,
+                                  mu_interp, disp_interp);
+  log_Z = interp_from_grid_m(grid_mus, grid_nus,
+                             grid_logZ_long,
+                             mu_interp, disp_interp);
+  // V and log_lambda are matrices with as many rows as we have persons and
+  // as many columns as we have items
+  
+  double out = 0;
+  for (int k=0; k<n_nodes; k++) { // nodes
+    for(int i=0;i<N;i++) { // persons
+      for(int j=0;j<m;j++) { // items
+        out += (data(i,j)*log_lambda(k,j) - log_Z(k,j) - 
+          disps[j]*logFactorial(data(i,j))) * PPs(i,k);
+      }
+    }
+  } // end loops over K nodes
   
   return(out);
 }

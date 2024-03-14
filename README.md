@@ -22,7 +22,7 @@ References:
 
 Beisemann, M. (2022). A flexible approach to modeling over-, under-and equidispersed count data in IRT: The two-parameter Conway-Maxwell-Poisson model. British Journal of Mathematical and Statistical Psychology, (Advanced online publication). https://doi.org/10.1111/bmsp.12273
 
-Beisemann, M., Forthmann, B., & Doebler, P. (2022). Understanding Ability and Reliability Differences Measured with Count Items: The Distributional Regression Test Model and the Count Latent Regression Model. Multivariate Behavioral Research, (Advance Online Publication), 1–21. https://doi.org/10.1080/00273171.2023.22885
+Beisemann, M., Forthmann, B., & Doebler, P. (2024). Understanding Ability and Reliability Differences Measured with Count Items: The Distributional Regression Test Model and the Count Latent Regression Model. Multivariate Behavioral Research, (Advance Online Publication), 1–21. https://doi.org/10.1080/00273171.2023.22885
 
 Myszkowski, N., & Storme, M. (2021). Accounting for variable task discrimination in divergent thinking fluency measurement: An example of the benefits of a 2-Parameter Poisson Counts Model and its bifactor extension over the Rasch Poisson Counts Model. The Journal of Creative Behavior, 55 (3), 800–818. https://onlinelibrary.wiley.com/doi/abs/10.1002/jocb.490
 

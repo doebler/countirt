@@ -5,7 +5,7 @@ This package implements methods for count data Item Response Theory (IRT), speci
 
 - the Two-Parameter Conway-Maxwell-Poisson model (2PCMPM; Beisemann, 2022)
 - the Two-Parameter Poisson Counts Model (2PPCM; Myszkowski & Storme, 2021)
-- the Distributional Regression Test Model (DRTM) and the Count Latent Regression Model (CLRM) which are explanatory count IRT models based on the 2PCMPM (Beisemann, Forthmann, & Doebler, 2022)
+- the Distributional Regression Test Model (DRTM) and the Count Latent Regression Model (CLRM) which are explanatory count IRT models based on the 2PCMPM (Beisemann, Forthmann, & Doebler, 2024)
 - the Poisson variants of the DRTM and the CLRM
 
 This package is currently in early development and will be continuously extended. At this development stage, there might be bugs. Checks and warnings so far are only minimal, requiring users to be mindful themselves of whether their data and results seem plausible. Please be aware of that if you use the package. So far, you can fit all implemented models (including some constrained versions of these models) with the cirt function. Please consult the documentation of the cirt function. 
@@ -22,7 +22,7 @@ References:
 
 Beisemann, M. (2022). A flexible approach to modeling over-, under-and equidispersed count data in IRT: The two-parameter Conway-Maxwell-Poisson model. British Journal of Mathematical and Statistical Psychology, (Advanced online publication). https://doi.org/10.1111/bmsp.12273
 
-Beisemann, M., Forthmann, B., & Doebler, P. (2022). Understanding Ability and Reliability Differences Measured with Count Items: The Distributional Regression Test Model and the Count Latent Regression Model. https://doi.org/10.31234/osf.io/nyasg
+Beisemann, M., Forthmann, B., & Doebler, P. (2022). Understanding Ability and Reliability Differences Measured with Count Items: The Distributional Regression Test Model and the Count Latent Regression Model. Multivariate Behavioral Research, (Advance Online Publication), 1–21. https://doi.org/10.1080/00273171.2023.22885
 
 Myszkowski, N., & Storme, M. (2021). Accounting for variable task discrimination in divergent thinking fluency measurement: An example of the benefits of a 2-Parameter Poisson Counts Model and its bifactor extension over the Rasch Poisson Counts Model. The Journal of Creative Behavior, 55 (3), 800–818. https://onlinelibrary.wiley.com/doi/abs/10.1002/jocb.490
 

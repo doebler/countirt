@@ -1,6 +1,8 @@
 # countirt
  R package for count data IRT models.
 
+ *Note:* Development of this package at an early stage of development has been paused. The package will be maintained and possibly further developed in the future by Philipp Doebler (email: doebler@statistik.tu-dortmund.de), on whose GitHub you should find the most up-to-date version of countirt.
+
 This package implements methods for count data Item Response Theory (IRT), specifically:
 
 - the Two-Parameter Conway-Maxwell-Poisson model (2PCMPM; Beisemann, 2022)
@@ -15,8 +17,6 @@ Please be aware that the CMP models and algorithms were developed for and assess
 You can install the package from GitHub e.g. using the devtools package with devtools::install_github("mbsmn/countirt"). Please note that the package includes C++ code which is tied into R using the Rcpp and RcppGSL packages. In C++, I use the GSL library. In order to be able to install and use the countirt package smoothly, you need to install GSL on your machine (this is not an R package, but a C/C++ library). If you have a Mac, you can do so e.g. with homebrew. There are tutorials online of how you can install the GSL library. You only need to have it, the rest should be taken care of by Rcpp and RcppGSL.
 
 In the future, I hope to provide vignettes and some examples here for how to use the countirt package. Until then, you can have a look at the example script here (https://osf.io/dzcyt/) for some code using the countirt package.
-
-If you have any questions, you can reach me at: beisemann@statistik.tu-dortmund.de
 
 References:
 
